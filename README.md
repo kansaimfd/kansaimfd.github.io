@@ -4,8 +4,8 @@
 
 関西の音楽練習場、コンサートホールの情報をまとめています。各種条件で検索することができます。
 
-* [練習場一覧](https://yamauchist.github.io/test/facilities.html)
-* [コンサートホール一覧](https://yamauchist.github.io/test/concerthall.html)
+* [練習場一覧](https://kansaimfd.github.io/facilities.html)
+* [コンサートホール一覧](https://kansaimfd.github.io/concerthall.html)
 
 ## 利用規約
 

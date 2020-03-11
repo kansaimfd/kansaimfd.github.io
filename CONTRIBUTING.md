@@ -1,5 +1,8 @@
 # 関西音楽練習場リストへのデータ入力ルール
 
+下記のスプレッドシートに施設情報を入力します。
+[関西音楽系施設まとめ](https://docs.google.com/spreadsheets/d/141TJiRk_RhZC66hbCJr3zhhhx11avtYy7bLRcV36RnA/edit?usp=sharing)
+
 ## 部屋名について
 
 同じ施設内に複数の部屋がある場合は複数の行に同一施設名で入力してください。
