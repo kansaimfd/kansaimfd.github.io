@@ -1,0 +1,124 @@
+
+.list li a {
+    display: block;
+    color: inherit;
+}
+
+    .list li a:hover {
+        background: rgba(0,0,0,.1);
+        text-decoration: none;
+    }
+/* .list li:first-child {display:none;} */
+
+.side-nav i {
+    width: 15px;
+    margin-right: 5px;
+}
+
+.uk-label:empty {
+    display: none;
+}
+
+/*.address-line:before {
+    content: "\f3c5";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}
+
+.station-line:before {
+    content: "\f238";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+}*/
+
+.station-line i, .address-line i {
+    width: 15px;
+}
+
+.name-line {
+    margin: 0;
+}
+
+.piano, .percussion, .parking, .stand {
+    display: inline-block;
+    padding: 0 10px;
+    background: transparent;
+    line-height: 1.5;
+    font-size: .875rem;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-radius: 2px;
+}
+
+    .piano:empty, .percussion:empty, .parking:empty, .stand:empty {
+        display: none;
+    }
+
+.piano {
+    border: solid #ff6a00 1px;
+    color: #ff6a00;
+}
+
+.percussion {
+    border: solid #ff6a00 1px;
+    color: #ff6a00;
+}
+
+.parking {
+    border: solid #ff6a00 1px;
+    color: #ff6a00;
+}
+
+.stand {
+    border: solid #ff6a00 1px;
+    color: #ff6a00;
+}
+
+#spinner {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.leaflet-marker-icon-color-blue {
+    -webkit-filter: hue-rotate( 30deg);
+    filter: hue-rotate( 30deg);
+}
+
+.leaflet-marker-icon-color-pink {
+    -webkit-filter: hue-rotate( 90deg);
+    filter: hue-rotate( 90deg);
+}
+
+.leaflet-marker-icon-color-red {
+    -webkit-filter: hue-rotate(150deg);
+    filter: hue-rotate(150deg);
+}
+
+.leaflet-marker-icon-color-yellow {
+    -webkit-filter: hue-rotate(210deg);
+    filter: hue-rotate(210deg);
+}
+
+.leaflet-marker-icon-color-green {
+    -webkit-filter: hue-rotate(270deg);
+    filter: hue-rotate(270deg);
+}
+
+.leaflet-marker-icon-color-alua {
+    -webkit-filter: hue-rotate(330deg);
+    filter: hue-rotate(330deg);
+}
+
+.marker {
+    background-color: #1378b3;
+    background-size: cover;
+    border: solid #ffffff 3px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.facility-marker {
+    background-color: mediumvioletred;
+}

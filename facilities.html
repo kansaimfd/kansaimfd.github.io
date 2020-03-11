@@ -1,0 +1,264 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <title>関西音楽系施設まとめ - 練習場一覧</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="オーケストラ,練習場,アンサンブル,施設,音楽,まとめ,コンサートホール">
+    <meta name="description" content="関西の音楽練習場、コンサートホールの情報をまとめています。">
+    <meta http-equiv="content-language" content="ja">
+    <meta http-equiv="default-style" content="main.css">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" href="images/icons/favicon.ico">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="音楽施設まとめ">
+    <link rel="apple-touch-icon" href="images/icons/icon-152x152.png">
+
+    <meta name="google-site-verification" content="OVa4nTI08BfJPdU7rFYoQvHZsNadsOuwxmZwFf5QQWY" />
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="stylesheet" href="css/uikit.theme.min.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css"
+          integrity="sha256-UzFD2WYH2U1dQpKDjjZK72VtPeWP50NoJjd26rnAdUI=" crossorigin="anonymous" /> -->
+    <link rel="stylesheet" href="js/leaflet/leaflet.css" />
+    <script src="js/leaflet/leaflet.js"></script>
+    <script src="js/uikit.min.js"></script>
+    <script src="js/uikit-icons.min.js"></script>
+    <script src="js/jquery-3.4.1.min.js"></script>
+    <script src="js/list.js"></script>
+    <script src="js/list.pagination.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.8/jquery.csv.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="offcanvas" uk-offcanvas="overlay: true">
+        <div class="uk-offcanvas-bar uk-padding-remove uk-box-shadow-large">
+            <ul class="uk-nav uk-nav-default side-nav uk-padding-small">
+                <li class="uk-nav-header uk-logo">関西音楽系施設まとめ</li>
+                <li><a href="index.html"><i class="fas fa-home"></i>Home</a></li>
+                <li class="uk-active"><a href="facilities.html"><i class="fas fa-music"></i>練習場一覧</a></li>
+                <li><a href="concerthall.html"><i class="fas fa-university"></i>コンサートホール一覧</a></li>
+                <li class="uk-nav-divider"></li>
+                <li>Copyright &copy; 2020 kansai-mfd Contributors All Rights Reserved.</li>
+            </ul>
+        </div>
+    </div>
+    <header class="uk-background-secondary uk-light">
+        <nav class="uk-container uk-container-small uk-padding-remove" uk-navbar>
+            <div class="uk-navbar-left">
+                <a href="#offcanvas" class="uk-navbar-toggle uk-text-large" uk-toggle>
+                    <i class="fas fa-bars"></i>
+                </a>
+            </div>
+            <div class="uk-navbar-left uk-text-bold">
+                <span class="uk-navbar-item uk-logo">練習場一覧</span>
+            </div>
+        </nav>
+    </header>
+    <div class="uk-container uk-container-small uk-padding-remove">
+
+        <main class="uk-padding-small">
+            <div id="button-grid" class="uk-grid-collapse uk-child-width-expand" uk-grid>
+                <div>
+                    <div class="uk-inline uk-width-1-1">
+                        <select class="uk-select" id="sort-select">
+                            <option>名前順</option>
+                            <option>住所順</option>
+                            <option>駅名順</option>
+                            <option>駅から近い順</option>
+                            <option>広い順</option>
+                            <option>定員順</option>
+                            <option>安い順</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <a class="uk-button uk-button-default uk-width-1-1" href="#modal-overflow" style="padding:0;" uk-toggle>
+                        <i class="fas fa-search"></i>条件検索
+                    </a>
+                </div>
+                <div>
+                    <button class="uk-button uk-button-default uk-width-1-1" type="button" id="map-toggle-button" uk-toggle="target: .toggle-content"><i class="fas fa-map-marker-alt"></i>マップ</button>
+                </div>
+            </div>
+            <div class="uk-width-large">
+                <div id="modal-overflow" uk-modal>
+                    <div class="uk-modal-dialog">
+                        <button class="uk-modal-close-default" type="button" uk-close></button>
+                        <div class="uk-modal-header">
+                            <h2 class="uk-modal-title">条件検索</h2>
+                        </div>
+                        <div class="uk-modal-body" uk-overflow-auto>
+                            施設名
+                            <input class="uk-input" type="text" placeholder="" name="name-input">
+                            <ul uk-accordion="multiple: true">
+                                <li class="uk-open">
+                                    <a class="uk-accordion-title" href="#">都道府県</a>
+                                    <div class="uk-accordion-content">
+                                        <ul id="prefList" class="uk-list"></ul>
+                                    </div>
+                                </li>
+                                <li>
+                                    <a class="uk-accordion-title" href="#">市区町村</a>
+                                    <div class="uk-accordion-content">
+                                        <ul id="cityList" class="uk-list"></ul>
+                                    </div>
+                                </li>
+                                <li>
+                                    <a class="uk-accordion-title" href="#">最寄駅</a>
+                                    <div class="uk-accordion-content">
+                                        <ul id="stationList" class="uk-list"></ul>
+                                    </div>
+                                </li>
+                                <li>
+                                    <a class="uk-accordion-title" href="#">分類</a>
+                                    <div class="uk-accordion-content">
+                                        <ul id="categoryList" class="uk-list"></ul>
+                                    </div>
+                                </li>
+                            </ul>
+                            その他条件
+                            <ul class="uk-list">
+                                <li>
+                                    <label>
+                                        <input id="pianoCheckbox" class="uk-checkbox" type="checkbox"
+                                               value="piano">ピアノあり
+                                    </label>
+                                </li>
+                                <li>
+                                    <label>
+                                        <input id="percCheckbox" class="uk-checkbox" type="checkbox"
+                                               value="perc">打楽器貸出あり
+                                    </label>
+                                </li>
+                                <li>
+                                    <label>
+                                        <input id="standCheckbox" class="uk-checkbox" type="checkbox"
+                                               value="stand">譜面台貸出あり
+                                    </label>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="uk-modal-footer uk-text-right">
+                            <button class="uk-button uk-button-default uk-modal-close" type="button">キャンセル</button>
+                            <button class="uk-button uk-button-primary uk-modal-close" type="button" id="search-button">
+                                検索
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="spinner">
+                <img src="images/icon_loader_f_ww_01_s1.gif">
+            </div>
+
+            <div class="toggle-content" id="main-map" style="height:65vh;" hidden>
+
+            </div>
+
+            <div id="map-popup-template" style="display:none;">
+                <div>
+                    <p class="uk-text-lead name-line">
+                        <span class="uk-hidden id" style="display:none;"></span>
+                        <span class="name"></span>
+                        <span class="room"></span>
+                        <span class="category uk-label" style="display:none;"></span>
+                    </p>
+                    <div class="address-line">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span class="pref"></span>
+                        <span class="city"></span>
+                        <span class="address"></span>
+                    </div>
+                    <div class="station-line">
+                        <i class="fas fa-train"></i>
+                        <span class="station"></span>
+                        <span class="onfoot"></span>
+                    </div>
+                    <a class="open-map">地図アプリで開く</a>
+                </div>
+            </div>
+
+            <div class="uk-margin-top toggle-content" id="facility-list">
+                <ul class="list uk-list"> </ul>
+                <ul class="uk-hidden" style="display:none;" id="list-template">
+                    <li class="uk-card uk-card-default uk-card-body uk-padding-remove">
+                        <a href="#modal-detail" class="detail-link uk-padding-small" uk-toggle>
+                            <p class="uk-text-lead name-line">
+                                <span class="uk-hidden id" style="display:none;"></span>
+                                <span class="name"></span>
+                                <span class="room"></span>
+                                <span class="category uk-label" style="display:none;"></span>
+                            </p>
+                            <div class="address-line">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span class="pref"></span>
+                                <span class="city"></span>
+                                <span class="address"></span>
+                            </div>
+                            <div class="station-line">
+                                <i class="fas fa-train"></i>
+                                <span class="line"></span>
+                                <span class="station"></span>
+                                <span class="onfoot"></span>
+                            </div>
+                            <div>
+                                <span class="area"></span>
+                                <span class="capacity"></span>
+                                <span class="fee"></span>
+                            </div>
+                            <div>
+                                <span class="parking "></span>
+                                <span class="piano "></span>
+                                <span class="percussion "></span>
+                                <span class="stand"></span>
+                                <div style="display:none;">
+                                    <span class="latitude"></span>
+                                    <span class="longitude"></span>
+                                </div>
+                            </div>
+                            <div class="url" style="display:none;"></div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div id="modal-detail" uk-modal>
+                <div class="uk-modal-dialog">
+                    <button class="uk-modal-close-default" type="button" uk-close></button>
+                    <div class="uk-modal-header">
+                        <h4 class="uk-modal-title" id="dialogTitle">[名前]</h4>
+                    </div>
+
+                    <div class="uk-modal-body" uk-overflow-auto>
+                        <div class="address-line">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span id="dialog_address"></span>
+                        </div>
+                        <div class="station-line">
+                            <i class="fas fa-train"></i>
+                            <span id="dialog_station"></span>
+                        </div>
+                        <a id="detail-url" target="_blank"></a>
+                        <div id="mapcontainer" style="height:50vh"></div>
+                        <a id="maplink" href="https://www.google.com/maps/search/?api=1&query=47.5951518,-122.3316393">地図アプリで見る</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script type="text/javascript">
+        initializeFacilitiesPage();
+    </script>
+</body>
+
+</html>
