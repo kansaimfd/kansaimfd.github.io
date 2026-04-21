@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom'
 import { practices } from '../data'
 import type { Practice } from '../types'
 import FacilityMap from '../components/FacilityMap'
+import ViewToggle, { type ViewMode } from '../components/ViewToggle'
+import SortBar from '../components/SortBar'
+import SortableTh from '../components/SortableTh'
+import FilterPanel from '../components/FilterPanel'
 
-type ViewMode = 'list' | 'table' | 'map'
 type SortKey = '施設名' | '都道府県' | '最寄駅徒歩'
 
 function unique<T>(arr: T[]): T[] {
@@ -32,7 +35,7 @@ export default function PracticeListPage() {
   const stations = useMemo(() => unique(practices.map(p => p.最寄駅).filter(Boolean) as string[]), [])
 
   const filtered = useMemo(() => {
-    let list = practices.filter(p => {
+    const list = practices.filter(p => {
       if (filterPref && p.都道府県 !== filterPref) return false
       if (filterCity && p.市区町村 !== filterCity) return false
       if (filterCategory && p.分類 !== filterCategory) return false
@@ -47,7 +50,7 @@ export default function PracticeListPage() {
       return true
     })
 
-    list.sort((a, b) => {
+    return [...list].sort((a, b) => {
       let av: any, bv: any
       if (sortKey === '施設名') { av = a.施設名; bv = b.施設名 }
       else if (sortKey === '都道府県') { av = a.都道府県; bv = b.都道府県 }
@@ -56,7 +59,6 @@ export default function PracticeListPage() {
       if (av > bv) return sortAsc ? 1 : -1
       return 0
     })
-    return list
   }, [query, filterPref, filterCity, filterCategory, filterStation, filterWalk, filterPiano, sortKey, sortAsc])
 
   function toggleSort(key: SortKey) {
@@ -64,80 +66,58 @@ export default function PracticeListPage() {
     else { setSortKey(key); setSortAsc(true) }
   }
 
-  function SortTh({ k, label }: { k: SortKey; label: string }) {
-    return (
-      <th className="px-3 py-2 text-left cursor-pointer hover:bg-gray-100 whitespace-nowrap" onClick={() => toggleSort(k)}>
-        {label}{sortKey === k ? (sortAsc ? ' ▲' : ' ▼') : ''}
-      </th>
-    )
-  }
+  const sortTh = (k: SortKey, label: string) => (
+    <SortableTh k={k} label={label} sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+  )
 
   return (
     <div>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mb-6 pb-2 border-b-2 border-gold-500">練習場一覧</h1>
 
-      {/* フィルター */}
-      <details className="mb-4 border border-gray-200 rounded-xl p-4 bg-white shadow-sm">
-        <summary className="cursor-pointer font-medium text-navy-700">絞り込み・検索</summary>
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          <input
-            type="text"
-            placeholder="フリーワード検索"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            className="border rounded px-3 py-1.5 text-sm col-span-full"
-          />
-          <select value={filterPref} onChange={e => { setFilterPref(e.target.value); setFilterCity('') }} className="border rounded px-2 py-1.5 text-sm">
-            <option value="">都道府県（すべて）</option>
-            {prefs.map(p => <option key={p}>{p}</option>)}
-          </select>
-          <select value={filterCity} onChange={e => setFilterCity(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
-            <option value="">市区町村（すべて）</option>
-            {cities.map(c => <option key={c}>{c}</option>)}
-          </select>
-          <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
-            <option value="">分類（すべて）</option>
-            {categories.map(c => <option key={c}>{c}</option>)}
-          </select>
-          <select value={filterStation} onChange={e => setFilterStation(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
-            <option value="">最寄駅（すべて）</option>
-            {stations.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <div className="flex items-center gap-2 text-sm">
-            <label>徒歩</label>
-            <input type="number" min={0} value={filterWalk} onChange={e => setFilterWalk(e.target.value)} className="border rounded w-16 px-2 py-1.5" placeholder="〜" />
-            <span>分以内</span>
-          </div>
-          <label className="flex items-center gap-1 cursor-pointer text-sm">
-            <input type="checkbox" checked={filterPiano} onChange={e => setFilterPiano(e.target.checked)} />
-            ピアノあり
-          </label>
+      <FilterPanel>
+        <input
+          type="text"
+          placeholder="フリーワード検索"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          className="border rounded px-3 py-1.5 text-sm col-span-full"
+        />
+        <select value={filterPref} onChange={e => { setFilterPref(e.target.value); setFilterCity('') }} className="border rounded px-2 py-1.5 text-sm">
+          <option value="">都道府県（すべて）</option>
+          {prefs.map(p => <option key={p}>{p}</option>)}
+        </select>
+        <select value={filterCity} onChange={e => setFilterCity(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
+          <option value="">市区町村（すべて）</option>
+          {cities.map(c => <option key={c}>{c}</option>)}
+        </select>
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
+          <option value="">分類（すべて）</option>
+          {categories.map(c => <option key={c}>{c}</option>)}
+        </select>
+        <select value={filterStation} onChange={e => setFilterStation(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
+          <option value="">最寄駅（すべて）</option>
+          {stations.map(s => <option key={s}>{s}</option>)}
+        </select>
+        <div className="flex items-center gap-2 text-sm">
+          <label>徒歩</label>
+          <input type="number" min={0} value={filterWalk} onChange={e => setFilterWalk(e.target.value)} className="border rounded w-16 px-2 py-1.5" placeholder="〜" />
+          <span>分以内</span>
         </div>
-      </details>
+        <label className="flex items-center gap-1 cursor-pointer text-sm">
+          <input type="checkbox" checked={filterPiano} onChange={e => setFilterPiano(e.target.checked)} />
+          ピアノあり
+        </label>
+      </FilterPanel>
 
-      {/* 表示切替 */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <span className="text-sm text-gray-500">{filtered.length} 件</span>
-        <div className="flex gap-2">
-          {(['list', 'table', 'map'] as ViewMode[]).map(v => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${view === v ? 'bg-navy-700 text-white border-navy-700' : 'bg-white text-gray-600 border-gray-300 hover:border-navy-700 hover:text-navy-700'}`}>
-              {v === 'list' ? 'リスト' : v === 'table' ? '表' : '地図'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ViewToggle view={view} onChangeView={setView} count={filtered.length} />
 
       {view === 'list' && (
-        <div className="flex items-center gap-2 mb-3 text-sm">
-          <span className="text-gray-500">並び替え:</span>
-          {(['施設名', '都道府県', '最寄駅徒歩'] as SortKey[]).map(k => (
-            <button key={k} onClick={() => toggleSort(k)}
-              className={`px-2 py-0.5 rounded-full border text-xs transition-colors ${sortKey === k ? 'bg-navy-700 text-white border-navy-700' : 'border-gray-300 hover:border-navy-700 hover:text-navy-700'}`}>
-              {k}{sortKey === k ? (sortAsc ? ' ▲' : ' ▼') : ''}
-            </button>
-          ))}
-        </div>
+        <SortBar
+          keys={['施設名', '都道府県', '最寄駅徒歩'] as SortKey[]}
+          sortKey={sortKey}
+          sortAsc={sortAsc}
+          onToggle={toggleSort}
+        />
       )}
 
       {view === 'list' && (
@@ -152,11 +132,11 @@ export default function PracticeListPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <SortTh k="施設名" label="施設名" />
-                <SortTh k="都道府県" label="都道府県" />
+                {sortTh('施設名', '施設名')}
+                {sortTh('都道府県', '都道府県')}
                 <th className="px-3 py-2 text-left whitespace-nowrap">市区町村</th>
                 <th className="px-3 py-2 text-left whitespace-nowrap">分類</th>
-                <SortTh k="最寄駅徒歩" label="徒歩(分)" />
+                {sortTh('最寄駅徒歩', '徒歩(分)')}
                 <th className="px-3 py-2 text-left">ピアノ</th>
               </tr>
             </thead>
@@ -164,7 +144,7 @@ export default function PracticeListPage() {
               {filtered.map(p => (
                 <tr key={p.ID} className="border-b hover:bg-gray-50">
                   <td className="px-3 py-2">
-                    <Link to={`/practice/${p.ID}`} className="text-blue-600 hover:underline">{p.施設名}</Link>
+                    <Link to={`/practice/${p.ID}`} className="text-navy-700 hover:text-gold-500 hover:underline">{p.施設名}</Link>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{p.都道府県}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{p.市区町村}</td>
