@@ -9,10 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Tech Stack
 
 - **Vite** — ビルドツール
-- **React** — UIフレームワーク
-- **Tailwind CSS** — スタイリング
-- **Leaflet + OpenStreetMap** — 地図表示
-- **YAML → JSON** — 施設データはYAMLで管理し、ビルド時にJSONへ変換してフロントエンドに埋め込む
+- **React + TypeScript** — UIフレームワーク
+- **Tailwind CSS v4** — スタイリング（`@tailwindcss/vite` プラグイン経由）
+- **React Router v7** — クライアントサイドルーティング（`basename="/kansai-mfd/"`）
+- **Leaflet + react-leaflet + OpenStreetMap** — 地図表示
+- **js-yaml** — YAML→JSON変換（ビルドスクリプト内で使用）
 
 ## Commands
 
@@ -29,19 +30,21 @@ npm run lint       # ESLintによるコードチェック
 ### Data Flow
 
 ```
-data/facilities/*.yaml
-        ↓ (scripts/build-data.js などビルドスクリプト)
-src/data/facilities.json
-        ↓ (import)
+data/facilities/concerthall.yaml  data/facilities/facilities.yaml
+        ↓ (scripts/build-data.mjs)
+src/data/concerthalls.json        src/data/practices.json
+        ↓ (src/data.ts でimport)
 React コンポーネント
 ```
 
 ### Key Directories
 
-- `data/` — 施設データのYAMLファイル群
-- `scripts/` — YAML→JSON変換スクリプト
-- `src/data/` — 変換後JSONの出力先（gitignore推奨）
-- `src/components/` — Reactコンポーネント
+- `data/facilities/` — 施設データのYAMLファイル群
+- `scripts/build-data.mjs` — YAML→JSON変換スクリプト
+- `src/data/` — 変換後JSONの出力先（`.gitignore` 済み）
+- `src/types.ts` — `ConcertHall` / `Practice` 型定義
+- `src/data.ts` — JSONデータの読み込みと型付け
+- `src/components/` — 共通UIコンポーネント
 - `src/pages/` — ページ単位のコンポーネント
 
 ### Data Schema (YAML)
@@ -83,12 +86,19 @@ React コンポーネント
   親子室: 〇 | ×               # 任意
 ```
 
+## Design
+
+- **カラー**: ネイビー（`#1B2E4B`）＋ゴールド（`#B8962E`）＋クリーム背景（`#F8F6F0`）
+- **フォント**: 見出しに Noto Serif JP（クラシカル感）、本文に Noto Sans JP
+- **テーマ**: クラシック音楽・オーケストラ・親しみやすい・モダン
+
 ## Deployment
 
-GitHub Pages にデプロイ。React Router を使う場合は `basename` の設定とリダイレクト対応が必要。
+GitHub Pages にデプロイ（リポジトリ名 `kansai-mfd`）。`vite.config.ts` の `base` と React Router の `basename` はともに `/kansai-mfd/` に設定済み。
 
 ## Notes
 
-- `src/data/facilities.json` はビルド成果物なので `.gitignore` に追加する
-- YAMLからJSONへの変換は `npm run build` の前処理として実行すること
-- `concerthall.yaml` の `築年月` は `YYYY-MM` 形式で記述する（Excelシリアル値は変換が必要）
+- `src/data/concerthalls.json` と `src/data/practices.json` はビルド成果物なので `.gitignore` 済み
+- YAMLからJSONへの変換は `npm run dev` / `npm run build` の前処理として自動実行される
+- `concerthall.yaml` の `築年月` は `YYYY-MM` 形式で記述する（Excelシリアル値は変換済み）
+- `concerthall.yaml` に同一施設の複数ホール（部屋名で区別）が含まれる場合、一覧では別エントリとして表示する
