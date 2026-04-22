@@ -1,3 +1,9 @@
+export interface Station {
+  路線?: string
+  駅: string
+  駅徒歩?: number
+}
+
 export interface ConcertHall {
   ID: number
   施設名: string
@@ -10,9 +16,7 @@ export interface ConcertHall {
   料金URL?: string
   分類?: string
   築年月?: string
-  最寄駅路線?: string
-  最寄駅?: string
-  最寄駅徒歩?: number
+  最寄駅?: Station[]
   舞台高さ?: number
   舞台奥行?: number
   舞台幅?: number

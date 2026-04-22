@@ -7,7 +7,9 @@
     "dev": "node scripts/build-data.mjs && vite",
     "build": "node scripts/build-data.mjs && tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sheet:export": "node scripts/yaml-to-csv.mjs",
+    "sheet:import": "node scripts/csv-to-yaml.mjs"
   },
   "dependencies": {
     "@types/js-yaml": "^4.0.9",
