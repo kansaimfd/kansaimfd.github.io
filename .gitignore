@@ -27,4 +27,5 @@ dist-ssr
 src/data/concerthalls.json
 src/data/practices.json
 data/facilities/concerthall.csv
+data/facilities/concerthall.xlsx
 .claude/

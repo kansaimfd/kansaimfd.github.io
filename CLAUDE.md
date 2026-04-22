@@ -30,7 +30,7 @@ npm run lint       # ESLintによるコードチェック
 ### Data Flow
 
 ```
-data/facilities/concerthall.yaml  data/facilities/facilities.yaml
+data/facilities/concerthall.yaml  data/facilities/practice.yaml
         ↓ (scripts/build-data.mjs)
 src/data/concerthalls.json        src/data/practices.json
         ↓ (src/data.ts でimport)

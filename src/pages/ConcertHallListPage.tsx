@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { concerthalls } from '../data'
 import type { ConcertHall } from '../types'
 import FacilityMap from '../components/FacilityMap'
-import ViewToggle, { type ViewMode } from '../components/ViewToggle'
+import { type ViewMode } from '../components/ViewToggle'
 import SortableTh from '../components/SortableTh'
 
 type SortKey = '施設名' | '都道府県' | '客席数' | '最寄駅徒歩'
@@ -146,9 +145,9 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
         {/* Name + address + access */}
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-            <Link to={`/concert/${h.ID}`} style={{ fontFamily: '"Noto Serif JP", serif', fontWeight: 600, fontSize: isMobile ? 15 : 17, color: '#1B2E4B', letterSpacing: '-0.01em', textDecoration: 'none', lineHeight: 1.3 }}>
+            <span style={{ fontFamily: '"Noto Serif JP", serif', fontWeight: 600, fontSize: isMobile ? 15 : 17, color: '#1B2E4B', letterSpacing: '-0.01em', lineHeight: 1.3 }}>
               {h.施設名}
-            </Link>
+            </span>
             {h.部屋名 && <span style={{ fontSize: isMobile ? 11 : 12, color: '#9ca3af' }}>（{h.部屋名}）</span>}
           </div>
           <p style={{ fontSize: isMobile ? 11 : 12, color: '#6b7280', margin: '4px 0 0', letterSpacing: '0.02em' }}>
@@ -217,7 +216,7 @@ const EQUIP_OPTIONS = [
 
 export default function ConcertHallListPage() {
   const { isMobile, isTablet } = useSize()
-  const [view, setView] = useState<ViewMode>('list')
+  const [view] = useState<ViewMode>('list')
   const [query, setQuery] = useState('')
   const [filterPrefs, setFilterPrefs] = useState<string[]>([])
   const [filterEquip, setFilterEquip] = useState<Set<string>>(new Set())
@@ -327,7 +326,6 @@ export default function ConcertHallListPage() {
             関西6府県のホールを客席数・設備・アクセスで比較
           </p>
         </div>
-        <ViewToggle view={view} onChangeView={setView} count={filtered.length} fullWidth={isMobile} />
       </div>
 
       {/* Filter panel */}
@@ -422,9 +420,9 @@ export default function ConcertHallListPage() {
               {filtered.map(h => (
                 <tr key={h.ID} className="border-b hover:bg-gray-50">
                   <td className="px-3 py-2">
-                    <Link to={`/concert/${h.ID}`} className="text-navy-700 hover:text-gold-500 hover:underline">
+                    <span className="text-navy-700">
                       {h.施設名}{h.部屋名 ? `（${h.部屋名}）` : ''}
-                    </Link>
+                    </span>
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{h.都道府県}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{h.市区町村}</td>

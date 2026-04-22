@@ -20,11 +20,6 @@ export default function App() {
             }>
               コンサートホール
             </NavLink>
-            <NavLink to="/practice" className={({ isActive }) =>
-              isActive ? 'text-gold-400 font-medium text-sm' : 'text-navy-100 hover:text-white text-sm transition-colors'
-            }>
-              練習場
-            </NavLink>
             <NavLink to="/about" className={({ isActive }) =>
               isActive ? 'text-gold-400 font-medium text-sm' : 'text-navy-100 hover:text-white text-sm transition-colors'
             }>

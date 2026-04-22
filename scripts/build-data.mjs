@@ -12,7 +12,7 @@ function loadYaml(relPath) {
 }
 
 const concerthalls = loadYaml('data/facilities/concerthall.yaml')
-const practices = loadYaml('data/facilities/facilities.yaml')
+const practices = loadYaml('data/facilities/practice.yaml')
 
 const outDir = resolve(root, 'src/data')
 mkdirSync(outDir, { recursive: true })
