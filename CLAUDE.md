@@ -51,7 +51,7 @@ React コンポーネント
 
 施設データは日本語キーのYAMLリスト形式で記述する。ファイルは `data/facilities/` 以下に分類別で管理する。
 
-**共通フィールド:**
+**共通フィールド（両YAMLファイル）:**
 
 ```yaml
 - ID: number                   # 必須（URLに使用: /concert/:id, /practice/:id）
@@ -60,10 +60,7 @@ React コンポーネント
   市区町村: string             # 必須
   番地以下: string             # 必須
   URL: string                  # 任意
-  分類: string                 # 任意 例: アンサンブル用, コンサートホール
-  最寄駅: string               # 任意
-  最寄駅徒歩: number           # 任意（分）
-  ピアノ有無: 〇 | ×           # 任意
+  分類: string                 # 任意
   経度: number                 # 必須
   緯度: number                 # 必須
 ```
@@ -75,15 +72,40 @@ React コンポーネント
   申込URL: string              # 任意
   料金URL: string              # 任意
   築年月: string               # 任意（YYYY-MM形式 例: 1995-04）
-  最寄駅路線: string           # 任意
+  最寄駅:                      # 任意（配列）
+    - 路線: string
+      駅: string
+      駅徒歩: number           # 分
   舞台高さ: number             # 任意（m）
   舞台奥行: number             # 任意（m）
   舞台幅: number               # 任意（m）
   客席数: number               # 任意
   駐車場: number               # 任意（台数）
+  ピアノ有無: 〇 | ×           # 任意
   パイプオルガン: 〇 | ×       # 任意
   譜面台貸出: 〇 | ×           # 任意
   親子室: 〇 | ×               # 任意
+```
+
+**`practice.yaml`（練習場）固有フィールド:**
+
+```yaml
+  申込URL: string              # 任意
+  料金URL: string              # 任意
+  TEL: string                  # 任意
+  開館時間: string             # 任意（例: 09-00）
+  閉館時間: string             # 任意（例: 22-00）
+  休館日: string               # 任意
+  最寄駅:                      # 任意（配列）
+    - 路線: string
+      駅: string
+      駅徒歩: number           # 分
+  部屋:                        # 任意（配列）
+    - 部屋名: string
+      面積: number             # 任意（㎡）
+      定員: number             # 任意（人）
+      ピアノ有無: 〇 | ×       # 任意
+  ピアノ有無: 〇 | ×           # 任意（部屋レベルで管理する場合は省略可）
 ```
 
 ## Design

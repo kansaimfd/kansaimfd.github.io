@@ -120,13 +120,41 @@ for (const get of getSheetRows(practiceSheet)) {
   practice['市区町村'] = get('市区町村')
   practice['番地以下'] = get('番地以下')
 
-  for (const k of ['URL', '分類', '最寄駅', 'ピアノ有無']) {
+  for (const k of ['URL', '申込URL', '料金URL', 'TEL', '開館時間', '閉館時間', '休館日', '分類', 'ピアノ有無']) {
     const v = toStr(get(k))
     if (v) practice[k] = v
   }
 
-  const aruki = toNum(get('最寄駅徒歩'))
-  if (aruki != null) practice['最寄駅徒歩'] = aruki
+  // 最寄駅配列
+  const stations = []
+  for (let n = 1; n <= 3; n++) {
+    const eki = toStr(get(`最寄駅${n}_駅`))
+    if (!eki) continue
+    const entry = {}
+    const rosen = toStr(get(`最寄駅${n}_路線`))
+    if (rosen) entry['路線'] = rosen
+    entry['駅'] = eki
+    const aruki = toNum(get(`最寄駅${n}_駅徒歩`))
+    if (aruki != null) entry['駅徒歩'] = aruki
+    stations.push(entry)
+  }
+  if (stations.length > 0) practice['最寄駅'] = stations
+
+  // 部屋配列
+  const rooms = []
+  for (let n = 1; n <= 5; n++) {
+    const name = toStr(get(`部屋${n}_部屋名`))
+    if (!name) continue
+    const room = { '部屋名': name }
+    const area = toNum(get(`部屋${n}_面積`))
+    if (area != null) room['面積'] = area
+    const cap = toNum(get(`部屋${n}_定員`))
+    if (cap != null) room['定員'] = cap
+    const piano = toStr(get(`部屋${n}_ピアノ有無`))
+    if (piano) room['ピアノ有無'] = piano
+    rooms.push(room)
+  }
+  if (rooms.length > 0) practice['部屋'] = rooms
 
   practice['経度'] = Number(get('経度'))
   practice['緯度'] = Number(get('緯度'))

@@ -30,6 +30,13 @@ export interface ConcertHall {
   緯度: number
 }
 
+export interface PracticeRoom {
+  部屋名: string
+  面積?: number
+  定員?: number
+  ピアノ有無?: '〇' | '×'
+}
+
 export interface Practice {
   ID: number
   施設名: string
@@ -37,9 +44,16 @@ export interface Practice {
   市区町村: string
   番地以下: string
   URL?: string
+  申込URL?: string
+  料金URL?: string
+  TEL?: string
+  開館時間?: string
+  閉館時間?: string
+  休館日?: string
   分類?: string
-  最寄駅?: string
+  最寄駅?: string | Station[]
   最寄駅徒歩?: number
+  部屋?: PracticeRoom[]
   ピアノ有無?: '〇' | '×'
   経度: number
   緯度: number

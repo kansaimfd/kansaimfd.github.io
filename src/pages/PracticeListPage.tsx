@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { practices } from '../data'
-import type { Practice } from '../types'
+import type { Practice, Station } from '../types'
 import FacilityMap from '../components/FacilityMap'
 import ViewToggle, { type ViewMode } from '../components/ViewToggle'
 import SortBar from '../components/SortBar'
@@ -32,16 +32,25 @@ export default function PracticeListPage() {
     [filterPref]
   )
   const categories = useMemo(() => unique(practices.map(p => p.分類).filter(Boolean) as string[]), [])
-  const stations = useMemo(() => unique(practices.map(p => p.最寄駅).filter(Boolean) as string[]), [])
+  const stations = useMemo(() => unique(practices.flatMap(p =>
+    Array.isArray(p.最寄駅) ? (p.最寄駅 as Station[]).map(s => s.駅) : p.最寄駅 ? [p.最寄駅 as string] : []
+  )), [])
 
   const filtered = useMemo(() => {
     const list = practices.filter(p => {
       if (filterPref && p.都道府県 !== filterPref) return false
       if (filterCity && p.市区町村 !== filterCity) return false
       if (filterCategory && p.分類 !== filterCategory) return false
-      if (filterStation && p.最寄駅 !== filterStation) return false
-      if (filterWalk && (p.最寄駅徒歩 == null || p.最寄駅徒歩 > Number(filterWalk))) return false
-      if (filterPiano && p.ピアノ有無 !== '〇') return false
+      if (filterStation) {
+        const names = Array.isArray(p.最寄駅) ? (p.最寄駅 as Station[]).map(s => s.駅) : p.最寄駅 ? [p.最寄駅 as string] : []
+        if (!names.includes(filterStation)) return false
+      }
+      const minWalk = Array.isArray(p.最寄駅)
+        ? Math.min(...(p.最寄駅 as Station[]).map(s => s.駅徒歩 ?? 999))
+        : p.最寄駅徒歩 ?? 999
+      if (filterWalk && minWalk > Number(filterWalk)) return false
+      const hasPiano = p.ピアノ有無 === '〇' || p.部屋?.some(r => r.ピアノ有無 === '〇')
+      if (filterPiano && !hasPiano) return false
       if (query) {
         const q = query.toLowerCase()
         const text = `${p.施設名}${p.都道府県}${p.市区町村}${p.番地以下}`.toLowerCase()
@@ -54,7 +63,10 @@ export default function PracticeListPage() {
       let av: any, bv: any
       if (sortKey === '施設名') { av = a.施設名; bv = b.施設名 }
       else if (sortKey === '都道府県') { av = a.都道府県; bv = b.都道府県 }
-      else { av = a.最寄駅徒歩 ?? 999; bv = b.最寄駅徒歩 ?? 999 }
+      else {
+        av = Array.isArray(a.最寄駅) ? Math.min(...(a.最寄駅 as Station[]).map(s => s.駅徒歩 ?? 999)) : a.最寄駅徒歩 ?? 999
+        bv = Array.isArray(b.最寄駅) ? Math.min(...(b.最寄駅 as Station[]).map(s => s.駅徒歩 ?? 999)) : b.最寄駅徒歩 ?? 999
+      }
       if (av < bv) return sortAsc ? -1 : 1
       if (av > bv) return sortAsc ? 1 : -1
       return 0
@@ -173,8 +185,15 @@ function PracticeCard({ practice: p }: { practice: Practice }) {
       <p className="text-sm text-gray-500 mt-1">{p.都道府県} {p.市区町村}</p>
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
         {p.分類 && <span className="bg-navy-50 text-navy-700 rounded-full px-2 py-0.5">{p.分類}</span>}
-        {p.最寄駅 && <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{p.最寄駅}{p.最寄駅徒歩 != null ? ` 徒歩${p.最寄駅徒歩}分` : ''}</span>}
-        {p.ピアノ有無 === '〇' && <span className="bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">ピアノ</span>}
+        {Array.isArray(p.最寄駅)
+          ? (p.最寄駅 as Station[]).slice(0, 1).map((s, i) => (
+              <span key={i} className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{s.駅}{s.駅徒歩 != null ? ` 徒歩${s.駅徒歩}分` : ''}</span>
+            ))
+          : p.最寄駅 && <span className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{p.最寄駅 as string}{p.最寄駅徒歩 != null ? ` 徒歩${p.最寄駅徒歩}分` : ''}</span>
+        }
+        {(p.ピアノ有無 === '〇' || p.部屋?.some(r => r.ピアノ有無 === '〇')) && (
+          <span className="bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">ピアノ</span>
+        )}
       </div>
     </Link>
   )
