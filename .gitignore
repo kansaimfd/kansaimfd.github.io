@@ -26,6 +26,8 @@ dist-ssr
 # Generated data
 src/data/concerthalls.json
 src/data/practices.json
+data/facilities/.research-progress*.json
 data/facilities/concerthall.csv
 data/facilities/concerthall.xlsx
+data/facilities/draft/
 .claude/
