@@ -4,6 +4,8 @@ import L from 'leaflet'
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+import type { Station } from '../types'
+import { stationLabel } from '../station'
 
 // leaflet のデフォルトアイコン修正
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -13,8 +15,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 })
 
-interface StationItem { 路線?: string; 駅: string; 駅徒歩?: number }
-
 interface Facility {
   ID: number
   施設名: string
@@ -22,8 +22,7 @@ interface Facility {
   都道府県: string
   市区町村: string
   番地以下: string
-  最寄駅?: string | StationItem[]
-  最寄駅徒歩?: number
+  最寄駅?: Station[]
   経度: number
   緯度: number
 }
@@ -52,18 +51,9 @@ export default function FacilityMap({ facilities, detailBasePath }: Props) {
                 {f.施設名}{f.部屋名 ? `（${f.部屋名}）` : ''}
               </p>
               <p className="text-gray-600">{f.都道府県}{f.市区町村}{f.番地以下}</p>
-              {Array.isArray(f.最寄駅)
-                ? f.最寄駅.map((s, i) => (
-                    <p key={i} className="text-gray-600">
-                      {s.路線 ? `${s.路線} ` : ''}{s.駅}{s.駅徒歩 != null ? `（徒歩${s.駅徒歩}分）` : ''}
-                    </p>
-                  ))
-                : f.最寄駅 && (
-                    <p className="text-gray-600">
-                      {f.最寄駅}{f.最寄駅徒歩 != null ? `（徒歩${f.最寄駅徒歩}分）` : ''}
-                    </p>
-                  )
-              }
+              {f.最寄駅?.map((s, i) => (
+                <p key={i} className="text-gray-600">{stationLabel(s)}</p>
+              ))}
               <Link
                 to={`${detailBasePath}/${f.ID}`}
                 className="block mt-1 text-blue-600 hover:underline"

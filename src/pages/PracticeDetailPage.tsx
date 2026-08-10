@@ -1,8 +1,10 @@
 import { useParams, Link } from 'react-router-dom'
 import { practices } from '../data'
+import { stationLabel } from '../station'
 import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
-import type { Station } from '../types'
+import SourceNote from '../components/SourceNote'
+import { availabilityMark } from '../availability'
 
 export default function PracticeDetailPage() {
   const { id } = useParams()
@@ -19,9 +21,7 @@ export default function PracticeDetailPage() {
 
   const p = practice
 
-  const stationText = Array.isArray(p.最寄駅)
-    ? (p.最寄駅 as Station[]).map(s => `${s.路線 ? s.路線 + ' ' : ''}${s.駅}${s.駅徒歩 != null ? `（徒歩${s.駅徒歩}分）` : ''}`).join(' / ')
-    : p.最寄駅 ? `${p.最寄駅}${p.最寄駅徒歩 != null ? `（徒歩${p.最寄駅徒歩}分）` : ''}` : undefined
+  const stationText = p.最寄駅?.map(stationLabel).join(' / ')
 
   const rows: [string, string | number | undefined | null][] = [
     ['都道府県', p.都道府県],
@@ -32,7 +32,7 @@ export default function PracticeDetailPage() {
     ['休館日', p.休館日],
     ['分類', p.分類],
     ['最寄駅', stationText],
-    ['ピアノ有無', p.ピアノ有無],
+    ['ピアノ有無', p.ピアノ有無 != null ? availabilityMark(p.ピアノ有無) : undefined],
   ]
 
   return (
@@ -82,7 +82,7 @@ export default function PracticeDetailPage() {
                     <td className="px-3 py-2">{r.部屋名}</td>
                     <td className="px-3 py-2 text-right">{r.面積 ?? '—'}</td>
                     <td className="px-3 py-2 text-right">{r.定員 ?? '—'}</td>
-                    <td className="px-3 py-2 text-center">{r.ピアノ有無 ?? '—'}</td>
+                    <td className="px-3 py-2 text-center">{availabilityMark(r.ピアノ有無)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -90,6 +90,8 @@ export default function PracticeDetailPage() {
           </div>
         </div>
       )}
+
+      <SourceNote 出典={p.出典} 最終確認日={p.最終確認日} />
     </div>
   )
 }

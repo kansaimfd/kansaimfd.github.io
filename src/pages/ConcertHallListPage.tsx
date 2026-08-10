@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react'
 import { concerthalls } from '../data'
 import type { ConcertHall } from '../types'
+import { NO_WALK, lineLabel, minWalk, walkLabel } from '../station'
+import { hasEquipment } from '../availability'
 import FacilityMap from '../components/FacilityMap'
 import { type ViewMode } from '../components/ViewToggle'
 import SortableTh from '../components/SortableTh'
@@ -26,6 +28,13 @@ const PREF_PALETTES: Record<string, { accent: string; tint: string; chip: string
   '和歌山県': { accent: '#8a3e3e', tint: '#f5e9e9', chip: '#d9b8b8', label: 'WAKAYAMA' },
 }
 const palOf = (pref: string) => PREF_PALETTES[pref] ?? PREF_PALETTES['大阪府']
+
+/** 平坦化された一覧は同一施設の複数ホールを含むため、地図では施設ごと1マーカーにまとめる */
+function dedupeByFacility(halls: ConcertHall[]): ConcertHall[] {
+  const seen = new Map<number, ConcertHall>()
+  for (const h of halls) if (!seen.has(h.ID)) seen.set(h.ID, h)
+  return [...seen.values()]
+}
 
 // Music motif strip at top of card
 function MusicMotif({ pref, isMobile }: { pref: string; isMobile: boolean }) {
@@ -157,9 +166,10 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
             <div style={{ marginTop: 3 }}>
               {h.最寄駅.map((s, i) => (
                 <p key={i} style={{ fontSize: isMobile ? 10.5 : 11.5, color: '#6b7280', margin: '1px 0 0', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  {s.路線 && <span style={{ color: '#9ca3af' }}>{s.路線}</span>}
+                  {s.路線 && <span style={{ color: '#9ca3af' }}>{lineLabel(s)}</span>}
                   <span style={{ color: '#1B2E4B' }}>{s.駅}</span>
-                  {s.駅徒歩 != null && <span style={{ color: '#9ca3af' }}>徒歩{s.駅徒歩}分</span>}
+                  {s.出口 && <span style={{ color: '#9ca3af' }}>{s.出口}</span>}
+                  {walkLabel(s) && <span style={{ color: '#9ca3af' }}>{walkLabel(s)}</span>}
                 </p>
               ))}
             </div>
@@ -194,10 +204,10 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
           paddingTop: !isDesktop ? 10 : 0,
           borderTop: !isDesktop ? '1px solid #f0ebde' : 'none',
         }}>
-          <EquipBadge label="ピアノ" on={h.ピアノ有無 === '〇'} />
-          <EquipBadge label="オルガン" on={h.パイプオルガン === '〇'} />
-          <EquipBadge label="譜面台" on={h.譜面台貸出 === '〇'} />
-          <EquipBadge label="親子室" on={h.親子室 === '〇'} />
+          <EquipBadge label="ピアノ" on={h.ピアノ有無 === true} />
+          <EquipBadge label="オルガン" on={h.パイプオルガン === true} />
+          <EquipBadge label="譜面台" on={h.譜面台貸出 === true} />
+          <EquipBadge label="親子室" on={h.親子室 === true} />
           {h.駐車場 != null && h.駐車場 > 0 && <EquipBadge label="駐車場" on />}
         </div>
       </div>
@@ -206,13 +216,18 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
 }
 
 const ALL_PREFS = ['大阪府', '京都府', '兵庫県', '奈良県', '滋賀県', '和歌山県']
-const EQUIP_OPTIONS = [
-  { key: 'piano',   label: 'ピアノあり' },
-  { key: 'organ',   label: 'パイプオルガンあり' },
-  { key: 'stand',   label: '譜面台貸出あり' },
-  { key: 'family',  label: '親子室あり' },
-  { key: 'parking', label: '駐車場あり' },
+/** 3値（あり/なし/未調査）を持つ設備。駐車場は台数なのでここには含めない */
+const EQUIP_FIELDS = [
+  { key: 'piano',  label: 'ピアノあり',         pick: (h: ConcertHall) => h.ピアノ有無 },
+  { key: 'organ',  label: 'パイプオルガンあり', pick: (h: ConcertHall) => h.パイプオルガン },
+  { key: 'stand',  label: '譜面台貸出あり',     pick: (h: ConcertHall) => h.譜面台貸出 },
+  { key: 'family', label: '親子室あり',         pick: (h: ConcertHall) => h.親子室 },
 ] as const
+
+const EQUIP_OPTIONS = [
+  ...EQUIP_FIELDS.map(({ key, label }) => ({ key, label })),
+  { key: 'parking', label: '駐車場あり' },
+]
 
 export default function ConcertHallListPage() {
   const { isMobile, isTablet } = useSize()
@@ -226,8 +241,9 @@ export default function ConcertHallListPage() {
   const [sortKey, setSortKey] = useState<SortKey>('施設名')
   const [sortAsc, setSortAsc] = useState(true)
 
-  const filtered = useMemo(() => {
-    const list = concerthalls.filter(h => {
+  const { filtered, unknownExcluded } = useMemo(() => {
+    // 設備以外の条件で先に絞る。設備は未調査による除外数を数えるため別段にする
+    const base = concerthalls.filter(h => {
       if (filterPrefs.length > 0 && !filterPrefs.includes(h.都道府県)) return false
       if (filterSeats[0] && (h.客席数 == null || h.客席数 < Number(filterSeats[0]))) return false
       if (filterSeats[1] && (h.客席数 == null || h.客席数 > Number(filterSeats[1]))) return false
@@ -235,11 +251,6 @@ export default function ConcertHallListPage() {
       if (filterStageW[1] && (h.舞台幅 == null || h.舞台幅 > Number(filterStageW[1]))) return false
       if (filterStageD[0] && (h.舞台奥行 == null || h.舞台奥行 < Number(filterStageD[0]))) return false
       if (filterStageD[1] && (h.舞台奥行 == null || h.舞台奥行 > Number(filterStageD[1]))) return false
-      if (filterEquip.has('piano') && h.ピアノ有無 !== '〇') return false
-      if (filterEquip.has('organ') && h.パイプオルガン !== '〇') return false
-      if (filterEquip.has('stand') && h.譜面台貸出 !== '〇') return false
-      if (filterEquip.has('family') && h.親子室 !== '〇') return false
-      if (filterEquip.has('parking') && !(h.駐車場 != null && h.駐車場 > 0)) return false
       if (query) {
         const q = query.toLowerCase()
         const text = `${h.施設名}${h.部屋名 ?? ''}${h.都道府県}${h.市区町村}${h.番地以下}`.toLowerCase()
@@ -248,19 +259,29 @@ export default function ConcertHallListPage() {
       return true
     })
 
-    return [...list].sort((a, b) => {
-      let av: any, bv: any
+    const activeEquip = EQUIP_FIELDS.filter(e => filterEquip.has(e.key))
+    const list = base.filter(h => {
+      if (filterEquip.has('parking') && !(h.駐車場 != null && h.駐車場 > 0)) return false
+      return activeEquip.every(e => hasEquipment(e.pick(h)))
+    })
+
+    // 「設備なし」ではなく「未調査」のせいで消えた件数。黙って消さず利用者に開示する
+    const excluded = activeEquip.length === 0 ? 0 : base.filter(h =>
+      !list.includes(h) && activeEquip.some(e => e.pick(h) === undefined)
+    ).length
+
+    const sorted = [...list].sort((a, b) => {
+      let av: string | number, bv: string | number
       if (sortKey === '施設名') { av = a.施設名; bv = b.施設名 }
       else if (sortKey === '都道府県') { av = a.都道府県; bv = b.都道府県 }
       else if (sortKey === '客席数') { av = a.客席数 ?? -1; bv = b.客席数 ?? -1 }
-      else {
-        av = Math.min(...(a.最寄駅?.map(s => s.駅徒歩 ?? 999) ?? [999]))
-        bv = Math.min(...(b.最寄駅?.map(s => s.駅徒歩 ?? 999) ?? [999]))
-      }
+      else { av = minWalk(a); bv = minWalk(b) }
       if (av < bv) return sortAsc ? -1 : 1
       if (av > bv) return sortAsc ? 1 : -1
       return 0
     })
+
+    return { filtered: sorted, unknownExcluded: excluded }
   }, [query, filterPrefs, filterSeats, filterStageW, filterStageD, filterEquip, sortKey, sortAsc])
 
   function toggleSort(key: SortKey) {
@@ -395,9 +416,23 @@ export default function ConcertHallListPage() {
         </div>
       </div>
 
+      {unknownExcluded > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', gap: 8,
+          background: '#faf4df', border: '1px solid #ecd896', borderRadius: 6,
+          padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#8b6e1e', lineHeight: 1.6,
+        }}>
+          <span aria-hidden style={{ fontSize: 13 }}>⚠</span>
+          <span>
+            設備が<strong>未調査</strong>の {unknownExcluded} 件を絞り込みから除外しています。
+            設備が「ない」と確認できたわけではないため、実際には条件に合う施設が含まれている可能性があります。
+          </span>
+        </div>
+      )}
+
       {view === 'list' && (
         <div className="flex flex-col gap-3">
-          {filtered.map(h => <ConcertHallCard key={h.ID} hall={h} isMobile={isMobile} isTablet={isTablet} />)}
+          {filtered.map(h => <ConcertHallCard key={h.キー} hall={h} isMobile={isMobile} isTablet={isTablet} />)}
           {filtered.length === 0 && <p className="text-gray-400 py-8 text-center">該当する施設がありません</p>}
         </div>
       )}
@@ -418,7 +453,7 @@ export default function ConcertHallListPage() {
             </thead>
             <tbody>
               {filtered.map(h => (
-                <tr key={h.ID} className="border-b hover:bg-gray-50">
+                <tr key={h.キー} className="border-b hover:bg-gray-50">
                   <td className="px-3 py-2">
                     <span className="text-navy-700">
                       {h.施設名}{h.部屋名 ? `（${h.部屋名}）` : ''}
@@ -428,11 +463,11 @@ export default function ConcertHallListPage() {
                   <td className="px-3 py-2 whitespace-nowrap">{h.市区町村}</td>
                   <td className="px-3 py-2 text-right">{h.客席数 ?? '—'}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{h.舞台幅 != null && h.舞台奥行 != null ? `${h.舞台幅}×${h.舞台奥行}` : '—'}</td>
-                  <td className="px-3 py-2 text-right">{(() => { const m = Math.min(...(h.最寄駅?.map(s => s.駅徒歩 ?? 999) ?? [999])); return m < 999 ? m : '—' })()}</td>
+                  <td className="px-3 py-2 text-right">{minWalk(h) < NO_WALK ? minWalk(h) : '—'}</td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1 flex-wrap">
-                      {h.ピアノ有無 === '〇' && <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">ピアノ</span>}
-                      {h.パイプオルガン === '〇' && <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">オルガン</span>}
+                      {h.ピアノ有無 === true && <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">ピアノ</span>}
+                      {h.パイプオルガン === true && <span className="text-xs bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">オルガン</span>}
                     </div>
                   </td>
                 </tr>
@@ -445,7 +480,7 @@ export default function ConcertHallListPage() {
         </div>
       )}
 
-      {view === 'map' && <FacilityMap facilities={filtered} detailBasePath="/concert" />}
+      {view === 'map' && <FacilityMap facilities={dedupeByFacility(filtered)} detailBasePath="/concert" />}
 
       {view === 'list' && (
         <div className="mt-12 pt-5 border-t border-gray-200 flex items-center justify-between text-xs text-gray-400 tracking-widest">

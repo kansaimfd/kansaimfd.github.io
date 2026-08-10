@@ -25,9 +25,13 @@ dist-ssr
 
 # Generated data
 src/data/concerthalls.json
+src/data/concerthallFacilities.json
 src/data/practices.json
 data/facilities/.research-progress*.json
 data/facilities/concerthall.csv
 data/facilities/concerthall.xlsx
 data/facilities/draft/
 .claude/
+
+# 作業用ドキュメント（コミット対象外）
+docs/schema-review.md

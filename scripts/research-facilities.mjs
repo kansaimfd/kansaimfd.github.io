@@ -233,10 +233,11 @@ ${roomLine ? roomLine + '\n' : ''}住所: ${address}
 ${urlLine}
 
 調査が完了したら、次のJSON形式で回答してください。確認できなかった項目は null にしてください。
-最寄駅は路線名・駅名・徒歩分数を配列で。複数路線がある場合はすべて含めてください。
-備考は情報源URL・確認できた根拠・不確かな点を1〜2文で簡潔に記してください。
+最寄駅は路線名・駅名・徒歩分数を配列で。**路線名は配列**にし、同一駅に複数路線が乗り入れる場合はまとめてください。
+出典URLには、値の裏が取れたページのURLを必ず記してください（推測で埋めないこと）。
+備考は確認できた根拠・不確かな点を1〜2文で簡潔に記してください。
 
-{"客席数": 1024, "舞台幅": 15.0, "舞台奥行": 12.0, "舞台高さ": 8.0, "最寄駅": [{"路線": "大阪メトロ長堀鶴見緑地線", "駅": "大阪ビジネスパーク駅", "駅徒歩": 5}], "備考": "公式サイト https://example.com/hall より取得。舞台高さは記載なし。"}
+{"客席数": 1024, "舞台幅": 15.0, "舞台奥行": 12.0, "舞台高さ": 8.0, "最寄駅": [{"路線": ["大阪メトロ長堀鶴見緑地線", "京阪本線"], "駅": "大阪ビジネスパーク駅", "駅徒歩": 5}], "出典URL": "https://example.com/hall/outline", "備考": "公式サイトの施設概要より取得。舞台高さは記載なし。"}
 `.trim()
 
   const messages = [
@@ -276,17 +277,20 @@ ${urlLine}
                 items: {
                   type: 'object',
                   properties: {
-                    路線:   { type: ['string', 'null'] },
+                    路線:   { type: ['array', 'null'], items: { type: 'string' } },
                     駅:     { type: 'string' },
+                    出口:   { type: ['string', 'null'] },
                     駅徒歩: { type: ['integer', 'null'] },
+                    駅距離: { type: ['integer', 'null'] },
                   },
                   required: ['駅'],
                   additionalProperties: false,
                 },
               },
-              備考: { type: ['string', 'null'], maxLength: 200 },
+              出典URL: { type: ['string', 'null'] },
+              備考:    { type: ['string', 'null'], maxLength: 200 },
             },
-            required: ['客席数', '舞台幅', '舞台奥行', '舞台高さ', '最寄駅', '備考'],
+            required: ['客席数', '舞台幅', '舞台奥行', '舞台高さ', '最寄駅', '出典URL', '備考'],
             additionalProperties: false,
           },
         },
@@ -357,17 +361,33 @@ function toValidStations(v) {
     .filter(s => s && typeof s === 'object' && typeof s['駅'] === 'string' && s['駅'].trim())
     .map(s => {
       const entry = {}
-      if (s['路線'] && typeof s['路線'] === 'string' && s['路線'].trim()) {
-        entry['路線'] = s['路線'].trim()
-      }
+      // 路線は配列。文字列で返してきた場合も配列に正規化する
+      const lines = (Array.isArray(s['路線']) ? s['路線'] : [s['路線']])
+        .filter(l => typeof l === 'string' && l.trim())
+        .map(l => l.trim())
+      if (lines.length > 0) entry['路線'] = lines
       entry['駅'] = s['駅'].trim()
+      if (typeof s['出口'] === 'string' && s['出口'].trim()) entry['出口'] = s['出口'].trim()
       if (s['駅徒歩'] != null) {
         const n = Math.round(Number(s['駅徒歩']))
         if (!isNaN(n) && n > 0) entry['駅徒歩'] = n
       }
+      if (s['駅距離'] != null) {
+        const n = Math.round(Number(s['駅距離']))
+        if (!isNaN(n) && n > 0) entry['駅距離'] = n
+      }
       return entry
     })
   return stations.length > 0 ? stations : null
+}
+
+/** 調査結果に出典（URL・確認日・裏の取れた項目・備考）を付ける */
+function toSource(url, filledFields, note) {
+  if (typeof url !== 'string' || !/^https?:\/\//.test(url.trim())) return null
+  const source = { URL: url.trim(), 確認日: new Date().toISOString().slice(0, 10) }
+  if (filledFields.length > 0) source['項目'] = filledFields
+  if (note) source['備考'] = String(note).trim()
+  return source
 }
 
 // ── メイン ───────────────────────────────────────────────────
@@ -439,8 +459,16 @@ for (const hall of targets) {
     if (result['備考']) console.log(`  📝 ${result['備考']}`)
 
     if (!dryRun) {
+      const written = []
       for (const [key, val] of Object.entries(update)) {
-        if (val != null && hall[key] == null) hall[key] = val
+        if (val != null && hall[key] == null) { hall[key] = val; written.push(key) }
+      }
+      // 出典を YAML に残す。どこから取った値なのか後から検証できるようにするため
+      const source = toSource(result['出典URL'], written, result['備考'])
+      if (source && written.length > 0) {
+        hall['出典'] = [...(hall['出典'] ?? []), source]
+      } else if (written.length > 0) {
+        console.log('  ⚠ 出典URLが得られなかったため 出典 を記録できません')
       }
     }
 
@@ -448,6 +476,7 @@ for (const hall of targets) {
     progress.results[String(hall['ID'])] = {
       施設名: hall['施設名'],
       ...update,
+      出典URL: result['出典URL'] ?? null,
       備考: result['備考'] ?? null,
     }
     if (!dryRun) writeFileSync(PROGRESS_PATH, JSON.stringify(progress, null, 2), 'utf8')
