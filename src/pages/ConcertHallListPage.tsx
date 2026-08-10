@@ -4,6 +4,7 @@ import type { ConcertHall } from '../types'
 import { NO_WALK, lineLabel, minWalk, walkLabel } from '../station'
 import { hasEquipment } from '../availability'
 import { fullAddress, localAddress } from '../address'
+import { compareByName } from '../name'
 import FacilityMap from '../components/FacilityMap'
 import { type ViewMode } from '../components/ViewToggle'
 import SortableTh from '../components/SortableTh'
@@ -272,9 +273,10 @@ export default function ConcertHallListPage() {
     ).length
 
     const sorted = [...list].sort((a, b) => {
+      // 施設名は五十音順（コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる）
+      if (sortKey === '施設名') return (sortAsc ? 1 : -1) * compareByName(a, b)
       let av: string | number, bv: string | number
-      if (sortKey === '施設名') { av = a.施設名; bv = b.施設名 }
-      else if (sortKey === '都道府県') { av = a.都道府県; bv = b.都道府県 }
+      if (sortKey === '都道府県') { av = a.都道府県; bv = b.都道府県 }
       else if (sortKey === '客席数') { av = a.客席数 ?? -1; bv = b.客席数 ?? -1 }
       else { av = minWalk(a); bv = minWalk(b) }
       if (av < bv) return sortAsc ? -1 : 1

@@ -111,6 +111,16 @@ export function validate(datasets) {
         err(`建物名は 建物 フィールドに分けてください: ${f.番地以下}`)
       }
 
+      // ── 施設名かな ──
+      // 漢字を含む名前は読みが機械的に決まらないため、五十音順ソートに 施設名かな が要る
+      if (f.施設名かな != null) {
+        if (!/^[ぁ-ゖー・]+$/.test(f.施設名かな)) {
+          err(`施設名かな はひらがなで書いてください: ${f.施設名かな}`)
+        }
+      } else if (/[一-鿿]/.test(f.施設名)) {
+        warn('施設名かなが未設定（五十音順に並ばない）')
+      }
+
       // ── URL ──
       for (const k of URL_FIELDS) {
         if (f[k] != null && !isHttpUrl(f[k])) err(`${k} がURLの形式ではありません: ${f[k]}`)
@@ -132,7 +142,7 @@ export function validate(datasets) {
         if (!Array.isArray(f.部屋)) err(`部屋 は配列で書いてください`)
         else {
           for (const [i, room] of f.部屋.entries()) {
-            for (const k of ['客席数', '面積', '定員', '舞台幅', '舞台奥行', '舞台高さ']) {
+            for (const k of ['客席数', '面積', '定員', '舞台幅', '舞台奥行']) {
               if (room[k] != null && !isPositive(room[k])) {
                 err(`部屋[${i}] の ${k} が正の数ではありません: ${JSON.stringify(room[k])}`)
               }

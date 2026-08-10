@@ -15,7 +15,6 @@ function stageLabel(h: Hall): string | undefined {
   const parts = [
     h.舞台幅 != null ? `幅${h.舞台幅}m` : null,
     h.舞台奥行 != null ? `奥行${h.舞台奥行}m` : null,
-    h.舞台高さ != null ? `高さ${h.舞台高さ}m` : null,
   ].filter(Boolean)
   return parts.length > 0 ? parts.join(' × ') : undefined
 }

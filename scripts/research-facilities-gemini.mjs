@@ -22,7 +22,7 @@ const YAML_PATH      = 'data/facilities/concerthall.yaml'
 const PROGRESS_PATH  = 'data/facilities/.research-progress.json'
 const MAX_TOOL_TURNS = 8  // ループ上限
 
-const TARGET_FIELDS = ['客席数', '舞台幅', '舞台奥行', '舞台高さ']
+const TARGET_FIELDS = ['客席数', '舞台幅', '舞台奥行']
 
 // ── CLI 引数パース ────────────────────────────────────────────
 const args = process.argv.slice(2)
@@ -135,7 +135,7 @@ ${urlLine}
 
 調査が完了したら、次のJSON形式で回答してください。確認できなかった項目は null にしてください。
 
-{"客席数": 1024, "舞台幅": 15.0, "舞台奥行": 12.0, "舞台高さ": 8.0}
+{"客席数": 1024, "舞台幅": 15.0, "舞台奥行": 12.0}
 `.trim()
 
   const messages = [
@@ -168,9 +168,8 @@ ${urlLine}
               客席数:   { type: ['integer', 'null'] },
               舞台幅:   { type: ['number',  'null'] },
               舞台奥行: { type: ['number',  'null'] },
-              舞台高さ: { type: ['number',  'null'] },
             },
-            required: ['客席数', '舞台幅', '舞台奥行', '舞台高さ'],
+            required: ['客席数', '舞台幅', '舞台奥行'],
             additionalProperties: false,
           },
         },
@@ -285,7 +284,6 @@ for (const hall of targets) {
       客席数:   toValidNum(result['客席数']),
       舞台幅:   toValidNum(result['舞台幅']),
       舞台奥行: toValidNum(result['舞台奥行']),
-      舞台高さ: toValidNum(result['舞台高さ']),
     }
 
     const filled = Object.entries(update).filter(([, v]) => v != null).map(([k]) => k)

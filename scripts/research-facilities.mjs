@@ -28,7 +28,7 @@ const YAML_PATH      = 'data/facilities/concerthall.yaml'   // 読み取り専�
 const DRAFT_DIR      = 'data/facilities/draft'
 const MAX_TOOL_TURNS = 8  // ループ上限
 
-const TARGET_FIELDS = ['客席数', '舞台幅', '舞台奥行', '舞台高さ', '最寄駅']
+const TARGET_FIELDS = ['客席数', '舞台幅', '舞台奥行', '最寄駅']
 
 // ── CLI 引数パース ────────────────────────────────────────────
 const args = process.argv.slice(2)
@@ -237,7 +237,7 @@ ${urlLine}
 出典URLには、値の裏が取れたページのURLを必ず記してください（推測で埋めないこと）。
 備考は確認できた根拠・不確かな点を1〜2文で簡潔に記してください。
 
-{"客席数": 1024, "舞台幅": 15.0, "舞台奥行": 12.0, "舞台高さ": 8.0, "最寄駅": [{"路線": ["大阪メトロ長堀鶴見緑地線", "京阪本線"], "駅": "大阪ビジネスパーク駅", "駅徒歩": 5}], "出典URL": "https://example.com/hall/outline", "備考": "公式サイトの施設概要より取得。舞台高さは記載なし。"}
+{"客席数": 1024, "舞台幅": 15.0, "舞台奥行": 12.0, "最寄駅": [{"路線": ["大阪メトロ長堀鶴見緑地線", "京阪本線"], "駅": "大阪ビジネスパーク駅", "駅徒歩": 5}], "出典URL": "https://example.com/hall/outline", "備考": "公式サイトの施設概要より取得。舞台奥行は記載なし。"}
 `.trim()
 
   const messages = [
@@ -271,7 +271,6 @@ ${urlLine}
               客席数:   { type: ['integer', 'null'] },
               舞台幅:   { type: ['number',  'null'] },
               舞台奥行: { type: ['number',  'null'] },
-              舞台高さ: { type: ['number',  'null'] },
               最寄駅: {
                 type: ['array', 'null'],
                 items: {
@@ -290,7 +289,7 @@ ${urlLine}
               出典URL: { type: ['string', 'null'] },
               備考:    { type: ['string', 'null'], maxLength: 200 },
             },
-            required: ['客席数', '舞台幅', '舞台奥行', '舞台高さ', '最寄駅', '出典URL', '備考'],
+            required: ['客席数', '舞台幅', '舞台奥行', '最寄駅', '出典URL', '備考'],
             additionalProperties: false,
           },
         },
@@ -450,7 +449,6 @@ for (const hall of targets) {
       客席数:   toValidNum(result['客席数']),
       舞台幅:   toValidNum(result['舞台幅']),
       舞台奥行: toValidNum(result['舞台奥行']),
-      舞台高さ: toValidNum(result['舞台高さ']),
       最寄駅:   toValidStations(result['最寄駅']),
     }
 

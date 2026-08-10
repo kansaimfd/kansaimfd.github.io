@@ -35,6 +35,12 @@ export interface Station {
 interface FacilityBase {
   ID: number
   施設名: string
+  /**
+   * 施設名のひらがな読み。五十音順ソートに使う。
+   * 漢字を含む施設名には付ける（かな・カナのみの名前はビルド時に導出できるので不要）。
+   * 括弧内の別名は読みに含めない。
+   */
+  施設名かな?: string
   都道府県: string
   /** 市・区・町・村まで。政令市は区まで、郡部は郡名から書く 例: 神戸市中央区, 佐用郡佐用町 */
   市区町村: string
@@ -60,7 +66,6 @@ export interface Hall {
   客席数?: number
   舞台幅?: number
   舞台奥行?: number
-  舞台高さ?: number
   ピアノ有無?: Availability
   パイプオルガン?: Availability
   譜面台貸出?: Availability
