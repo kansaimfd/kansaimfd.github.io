@@ -57,6 +57,33 @@ function assertNoMarks(obj, path = '') {
   }
 }
 
+const SEIREI_CITIES = ['大阪市', '神戸市', '京都市', '堺市']
+
+/**
+ * 住所の記述ルールを検査する。
+ * 表記が揺れているとジオコーディングでの座標検算（課題#7）が効かなくなるため、
+ * ビルドを止めて気づけるようにする。
+ */
+function assertAddress(f, label) {
+  const fail = msg => { throw new Error(`${label} ${f.施設名}: ${msg}`) }
+
+  if (/[０-９]/.test(f.番地以下)) fail(`番地以下に全角数字があります: ${f.番地以下}`)
+  if (/[−－]/.test(f.番地以下)) fail(`番地以下に全角ハイフンがあります: ${f.番地以下}`)
+  if (f.番地以下.includes(f.都道府県) || f.番地以下.includes(f.市区町村)) {
+    fail(`番地以下に都道府県・市区町村が重複しています: ${f.番地以下}`)
+  }
+  if (SEIREI_CITIES.includes(f.市区町村)) {
+    fail(`政令市は区まで書いてください: ${f.市区町村}`)
+  }
+  if (/[町村]$/.test(f.市区町村) && !/[市郡]/.test(f.市区町村)) {
+    fail(`郡部は郡名から書いてください: ${f.市区町村}`)
+  }
+  // ビル名・階数が番地側にあるとジオコーディングの精度が落ちる
+  if (/(ビル|階|[0-9]+F|B[0-9]+F)/i.test(f.番地以下)) {
+    fail(`建物名は 建物 フィールドに分けてください: ${f.番地以下}`)
+  }
+}
+
 /** 出典[].確認日 の最新値を 最終確認日 として持たせる（YAMLには書かない派生値） */
 function withLastVerified(facility) {
   const dates = facility.出典?.map(s => s.確認日).filter(Boolean) ?? []
@@ -67,6 +94,7 @@ function withLastVerified(facility) {
 
 function normalize(facility, label) {
   assertNoMarks(facility, label)
+  assertAddress(facility, label)
   const withStations = facility.最寄駅
     ? { ...facility, 最寄駅: fillWalkMinutes(facility.最寄駅) }
     : facility

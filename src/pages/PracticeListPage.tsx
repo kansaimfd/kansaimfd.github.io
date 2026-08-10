@@ -4,6 +4,7 @@ import { practices } from '../data'
 import type { Practice } from '../types'
 import { NO_WALK, minWalk, stationNames, walkLabel } from '../station'
 import { availabilityMark } from '../availability'
+import { fullAddress } from '../address'
 import FacilityMap from '../components/FacilityMap'
 import ViewToggle, { type ViewMode } from '../components/ViewToggle'
 import SortBar from '../components/SortBar'
@@ -57,7 +58,7 @@ export default function PracticeListPage() {
       if (filterWalk && minWalk(p) > Number(filterWalk)) return false
       if (query) {
         const q = query.toLowerCase()
-        const text = `${p.施設名}${p.都道府県}${p.市区町村}${p.番地以下}`.toLowerCase()
+        const text = `${p.施設名}${fullAddress(p)}`.toLowerCase()
         if (!text.includes(q)) return false
       }
       return true

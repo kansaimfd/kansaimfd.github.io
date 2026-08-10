@@ -36,8 +36,12 @@ interface FacilityBase {
   ID: number
   施設名: string
   都道府県: string
+  /** 市・区・町・村まで。政令市は区まで、郡部は郡名から書く 例: 神戸市中央区, 佐用郡佐用町 */
   市区町村: string
+  /** 町名・丁目・番地。半角数字とハイフンに統一する */
   番地以下: string
+  /** ビル名・階・部屋番号。番地以下に混ぜるとジオコーディングの精度が落ちるため分ける */
+  建物?: string
   分類?: string
   URL?: string
   申込URL?: string

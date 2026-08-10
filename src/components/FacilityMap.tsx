@@ -6,6 +6,7 @@ import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import type { Station } from '../types'
 import { stationLabel } from '../station'
+import { fullAddress } from '../address'
 
 // leaflet のデフォルトアイコン修正
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -22,6 +23,7 @@ interface Facility {
   都道府県: string
   市区町村: string
   番地以下: string
+  建物?: string
   最寄駅?: Station[]
   経度: number
   緯度: number
@@ -50,7 +52,7 @@ export default function FacilityMap({ facilities, detailBasePath }: Props) {
               <p className="font-bold">
                 {f.施設名}{f.部屋名 ? `（${f.部屋名}）` : ''}
               </p>
-              <p className="text-gray-600">{f.都道府県}{f.市区町村}{f.番地以下}</p>
+              <p className="text-gray-600">{fullAddress(f)}</p>
               {f.最寄駅?.map((s, i) => (
                 <p key={i} className="text-gray-600">{stationLabel(s)}</p>
               ))}

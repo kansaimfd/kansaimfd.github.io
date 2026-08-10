@@ -5,6 +5,7 @@ import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark } from '../availability'
+import { fullAddress } from '../address'
 
 export default function PracticeDetailPage() {
   const { id } = useParams()
@@ -27,6 +28,7 @@ export default function PracticeDetailPage() {
     ['都道府県', p.都道府県],
     ['市区町村', p.市区町村],
     ['番地以下', p.番地以下],
+    ['建物', p.建物],
     ['TEL', p.TEL],
     ['開館時間', p.開館時間 && p.閉館時間 ? `${p.開館時間} 〜 ${p.閉館時間}` : p.開館時間],
     ['休館日', p.休館日],
@@ -39,7 +41,7 @@ export default function PracticeDetailPage() {
     <div className="max-w-2xl">
       <Link to="/practice" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">← 練習場一覧</Link>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{p.施設名}</h1>
-      <p className="text-gray-500 mb-4">{p.都道府県} {p.市区町村} {p.番地以下}</p>
+      <p className="text-gray-500 mb-4">{fullAddress(p)}</p>
 
       <DetailMap lat={p.緯度} lng={p.経度} name={p.施設名} />
 

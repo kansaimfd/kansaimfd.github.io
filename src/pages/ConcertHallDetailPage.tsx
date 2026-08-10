@@ -6,6 +6,7 @@ import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark } from '../availability'
+import { fullAddress } from '../address'
 
 type Row = [string, string | number | undefined | null]
 
@@ -39,6 +40,7 @@ export default function ConcertHallDetailPage() {
     ['都道府県', f.都道府県],
     ['市区町村', f.市区町村],
     ['番地以下', f.番地以下],
+    ['建物', f.建物],
     ['分類', f.分類],
     ['築年月', f.築年月],
     ['最寄駅', f.最寄駅?.map(stationLabel).join(' / ')],
@@ -49,7 +51,7 @@ export default function ConcertHallDetailPage() {
     <div className="max-w-2xl">
       <Link to="/concert" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">← コンサートホール一覧</Link>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{f.施設名}</h1>
-      <p className="text-gray-500 mb-4">{f.都道府県} {f.市区町村} {f.番地以下}</p>
+      <p className="text-gray-500 mb-4">{fullAddress(f)}</p>
 
       <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} />
 

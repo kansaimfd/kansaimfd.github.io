@@ -3,6 +3,7 @@ import { concerthalls } from '../data'
 import type { ConcertHall } from '../types'
 import { NO_WALK, lineLabel, minWalk, walkLabel } from '../station'
 import { hasEquipment } from '../availability'
+import { fullAddress, localAddress } from '../address'
 import FacilityMap from '../components/FacilityMap'
 import { type ViewMode } from '../components/ViewToggle'
 import SortableTh from '../components/SortableTh'
@@ -160,7 +161,7 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
             {h.部屋名 && <span style={{ fontSize: isMobile ? 11 : 12, color: '#9ca3af' }}>（{h.部屋名}）</span>}
           </div>
           <p style={{ fontSize: isMobile ? 11 : 12, color: '#6b7280', margin: '4px 0 0', letterSpacing: '0.02em' }}>
-            {h.市区町村}{h.番地以下}
+            {localAddress(h)}
           </p>
           {h.最寄駅 && h.最寄駅.length > 0 && (
             <div style={{ marginTop: 3 }}>
@@ -253,7 +254,7 @@ export default function ConcertHallListPage() {
       if (filterStageD[1] && (h.舞台奥行 == null || h.舞台奥行 > Number(filterStageD[1]))) return false
       if (query) {
         const q = query.toLowerCase()
-        const text = `${h.施設名}${h.部屋名 ?? ''}${h.都道府県}${h.市区町村}${h.番地以下}`.toLowerCase()
+        const text = `${h.施設名}${h.部屋名 ?? ''}${fullAddress(h)}`.toLowerCase()
         if (!text.includes(q)) return false
       }
       return true
