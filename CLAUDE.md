@@ -24,8 +24,12 @@ npm run build      # 本番ビルド（YAML→JSON変換 + Viteビルド）
 npm run preview    # ビルド結果のプレビュー
 npm run lint       # ESLintによるコードチェック
 
-node scripts/audit-coordinates.mjs   # 座標を国土地理院のジオコーディングで検算（随時）
+node scripts/build-data.mjs --verbose # データ検査の警告を全件表示
+node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコーディングで検算（随時）
 ```
+
+データ検査（`scripts/validate.mjs`）はビルド前に自動実行される。
+**エラーがあるとビルドは停止する**。警告は種類ごとに集約して表示され、ビルドは続行する。
 
 ## Architecture
 
@@ -53,6 +57,8 @@ React コンポーネント
 
 - `data/facilities/` — 施設データのYAMLファイル群
 - `scripts/build-data.mjs` — YAML→JSON変換スクリプト
+- `scripts/validate.mjs` — データ検査（オフラインで完結するもののみ）。ビルド前に自動実行される
+- `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
 - `src/data/` — 変換後JSONの出力先（`.gitignore` 済み）
 - `src/types.ts` — `ConcertHallFacility` / `ConcertHall` / `Practice` 型定義
 - `src/data.ts` — JSONデータの読み込みと型付け
