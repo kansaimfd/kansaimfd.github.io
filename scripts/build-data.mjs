@@ -72,6 +72,11 @@ function assertAddress(f, label) {
   if (f.番地以下.includes(f.都道府県) || f.番地以下.includes(f.市区町村)) {
     fail(`番地以下に都道府県・市区町村が重複しています: ${f.番地以下}`)
   }
+  // 「大阪市西区」に対する「西区立売堀…」のように、区・町・村名だけが重複するケース
+  const ward = f.市区町村.match(/[^市区町村郡]+[区町村]$/)?.[0]
+  if (ward && f.番地以下.startsWith(ward)) {
+    fail(`番地以下の先頭に ${ward} が重複しています: ${f.番地以下}`)
+  }
   if (SEIREI_CITIES.includes(f.市区町村)) {
     fail(`政令市は区まで書いてください: ${f.市区町村}`)
   }

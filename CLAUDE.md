@@ -23,6 +23,8 @@ npm run dev        # 開発サーバー起動
 npm run build      # 本番ビルド（YAML→JSON変換 + Viteビルド）
 npm run preview    # ビルド結果のプレビュー
 npm run lint       # ESLintによるコードチェック
+
+node scripts/audit-coordinates.mjs   # 座標を国土地理院のジオコーディングで検算（随時）
 ```
 
 ## Architecture
