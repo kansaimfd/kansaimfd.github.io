@@ -60,15 +60,26 @@ interface FacilityBase {
   最終確認日?: string
 }
 
-/** コンサートホール施設内の個々のホール */
-export interface Hall {
+export type PianoType = 'グランド' | 'アップライト' | '電子'
+
+/** ホール・練習室に共通する備品。「有無(3値) ＋ 詳細(任意)」の形で持つ */
+interface RoomBase {
   部屋名?: string
+  ピアノ有無?: Availability
+  /** ピアノが複数種ある部屋は稀なため単一値で持つ */
+  ピアノ種別?: PianoType
+  ピアノメーカー?: string
+  譜面台貸出?: Availability
+  /** 貸出本数。分かる場合のみ。「あるが本数不明」は 譜面台貸出 のみ true にする */
+  譜面台数?: number
+}
+
+/** コンサートホール施設内の個々のホール */
+export interface Hall extends RoomBase {
   客席数?: number
   舞台幅?: number
   舞台奥行?: number
-  ピアノ有無?: Availability
   パイプオルガン?: Availability
-  譜面台貸出?: Availability
   親子室?: Availability
 }
 
@@ -85,11 +96,21 @@ export interface ConcertHallFacility extends FacilityBase {
  */
 export type ConcertHall = Omit<ConcertHallFacility, '部屋'> & Hall & { キー: string }
 
-export interface PracticeRoom {
+export interface PracticeRoom extends RoomBase {
   部屋名: string
   面積?: number
   定員?: number
-  ピアノ有無?: Availability
+  /**
+   * 楽器の可否。実際の施設で区別されているのはほぼ「打楽器」だけなので、
+   * 金管・木管は分けずに 管楽器 でまとめる。細かい区別は 楽器制限 に書く。
+   */
+  管楽器?: Availability
+  打楽器?: Availability
+  /**
+   * 楽器についての条件・補足。「音量制限あり」「養生が必要」「木管のみ可」など。
+   * **条件付きで使える場合は 管楽器/打楽器 を true にしたうえで、ここに条件を書く。**
+   */
+  楽器制限?: string
 }
 
 /** practice.yaml の1レコード＝1施設 */

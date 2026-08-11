@@ -4,7 +4,7 @@ import { stationLabel } from '../station'
 import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
-import { availabilityMark } from '../availability'
+import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
 
 export default function PracticeDetailPage() {
@@ -75,16 +75,25 @@ export default function PracticeDetailPage() {
                   <th className="px-3 py-2 text-left">部屋名</th>
                   <th className="px-3 py-2 text-right whitespace-nowrap">面積(㎡)</th>
                   <th className="px-3 py-2 text-right whitespace-nowrap">定員</th>
-                  <th className="px-3 py-2 text-center whitespace-nowrap">ピアノ</th>
+                  <th className="px-3 py-2 text-center whitespace-nowrap">管楽器</th>
+                  <th className="px-3 py-2 text-center whitespace-nowrap">打楽器</th>
+                  <th className="px-3 py-2 text-left whitespace-nowrap">ピアノ</th>
+                  <th className="px-3 py-2 text-left whitespace-nowrap">譜面台</th>
                 </tr>
               </thead>
               <tbody>
                 {p.部屋.map((r, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="px-3 py-2">{r.部屋名}</td>
+                  <tr key={i} className="border-b last:border-0 align-top">
+                    <td className="px-3 py-2">
+                      {r.部屋名}
+                      {r.楽器制限 && <span className="block text-xs text-gray-500 mt-0.5">{r.楽器制限}</span>}
+                    </td>
                     <td className="px-3 py-2 text-right">{r.面積 ?? '—'}</td>
                     <td className="px-3 py-2 text-right">{r.定員 ?? '—'}</td>
-                    <td className="px-3 py-2 text-center">{availabilityMark(r.ピアノ有無)}</td>
+                    <td className="px-3 py-2 text-center">{availabilityMark(r.管楽器)}</td>
+                    <td className="px-3 py-2 text-center">{availabilityMark(r.打楽器)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{pianoLabel(r)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{standLabel(r)}</td>
                   </tr>
                 ))}
               </tbody>

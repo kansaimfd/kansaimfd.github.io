@@ -5,7 +5,7 @@ import type { Hall } from '../types'
 import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
-import { availabilityMark } from '../availability'
+import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
 
 type Row = [string, string | number | undefined | null]
@@ -80,9 +80,9 @@ export default function ConcertHallDetailPage() {
                   <th className="px-3 py-2 text-left">ホール名</th>
                   <th className="px-3 py-2 text-right whitespace-nowrap">客席数</th>
                   <th className="px-3 py-2 text-left whitespace-nowrap">舞台</th>
-                  <th className="px-3 py-2 text-center whitespace-nowrap">ピアノ</th>
+                  <th className="px-3 py-2 text-left whitespace-nowrap">ピアノ</th>
                   <th className="px-3 py-2 text-center whitespace-nowrap">オルガン</th>
-                  <th className="px-3 py-2 text-center whitespace-nowrap">譜面台</th>
+                  <th className="px-3 py-2 text-left whitespace-nowrap">譜面台</th>
                   <th className="px-3 py-2 text-center whitespace-nowrap">親子室</th>
                 </tr>
               </thead>
@@ -92,9 +92,9 @@ export default function ConcertHallDetailPage() {
                     <td className="px-3 py-2">{r.部屋名 ?? '—'}</td>
                     <td className="px-3 py-2 text-right">{r.客席数 != null ? `${r.客席数}席` : '—'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{stageLabel(r) ?? '—'}</td>
-                    <td className="px-3 py-2 text-center">{availabilityMark(r.ピアノ有無)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{pianoLabel(r)}</td>
                     <td className="px-3 py-2 text-center">{availabilityMark(r.パイプオルガン)}</td>
-                    <td className="px-3 py-2 text-center">{availabilityMark(r.譜面台貸出)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{standLabel(r)}</td>
                     <td className="px-3 py-2 text-center">{availabilityMark(r.親子室)}</td>
                   </tr>
                 ))}

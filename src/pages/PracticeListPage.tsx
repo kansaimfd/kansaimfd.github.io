@@ -19,15 +19,30 @@ function unique<T>(arr: T[]): T[] {
 }
 
 /**
- * 施設レベルと部屋レベルを合わせたピアノの3値。
- * どこかに true があれば true / すべて false なら false / 手がかりがなければ undefined（未調査）
+ * 施設レベルと部屋レベルを合わせた設備の3値。
+ * どこかの部屋で true なら施設として true（その部屋を使えばよい）。
+ * すべて false なら false / 手がかりがなければ undefined（未調査）。
  */
-function pianoState(p: Practice): boolean | undefined {
-  const values = [p.ピアノ有無, ...(p.部屋?.map(r => r.ピアノ有無) ?? [])]
+function facilityState(values: (boolean | undefined)[]): boolean | undefined {
   if (values.some(v => v === true)) return true
   if (values.some(v => v === false)) return false
   return undefined
 }
+
+const EQUIP_FILTERS = [
+  {
+    key: 'piano', label: 'ピアノあり', unknownLabel: 'ピアノの有無',
+    state: (p: Practice) => facilityState([p.ピアノ有無, ...(p.部屋?.map(r => r.ピアノ有無) ?? [])]),
+  },
+  {
+    key: 'wind', label: '管楽器可', unknownLabel: '管楽器の可否',
+    state: (p: Practice) => facilityState(p.部屋?.map(r => r.管楽器) ?? []),
+  },
+  {
+    key: 'perc', label: '打楽器可', unknownLabel: '打楽器の可否',
+    state: (p: Practice) => facilityState(p.部屋?.map(r => r.打楽器) ?? []),
+  },
+] as const
 
 export default function PracticeListPage() {
   const [view, setView] = useState<ViewMode>('list')
@@ -37,9 +52,15 @@ export default function PracticeListPage() {
   const [filterCategory, setFilterCategory] = useState('')
   const [filterStation, setFilterStation] = useState('')
   const [filterWalk, setFilterWalk] = useState('')
-  const [filterPiano, setFilterPiano] = useState(false)
+  const [filterEquip, setFilterEquip] = useState<Set<string>>(new Set())
   const [sortKey, setSortKey] = useState<SortKey>('施設名')
   const [sortAsc, setSortAsc] = useState(true)
+
+  // データが1件も無い設備は選択肢に出さない。必ず0件になる絞り込みを見せないため
+  const equipOptions = useMemo(
+    () => EQUIP_FILTERS.filter(e => practices.some(p => e.state(p) !== undefined)),
+    []
+  )
 
   const prefs = useMemo(() => unique(practices.map(p => p.都道府県)), [])
   const cities = useMemo(
@@ -65,9 +86,12 @@ export default function PracticeListPage() {
       return true
     })
 
-    const list = filterPiano ? base.filter(p => pianoState(p) === true) : base
-    // 「ピアノなし」ではなく「未調査」のせいで消えた件数
-    const excluded = filterPiano ? base.filter(p => pianoState(p) === undefined).length : 0
+    const active = EQUIP_FILTERS.filter(e => filterEquip.has(e.key))
+    const list = base.filter(p => active.every(e => e.state(p) === true))
+    // 「設備がない」のではなく「未調査」のせいで消えた件数。黙って消さず利用者に開示する
+    const excluded = active.length === 0 ? 0 : base.filter(p =>
+      !list.includes(p) && active.some(e => e.state(p) === undefined)
+    ).length
 
     const sorted = [...list].sort((a, b) => {
       // 施設名は五十音順（コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる）
@@ -81,7 +105,7 @@ export default function PracticeListPage() {
     })
 
     return { filtered: sorted, unknownExcluded: excluded }
-  }, [query, filterPref, filterCity, filterCategory, filterStation, filterWalk, filterPiano, sortKey, sortAsc])
+  }, [query, filterPref, filterCity, filterCategory, filterStation, filterWalk, filterEquip, sortKey, sortAsc])
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(a => !a)
@@ -125,10 +149,23 @@ export default function PracticeListPage() {
           <input type="number" min={0} value={filterWalk} onChange={e => setFilterWalk(e.target.value)} className="border rounded w-16 px-2 py-1.5" placeholder="〜" />
           <span>分以内</span>
         </div>
-        <label className="flex items-center gap-1 cursor-pointer text-sm">
-          <input type="checkbox" checked={filterPiano} onChange={e => setFilterPiano(e.target.checked)} />
-          ピアノあり
-        </label>
+        <div className="flex items-center gap-4 flex-wrap col-span-full">
+          {equipOptions.map(e => (
+            <label key={e.key} className="flex items-center gap-1 cursor-pointer text-sm">
+              <input
+                type="checkbox"
+                checked={filterEquip.has(e.key)}
+                onChange={() => setFilterEquip(prev => {
+                  const next = new Set(prev)
+                  if (next.has(e.key)) next.delete(e.key)
+                  else next.add(e.key)
+                  return next
+                })}
+              />
+              {e.label}
+            </label>
+          ))}
+        </div>
       </FilterPanel>
 
       <ViewToggle view={view} onChangeView={setView} count={filtered.length} />
@@ -137,7 +174,8 @@ export default function PracticeListPage() {
         <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3.5 py-2.5 mb-4 text-xs text-amber-800 leading-relaxed">
           <span aria-hidden>⚠</span>
           <span>
-            ピアノの有無が<strong>未調査</strong>の {unknownExcluded} 件を絞り込みから除外しています。
+            {EQUIP_FILTERS.filter(e => filterEquip.has(e.key)).map(e => e.unknownLabel).join('・')}
+            が<strong>未調査</strong>の {unknownExcluded} 件を絞り込みから除外しています。
             「ない」と確認できたわけではないため、実際には条件に合う施設が含まれている可能性があります。
           </span>
         </div>
@@ -182,7 +220,7 @@ export default function PracticeListPage() {
                   <td className="px-3 py-2 whitespace-nowrap">{p.市区町村}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{p.分類 ?? '—'}</td>
                   <td className="px-3 py-2 text-right">{minWalk(p) < NO_WALK ? minWalk(p) : '—'}</td>
-                  <td className="px-3 py-2 text-center">{availabilityMark(pianoState(p))}</td>
+                  <td className="px-3 py-2 text-center">{availabilityMark(EQUIP_FILTERS[0].state(p))}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
@@ -208,9 +246,11 @@ function PracticeCard({ practice: p }: { practice: Practice }) {
         {p.最寄駅?.slice(0, 1).map((s, i) => (
           <span key={i} className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{[s.駅, walkLabel(s)].filter(Boolean).join(' ')}</span>
         ))}
-        {pianoState(p) === true && (
-          <span className="bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">ピアノ</span>
-        )}
+        {EQUIP_FILTERS.filter(e => e.state(p) === true).map(e => (
+          <span key={e.key} className="bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">
+            {e.label.replace(/(あり|可)$/, '')}
+          </span>
+        ))}
       </div>
     </Link>
   )

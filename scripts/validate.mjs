@@ -19,7 +19,8 @@ const PREF_BOX = {
 
 const REQUIRED = ['施設名', '都道府県', '市区町村', '番地以下', '経度', '緯度']
 const URL_FIELDS = ['URL', '申込URL', '料金URL']
-const AVAILABILITY_FIELDS = ['ピアノ有無', 'パイプオルガン', '譜面台貸出', '親子室']
+const AVAILABILITY_FIELDS = ['ピアノ有無', 'パイプオルガン', '譜面台貸出', '親子室', '管楽器', '打楽器']
+const PIANO_TYPES = ['グランド', 'アップライト', '電子']
 const SEIREI_CITIES = ['大阪市', '神戸市', '京都市', '堺市']
 const TIME_FIELDS = ['開館時間', '閉館時間']
 
@@ -142,10 +143,23 @@ export function validate(datasets) {
         if (!Array.isArray(f.部屋)) err(`部屋 は配列で書いてください`)
         else {
           for (const [i, room] of f.部屋.entries()) {
-            for (const k of ['客席数', '面積', '定員', '舞台幅', '舞台奥行']) {
+            for (const k of ['客席数', '面積', '定員', '舞台幅', '舞台奥行', '譜面台数']) {
               if (room[k] != null && !isPositive(room[k])) {
                 err(`部屋[${i}] の ${k} が正の数ではありません: ${JSON.stringify(room[k])}`)
               }
+            }
+            if (room.ピアノ種別 != null && !PIANO_TYPES.includes(room.ピアノ種別)) {
+              err(`部屋[${i}] の ピアノ種別 は ${PIANO_TYPES.join(' / ')} のいずれかです: ${room.ピアノ種別}`)
+            }
+            // 「有無 ＋ 詳細」の形なので、詳細だけあって有無が立っていないのは矛盾
+            if ((room.ピアノ種別 != null || room.ピアノメーカー != null) && room.ピアノ有無 !== true) {
+              err(`部屋[${i}] にピアノの詳細があるのに ピアノ有無 が true ではありません`)
+            }
+            if (room.譜面台数 != null && room.譜面台貸出 === false) {
+              err(`部屋[${i}] に 譜面台数 があるのに 譜面台貸出 が false です`)
+            }
+            if (room.楽器制限 != null && typeof room.楽器制限 !== 'string') {
+              err(`部屋[${i}] の 楽器制限 は文字列で書いてください`)
             }
           }
           const unnamed = f.部屋.filter(r => !r.部屋名).length
