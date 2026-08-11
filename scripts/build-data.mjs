@@ -72,11 +72,19 @@ const rawPractices = loadYaml('data/facilities/practice.yaml')
 
 // 検査は変換前の生データに対して行う。派生値（駅徒歩の補完など）を混ぜると
 // 何がYAMLに書かれていた値なのか分からなくなるため
+// 駅座標マスタは検算にのみ使う。無くても検査は動く（その分の検査が省かれるだけ）
+let stationMaster
+try {
+  stationMaster = JSON.parse(readFileSync(resolve(root, 'data/stations.json'), 'utf-8'))
+} catch {
+  console.warn('⚠ data/stations.json がないため、駅座標との突き合わせを省略します')
+}
+
 const verbose = process.argv.includes('--verbose')
 if (report(validate([
   { file: 'concerthall', records: rawConcerthalls },
   { file: 'practice', records: rawPractices },
-]), { verbose })) {
+], { stationMaster }), { verbose })) {
   console.error('\nデータに誤りがあるためビルドを中止しました。')
   process.exit(1)
 }

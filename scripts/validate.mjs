@@ -29,6 +29,34 @@ const TIME_FIELDS = ['開館時間', '閉館時間']
 const WALK_MINUTES_LIMIT = 30
 
 /**
+ * 道路距離は直線距離より必ず長いので、直線距離の方が長ければ矛盾している。
+ * ただしマスタの駅座標は線路の中点であり、実際に歩き始める改札・出口とは離れている
+ * （大きな駅では200〜300m）。倍率だけで判定すると、公式が出口からの距離を書いている
+ * 施設が軒並み誤検出になるため、絶対値の余裕も持たせる。
+ */
+const STRAIGHT_RATIO = 1.3
+const STRAIGHT_MARGIN = 300
+
+/** 駅座標マスタ（data/stations.json）。駅名 → 候補の配列 */
+function indexStations(master) {
+  const byName = new Map()
+  for (const s of master?.駅 ?? []) {
+    if (!byName.has(s.駅)) byName.set(s.駅, [])
+    byName.get(s.駅).push(s)
+  }
+  return byName
+}
+
+function distance(lat1, lon1, lat2, lon2) {
+  const dLat = (lat1 - lat2) * 111_000
+  const dLon = (lon1 - lon2) * 111_000 * Math.cos((lat1 * Math.PI) / 180)
+  return Math.hypot(dLat, dLon)
+}
+
+/** 「新大阪駅」「阿倍野停留場」→「新大阪」「阿倍野」。マスタは接尾辞なしで持っている */
+const bareStationName = name => name.replace(/(駅|停留場|電停)$/, '')
+
+/**
  * 路線名の表記ゆれを見つけるための正規化。
  * 「大阪メトロ御堂筋線」と「Osaka Metro御堂筋線」を同一視して、
  * 表記が割れていることに気づけるようにする。
@@ -53,7 +81,8 @@ const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)
 const isTime = v => typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v)
 const isPositive = v => typeof v === 'number' && Number.isFinite(v) && v > 0
 
-export function validate(datasets) {
+export function validate(datasets, { stationMaster } = {}) {
+  const stationsByName = indexStations(stationMaster)
   const errors = []
   /** 警告は種類ごとに集計する。同種が何十件も並ぶと対処すべきものが埋もれるため */
   const warnings = []
@@ -207,6 +236,26 @@ export function validate(datasets) {
         }
         if (s.駅徒歩 != null && s.駅徒歩 > WALK_MINUTES_LIMIT) {
           warn('駅徒歩が長すぎる（バス利用の疑い）', `${where} ${s.駅} 徒歩${s.駅徒歩}分`)
+        }
+
+        // 駅座標マスタと突き合わせて、徒歩分数・距離が物理的にありえるかを見る。
+        // バス停などは鉄道の駅ではないのでマスタにない＝照合対象外。
+        if (stationsByName.size > 0 && !/(バス停|停留所)$/.test(s.駅)) {
+          const candidates = stationsByName.get(bareStationName(s.駅))
+          if (!candidates) {
+            warn('駅がマスタに見つからない（表記ゆれの疑い）', `${where} ${s.駅}`)
+          } else {
+            // 同名の別駅（JR福島と阪神福島など）があるので、施設に最も近いものを採る
+            const straight = Math.min(...candidates.map(c => distance(f.緯度, f.経度, c.緯度, c.経度)))
+            const claimed = s.駅距離 ?? (s.駅徒歩 != null ? s.駅徒歩 * 80 : null)
+            if (claimed != null && straight > claimed * STRAIGHT_RATIO + STRAIGHT_MARGIN) {
+              warn(
+                '駅までの距離が実際より近く書かれている',
+                `${where} ${s.駅} 直線${Math.round(straight)}m に対し ` +
+                (s.駅距離 != null ? `駅距離${s.駅距離}m` : `徒歩${s.駅徒歩}分(≒${claimed}m)`)
+              )
+            }
+          }
         }
       }
 

@@ -59,6 +59,8 @@ React コンポーネント
 - `scripts/build-data.mjs` — YAML→JSON変換スクリプト
 - `scripts/validate.mjs` — データ検査（オフラインで完結するもののみ）。ビルド前に自動実行される
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
+- `scripts/build-station-master.mjs` — 駅座標マスタの生成（随時。出力はコミット済み）
+- `data/stations.json` — 関西1,793駅の座標。出典: 国土数値情報（鉄道データ）国土交通省
 - `src/data/` — 変換後JSONの出力先（`.gitignore` 済み）
 - `src/types.ts` — `ConcertHallFacility` / `ConcertHall` / `Practice` 型定義
 - `src/data.ts` — JSONデータの読み込みと型付け

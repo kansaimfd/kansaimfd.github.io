@@ -26,6 +26,14 @@ const INTERVAL = 400
 const OK = 150
 const SUSPECT = 500
 
+/**
+ * 番地まで解決できなかった照合でも、これを超えるズレは誤りとみなす。
+ * 町丁目レベルの照合でも数km程度の精度はあるため、それを大きく超えるズレは
+ * 照合精度では説明がつかない。
+ * （この判定を入れる前は、コスモホールの66kmのズレが「精度不足」として見逃されていた）
+ */
+const COARSE_LIMIT = 5000
+
 const args = process.argv.slice(2)
 const getArg = n => { const i = args.indexOf(n); return i !== -1 ? args[i + 1] : null }
 const onlyFile = getArg('--file')
@@ -78,7 +86,9 @@ for (const [i, f] of targets.entries()) {
     if (!hit) {
       row = { 判定: '該当なし', 距離: null, 照合先: null }
     } else if (!isPrecise(hit.title)) {
-      row = { 判定: '精度不足', 距離: Math.round(distance(f.緯度, f.経度, hit.lat, hit.lon)), 照合先: hit }
+      const d = Math.round(distance(f.緯度, f.経度, hit.lat, hit.lon))
+      // 番地まで解決できていなくても、桁違いのズレは照合精度では説明がつかない
+      row = { 判定: d > COARSE_LIMIT ? '要修正' : '精度不足', 距離: d, 照合先: hit }
     } else {
       const d = Math.round(distance(f.緯度, f.経度, hit.lat, hit.lon))
       row = { 判定: d <= OK ? '一致' : d <= SUSPECT ? '要確認' : '要修正', 距離: d, 照合先: hit }
