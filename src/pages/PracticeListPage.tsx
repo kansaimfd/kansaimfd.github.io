@@ -29,6 +29,17 @@ function facilityState(values: (boolean | undefined)[]): boolean | undefined {
   return undefined
 }
 
+/**
+ * 施設内で最も定員の多い部屋の定員。分からなければ 0。
+ * 「◯名で使えるか」は部屋単位の話なので、施設としては最大の部屋で判断する。
+ */
+function maxCapacity(p: Practice): number {
+  return Math.max(0, ...(p.部屋?.map(r => r.定員 ?? 0) ?? []))
+}
+
+/** 定員が1件も入っていないうちは、必ず0件になる絞り込みを見せない */
+const hasCapacityData = practices.some(p => maxCapacity(p) > 0)
+
 const EQUIP_FILTERS = [
   {
     key: 'piano', label: 'ピアノあり', unknownLabel: 'ピアノの有無',
@@ -49,7 +60,7 @@ export default function PracticeListPage() {
   const [query, setQuery] = useState('')
   const [filterPref, setFilterPref] = useState('')
   const [filterCity, setFilterCity] = useState('')
-  const [filterCategory, setFilterCategory] = useState('')
+  const [filterCapacity, setFilterCapacity] = useState('')
   const [filterStation, setFilterStation] = useState('')
   const [filterWalk, setFilterWalk] = useState('')
   const [filterEquip, setFilterEquip] = useState<Set<string>>(new Set())
@@ -67,7 +78,6 @@ export default function PracticeListPage() {
     () => unique(practices.filter(p => !filterPref || p.都道府県 === filterPref).map(p => p.市区町村)),
     [filterPref]
   )
-  const categories = useMemo(() => unique(practices.map(p => p.分類).filter(Boolean) as string[]), [])
   const stations = useMemo(() => unique(practices.flatMap(stationNames)), [])
 
   const { filtered, unknownExcluded } = useMemo(() => {
@@ -75,7 +85,7 @@ export default function PracticeListPage() {
     const base = practices.filter(p => {
       if (filterPref && p.都道府県 !== filterPref) return false
       if (filterCity && p.市区町村 !== filterCity) return false
-      if (filterCategory && p.分類 !== filterCategory) return false
+      if (filterCapacity && maxCapacity(p) < Number(filterCapacity)) return false
       if (filterStation && !stationNames(p).includes(filterStation)) return false
       if (filterWalk && minWalk(p) > Number(filterWalk)) return false
       if (query) {
@@ -105,7 +115,7 @@ export default function PracticeListPage() {
     })
 
     return { filtered: sorted, unknownExcluded: excluded }
-  }, [query, filterPref, filterCity, filterCategory, filterStation, filterWalk, filterEquip, sortKey, sortAsc])
+  }, [query, filterPref, filterCity, filterCapacity, filterStation, filterWalk, filterEquip, sortKey, sortAsc])
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(a => !a)
@@ -136,10 +146,13 @@ export default function PracticeListPage() {
           <option value="">市区町村（すべて）</option>
           {cities.map(c => <option key={c}>{c}</option>)}
         </select>
-        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
-          <option value="">分類（すべて）</option>
-          {categories.map(c => <option key={c}>{c}</option>)}
-        </select>
+        {hasCapacityData && (
+          <div className="flex items-center gap-2 text-sm">
+            <label>定員</label>
+            <input type="number" min={0} value={filterCapacity} onChange={e => setFilterCapacity(e.target.value)} className="border rounded w-16 px-2 py-1.5" placeholder="〜" />
+            <span>名以上</span>
+          </div>
+        )}
         <select value={filterStation} onChange={e => setFilterStation(e.target.value)} className="border rounded px-2 py-1.5 text-sm">
           <option value="">最寄駅（すべて）</option>
           {stations.map(s => <option key={s}>{s}</option>)}
@@ -205,7 +218,7 @@ export default function PracticeListPage() {
                 {sortTh('施設名', '施設名')}
                 {sortTh('都道府県', '都道府県')}
                 <th className="px-3 py-2 text-left whitespace-nowrap">市区町村</th>
-                <th className="px-3 py-2 text-left whitespace-nowrap">分類</th>
+                <th className="px-3 py-2 text-right whitespace-nowrap">最大定員</th>
                 {sortTh('最寄駅徒歩', '徒歩(分)')}
                 <th className="px-3 py-2 text-left">ピアノ</th>
               </tr>
@@ -218,7 +231,7 @@ export default function PracticeListPage() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{p.都道府県}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{p.市区町村}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{p.分類 ?? '—'}</td>
+                  <td className="px-3 py-2 text-right">{maxCapacity(p) > 0 ? maxCapacity(p) : '—'}</td>
                   <td className="px-3 py-2 text-right">{minWalk(p) < NO_WALK ? minWalk(p) : '—'}</td>
                   <td className="px-3 py-2 text-center">{availabilityMark(EQUIP_FILTERS[0].state(p))}</td>
                 </tr>
@@ -242,7 +255,6 @@ function PracticeCard({ practice: p }: { practice: Practice }) {
       <p className="font-serif font-semibold text-navy-700 group-hover:text-gold-600 transition-colors">{p.施設名}</p>
       <p className="text-sm text-gray-500 mt-1">{p.都道府県} {p.市区町村}</p>
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-        {p.分類 && <span className="bg-navy-50 text-navy-700 rounded-full px-2 py-0.5">{p.分類}</span>}
         {p.最寄駅?.slice(0, 1).map((s, i) => (
           <span key={i} className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{[s.駅, walkLabel(s)].filter(Boolean).join(' ')}</span>
         ))}

@@ -32,7 +32,6 @@ export default function PracticeDetailPage() {
     ['TEL', p.TEL],
     ['開館時間', p.開館時間 && p.閉館時間 ? `${p.開館時間} 〜 ${p.閉館時間}` : p.開館時間],
     ['休館日', p.休館日],
-    ['分類', p.分類],
     ['最寄駅', stationText],
     ['ピアノ有無', p.ピアノ有無 != null ? availabilityMark(p.ピアノ有無) : undefined],
   ]

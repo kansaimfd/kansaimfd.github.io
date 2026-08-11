@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { concerthalls } from '../data'
-import type { ConcertHall } from '../types'
+import type { ConcertHall, HallType } from '../types'
 import { NO_WALK, lineLabel, minWalk, walkLabel } from '../station'
 import { hasEquipment } from '../availability'
 import { fullAddress, localAddress } from '../address'
@@ -160,6 +160,12 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
               {h.施設名}
             </span>
             {h.部屋名 && <span style={{ fontSize: isMobile ? 11 : 12, color: '#9ca3af' }}>（{h.部屋名}）</span>}
+            {h.ホール種別 && (
+              <span style={{
+                fontSize: 10.5, padding: '2px 7px', borderRadius: 3,
+                background: p.tint, color: p.accent, border: `1px solid ${p.chip}`,
+              }}>{h.ホール種別}</span>
+            )}
           </div>
           <p style={{ fontSize: isMobile ? 11 : 12, color: '#6b7280', margin: '4px 0 0', letterSpacing: '0.02em' }}>
             {localAddress(h)}
@@ -218,6 +224,7 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
 }
 
 const ALL_PREFS = ['大阪府', '京都府', '兵庫県', '奈良県', '滋賀県', '和歌山県']
+const ALL_HALL_TYPES: HallType[] = ['音楽専用', '多目的', '小ホール・サロン']
 /** 3値（あり/なし/未調査）を持つ設備。駐車場は台数なのでここには含めない */
 const EQUIP_FIELDS = [
   { key: 'piano',  label: 'ピアノあり',         pick: (h: ConcertHall) => h.ピアノ有無 },
@@ -237,6 +244,13 @@ export default function ConcertHallListPage() {
   const [query, setQuery] = useState('')
   const [filterPrefs, setFilterPrefs] = useState<string[]>([])
   const [filterEquip, setFilterEquip] = useState<Set<string>>(new Set())
+  const [filterHallTypes, setFilterHallTypes] = useState<HallType[]>([])
+
+  // データが1件も無い種別は選択肢に出さない。必ず0件になる絞り込みを見せないため
+  const hallTypeOptions = useMemo(
+    () => ALL_HALL_TYPES.filter(t => concerthalls.some(h => h.ホール種別 === t)),
+    []
+  )
   const [filterSeats, setFilterSeats] = useState<[string, string]>(['', ''])
   const [filterStageW, setFilterStageW] = useState<[string, string]>(['', ''])
   const [filterStageD, setFilterStageD] = useState<[string, string]>(['', ''])
@@ -247,6 +261,7 @@ export default function ConcertHallListPage() {
     // 設備以外の条件で先に絞る。設備は未調査による除外数を数えるため別段にする
     const base = concerthalls.filter(h => {
       if (filterPrefs.length > 0 && !filterPrefs.includes(h.都道府県)) return false
+      if (filterHallTypes.length > 0 && (h.ホール種別 == null || !filterHallTypes.includes(h.ホール種別))) return false
       if (filterSeats[0] && (h.客席数 == null || h.客席数 < Number(filterSeats[0]))) return false
       if (filterSeats[1] && (h.客席数 == null || h.客席数 > Number(filterSeats[1]))) return false
       if (filterStageW[0] && (h.舞台幅 == null || h.舞台幅 < Number(filterStageW[0]))) return false
@@ -285,7 +300,7 @@ export default function ConcertHallListPage() {
     })
 
     return { filtered: sorted, unknownExcluded: excluded }
-  }, [query, filterPrefs, filterSeats, filterStageW, filterStageD, filterEquip, sortKey, sortAsc])
+  }, [query, filterPrefs, filterHallTypes, filterSeats, filterStageW, filterStageD, filterEquip, sortKey, sortAsc])
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc(a => !a)
@@ -389,6 +404,27 @@ export default function ConcertHallListPage() {
             )
           })}
         </FilterRow>
+
+        {hallTypeOptions.length > 0 && (
+          <FilterRow label="HALL TYPE" title="ホール種別" isMobile={isMobile}>
+            {hallTypeOptions.map(t => {
+              const on = filterHallTypes.includes(t)
+              return (
+                <button key={t} onClick={() => setFilterHallTypes(prev =>
+                  prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
+                )} style={{
+                  padding: '5px 12px', fontSize: 11.5, fontFamily: 'inherit',
+                  border: `1px solid ${on ? '#1B2E4B' : '#e7e2d8'}`,
+                  background: on ? '#eef2f7' : '#fff',
+                  color: on ? '#1B2E4B' : '#6b7280',
+                  borderRadius: 999, cursor: 'pointer', fontWeight: on ? 500 : 400,
+                }}>
+                  {on ? '✓ ' : ''}{t}
+                </button>
+              )
+            })}
+          </FilterRow>
+        )}
 
         <FilterRow label="EQUIPMENT" title="設備" isMobile={isMobile}>
           {EQUIP_OPTIONS.map(({ key, label }) => {

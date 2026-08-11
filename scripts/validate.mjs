@@ -21,6 +21,7 @@ const REQUIRED = ['施設名', '都道府県', '市区町村', '番地以下', '
 const URL_FIELDS = ['URL', '申込URL', '料金URL']
 const AVAILABILITY_FIELDS = ['ピアノ有無', 'パイプオルガン', '譜面台貸出', '親子室', '管楽器', '打楽器']
 const PIANO_TYPES = ['グランド', 'アップライト', '電子']
+const HALL_TYPES = ['音楽専用', '多目的', '小ホール・サロン']
 const SEIREI_CITIES = ['大阪市', '神戸市', '京都市', '堺市']
 const TIME_FIELDS = ['開館時間', '閉館時間']
 
@@ -143,7 +144,7 @@ export function validate(datasets) {
         if (!Array.isArray(f.部屋)) err(`部屋 は配列で書いてください`)
         else {
           for (const [i, room] of f.部屋.entries()) {
-            for (const k of ['客席数', '面積', '定員', '舞台幅', '舞台奥行', '譜面台数']) {
+            for (const k of ['客席数', '面積', '定員', '舞台幅', '舞台奥行', '譜面台数', '楽屋収容人数']) {
               if (room[k] != null && !isPositive(room[k])) {
                 err(`部屋[${i}] の ${k} が正の数ではありません: ${JSON.stringify(room[k])}`)
               }
@@ -157,6 +158,12 @@ export function validate(datasets) {
             }
             if (room.譜面台数 != null && room.譜面台貸出 === false) {
               err(`部屋[${i}] に 譜面台数 があるのに 譜面台貸出 が false です`)
+            }
+            if (room.ホール種別 != null && !HALL_TYPES.includes(room.ホール種別)) {
+              err(`部屋[${i}] の ホール種別 は ${HALL_TYPES.join(' / ')} のいずれかです: ${room.ホール種別}`)
+            }
+            if (room.オルガン製作者 != null && room.パイプオルガン !== true) {
+              err(`部屋[${i}] に オルガン製作者 があるのに パイプオルガン が true ではありません`)
             }
             if (room.楽器制限 != null && typeof room.楽器制限 !== 'string') {
               err(`部屋[${i}] の 楽器制限 は文字列で書いてください`)

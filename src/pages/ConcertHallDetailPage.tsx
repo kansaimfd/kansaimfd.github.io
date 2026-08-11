@@ -40,7 +40,6 @@ export default function ConcertHallDetailPage() {
     ['市区町村', f.市区町村],
     ['番地以下', f.番地以下],
     ['建物', f.建物],
-    ['分類', f.分類],
     ['築年月', f.築年月],
     ['最寄駅', f.最寄駅?.map(stationLabel).join(' / ')],
     ['駐車場', f.駐車場 != null ? `${f.駐車場}台` : undefined],
@@ -78,8 +77,10 @@ export default function ConcertHallDetailPage() {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="px-3 py-2 text-left">ホール名</th>
+                  <th className="px-3 py-2 text-left whitespace-nowrap">種別</th>
                   <th className="px-3 py-2 text-right whitespace-nowrap">客席数</th>
                   <th className="px-3 py-2 text-left whitespace-nowrap">舞台</th>
+                  <th className="px-3 py-2 text-right whitespace-nowrap">楽屋(名)</th>
                   <th className="px-3 py-2 text-left whitespace-nowrap">ピアノ</th>
                   <th className="px-3 py-2 text-center whitespace-nowrap">オルガン</th>
                   <th className="px-3 py-2 text-left whitespace-nowrap">譜面台</th>
@@ -90,10 +91,15 @@ export default function ConcertHallDetailPage() {
                 {rooms.map((r, i) => (
                   <tr key={i} className="border-b last:border-0">
                     <td className="px-3 py-2">{r.部屋名 ?? '—'}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{r.ホール種別 ?? '—'}</td>
                     <td className="px-3 py-2 text-right">{r.客席数 != null ? `${r.客席数}席` : '—'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{stageLabel(r) ?? '—'}</td>
+                    <td className="px-3 py-2 text-right">{r.楽屋収容人数 ?? '—'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{pianoLabel(r)}</td>
-                    <td className="px-3 py-2 text-center">{availabilityMark(r.パイプオルガン)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      {availabilityMark(r.パイプオルガン)}
+                      {r.オルガン製作者 && <span className="ml-1 text-gray-600">{r.オルガン製作者}</span>}
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">{standLabel(r)}</td>
                     <td className="px-3 py-2 text-center">{availabilityMark(r.親子室)}</td>
                   </tr>
