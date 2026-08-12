@@ -48,9 +48,16 @@ interface FacilityBase {
   番地以下: string
   /** ビル名・階・部屋番号。番地以下に混ぜるとジオコーディングの精度が落ちるため分ける */
   建物?: string
+  TEL?: string
+  /** "HH:MM" 24時間表記 */
+  開館時間?: string
+  閉館時間?: string
+  休館日?: string
   URL?: string
   申込URL?: string
   料金URL?: string
+  /** 台数 */
+  駐車場?: number
   最寄駅?: Station[]
   経度: number
   緯度: number
@@ -61,9 +68,18 @@ interface FacilityBase {
 
 export type PianoType = 'グランド' | 'アップライト' | '電子'
 
-/** ホール・練習室に共通する備品。「有無(3値) ＋ 詳細(任意)」の形で持つ */
+/**
+ * ホール・練習室に共通する属性。備品は「有無(3値) ＋ 詳細(任意)」の形で持つ。
+ *
+ * 面積・定員をここに置いているのは、コンサートホール施設がスタジオや多目的室を
+ * 併設しているのが普通だから（フェニーチェ堺は大ホール〜文化交流室まで10室ある）。
+ */
 interface RoomBase {
   部屋名?: string
+  /** ㎡ */
+  面積?: number
+  /** 人 */
+  定員?: number
   ピアノ有無?: Availability
   /** ピアノが複数種ある部屋は稀なため単一値で持つ */
   ピアノ種別?: PianoType
@@ -102,7 +118,6 @@ export interface Hall extends RoomBase {
 /** concerthall.yaml の1レコード＝1施設 */
 export interface ConcertHallFacility extends FacilityBase {
   築年月?: string
-  駐車場?: number
   部屋?: Hall[]
 }
 
@@ -114,8 +129,6 @@ export type ConcertHall = Omit<ConcertHallFacility, '部屋'> & Hall & { キー:
 
 export interface PracticeRoom extends RoomBase {
   部屋名: string
-  面積?: number
-  定員?: number
   /**
    * 楽器の可否。実際の施設で区別されているのはほぼ「打楽器」だけなので、
    * 金管・木管は分けずに 管楽器 でまとめる。細かい区別は 楽器制限 に書く。
@@ -131,10 +144,6 @@ export interface PracticeRoom extends RoomBase {
 
 /** practice.yaml の1レコード＝1施設 */
 export interface Practice extends FacilityBase {
-  TEL?: string
-  開館時間?: string
-  閉館時間?: string
-  休館日?: string
   部屋?: PracticeRoom[]
   ピアノ有無?: Availability
 }

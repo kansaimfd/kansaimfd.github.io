@@ -33,5 +33,7 @@ data/facilities/concerthall.xlsx
 data/facilities/draft/
 .claude/
 
+data/research/
+
 # 作業用ドキュメント（コミット対象外）
 docs/schema-review.md
