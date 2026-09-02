@@ -8,6 +8,7 @@ import { compareByName } from '../name'
 import FacilityMap from '../components/FacilityMap'
 import { type ViewMode } from '../components/ViewToggle'
 import SortableTh from '../components/SortableTh'
+import RentalBadge from '../components/RentalBadge'
 
 type SortKey = '施設名' | '都道府県' | '客席数' | '最寄駅徒歩'
 
@@ -160,6 +161,7 @@ function ConcertHallCard({ hall: h, isMobile, isTablet }: { hall: ConcertHall; i
               {h.施設名}
             </span>
             {h.部屋名 && <span style={{ fontSize: isMobile ? 11 : 12, color: '#9ca3af' }}>（{h.部屋名}）</span>}
+            <RentalBadge 貸館={h.貸館} />
             {h.ホール種別 && (
               <span style={{
                 fontSize: 10.5, padding: '2px 7px', borderRadius: 3,
@@ -497,6 +499,7 @@ export default function ConcertHallListPage() {
                     <span className="text-navy-700">
                       {h.施設名}{h.部屋名 ? `（${h.部屋名}）` : ''}
                     </span>
+                    <RentalBadge 貸館={h.貸館} />
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{h.都道府県}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{h.市区町村}</td>

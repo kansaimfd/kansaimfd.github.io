@@ -7,6 +7,7 @@ import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
+import { rentalNotice } from '../rental'
 
 type Row = [string, string | number | undefined | null]
 
@@ -50,6 +51,11 @@ export default function ConcertHallDetailPage() {
       <Link to="/concert" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">← コンサートホール一覧</Link>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{f.施設名}</h1>
       <p className="text-gray-500 mb-4">{fullAddress(f)}</p>
+      {rentalNotice(f.貸館) && (
+        <p className="mt-2 mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm font-medium">
+          {rentalNotice(f.貸館)}
+        </p>
+      )}
 
       <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} />
 

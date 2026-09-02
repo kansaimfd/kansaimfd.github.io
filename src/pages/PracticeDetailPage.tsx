@@ -6,6 +6,7 @@ import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
+import { rentalNotice } from '../rental'
 
 export default function PracticeDetailPage() {
   const { id } = useParams()
@@ -41,6 +42,11 @@ export default function PracticeDetailPage() {
       <Link to="/practice" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">← 練習場一覧</Link>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{p.施設名}</h1>
       <p className="text-gray-500 mb-4">{fullAddress(p)}</p>
+      {rentalNotice(p.貸館) && (
+        <p className="mt-2 mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm font-medium">
+          {rentalNotice(p.貸館)}
+        </p>
+      )}
 
       <DetailMap lat={p.緯度} lng={p.経度} name={p.施設名} />
 

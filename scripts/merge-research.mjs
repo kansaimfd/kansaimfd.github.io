@@ -26,13 +26,13 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
  */
 const FACILITY_FIELDS = [
   'URL', '築年月', '駐車場', 'TEL', '開館時間', '閉館時間', '休館日',
-  '申込URL', '料金URL', '最寄駅', '部屋', '出典',
+  '申込URL', '料金URL', '最寄駅', '貸館', '部屋', '出典',
 ]
 
 const FACILITY_ORDER = [
   'ID', '施設名', '施設名かな', '都道府県', '市区町村', '番地以下', '建物',
   '築年月', 'TEL', '開館時間', '閉館時間', '休館日',
-  'URL', '申込URL', '料金URL', '駐車場', '最寄駅', '部屋', 'ピアノ有無', '出典',
+  'URL', '申込URL', '料金URL', '駐車場', '最寄駅', '貸館', '部屋', 'ピアノ有無', '出典',
   '経度', '緯度',
 ]
 const ROOM_ORDER = [

@@ -11,6 +11,7 @@ import ViewToggle, { type ViewMode } from '../components/ViewToggle'
 import SortBar from '../components/SortBar'
 import SortableTh from '../components/SortableTh'
 import FilterPanel from '../components/FilterPanel'
+import RentalBadge from '../components/RentalBadge'
 
 type SortKey = '施設名' | '都道府県' | '最寄駅徒歩'
 
@@ -228,6 +229,7 @@ export default function PracticeListPage() {
                 <tr key={p.ID} className="border-b hover:bg-gray-50">
                   <td className="px-3 py-2">
                     <Link to={`/practice/${p.ID}`} className="text-navy-700 hover:text-gold-500 hover:underline">{p.施設名}</Link>
+                    <RentalBadge 貸館={p.貸館} />
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{p.都道府県}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{p.市区町村}</td>
@@ -252,7 +254,7 @@ export default function PracticeListPage() {
 function PracticeCard({ practice: p }: { practice: Practice }) {
   return (
     <Link to={`/practice/${p.ID}`} className="block border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-gold-500 transition-all bg-white group">
-      <p className="font-serif font-semibold text-navy-700 group-hover:text-gold-600 transition-colors">{p.施設名}</p>
+      <p className="font-serif font-semibold text-navy-700 group-hover:text-gold-600 transition-colors">{p.施設名}<RentalBadge 貸館={p.貸館} /></p>
       <p className="text-sm text-gray-500 mt-1">{p.都道府県} {p.市区町村}</p>
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
         {p.最寄駅?.slice(0, 1).map((s, i) => (

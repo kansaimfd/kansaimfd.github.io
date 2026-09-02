@@ -24,6 +24,8 @@ const PIANO_TYPES = ['グランド', 'アップライト', '電子']
 const HALL_TYPES = ['音楽専用', '多目的', '小ホール・サロン']
 const SEIREI_CITIES = ['大阪市', '神戸市', '京都市', '堺市']
 const TIME_FIELDS = ['開館時間', '閉館時間']
+const RENTAL_STATES = ['休止', '終了']
+const isYearMonth = v => typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v)
 
 /** 徒歩でこれを超えるなら、実際はバス利用などの可能性が高い */
 const WALK_MINUTES_LIMIT = 30
@@ -163,6 +165,29 @@ export function validate(datasets, { stationMaster } = {}) {
       }
       if (f.開館時間 && f.閉館時間 && f.開館時間 >= f.閉館時間) {
         warn('開館時間が閉館時間以降', `${f.開館時間} 〜 ${f.閉館時間}`)
+      }
+
+      // ── 貸館の休止・終了 ──
+      if (f.貸館 != null) {
+        const r = f.貸館
+        if (typeof r !== 'object' || Array.isArray(r)) err(`貸館 はマッピングで書いてください`)
+        else {
+          if (!RENTAL_STATES.includes(r.状態)) {
+            err(`貸館.状態 は ${RENTAL_STATES.join(' / ')} のいずれかです: ${JSON.stringify(r.状態)}`)
+          }
+          for (const k of ['開始', '再開']) {
+            if (r[k] != null && !isYearMonth(r[k])) {
+              err(`貸館.${k} は "YYYY-MM" 形式で書いてください: ${JSON.stringify(r[k])}`)
+            }
+          }
+          // 終了は再開しないことが定義なので、再開が入っていたら状態の取り違え
+          if (r.状態 === '終了' && r.再開 != null) {
+            err(`貸館.再開 があるなら 状態 は 休止 です（終了 は再開しないもの）`)
+          }
+          if (r.開始 && r.再開 && r.開始 >= r.再開) {
+            err(`貸館.再開 が 開始 以前です: ${r.開始} 〜 ${r.再開}`)
+          }
+        }
       }
 
       // ── 設備の3値 ──
