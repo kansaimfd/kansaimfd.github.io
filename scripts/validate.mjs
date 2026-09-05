@@ -27,6 +27,33 @@ const TIME_FIELDS = ['開館時間', '閉館時間']
 const RENTAL_STATES = ['休止', '終了']
 const isYearMonth = v => typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v)
 
+/**
+ * 貸館の休止・終了を検査する。施設にも部屋にも同じ形で書けるので共通化している
+ * （部屋側は「その部屋だけ休止」を表し、施設側の指定より優先される）。
+ */
+function checkRental(r, label, err) {
+  if (r == null) return
+  if (typeof r !== 'object' || Array.isArray(r)) {
+    err(`${label} はマッピングで書いてください`)
+    return
+  }
+  if (!RENTAL_STATES.includes(r.状態)) {
+    err(`${label}.状態 は ${RENTAL_STATES.join(' / ')} のいずれかです: ${JSON.stringify(r.状態)}`)
+  }
+  for (const k of ['開始', '再開']) {
+    if (r[k] != null && !isYearMonth(r[k])) {
+      err(`${label}.${k} は "YYYY-MM" 形式で書いてください: ${JSON.stringify(r[k])}`)
+    }
+  }
+  // 終了は再開しないことが定義なので、再開が入っていたら状態の取り違え
+  if (r.状態 === '終了' && r.再開 != null) {
+    err(`${label}.再開 があるなら 状態 は 休止 です（終了 は再開しないもの）`)
+  }
+  if (r.開始 && r.再開 && r.開始 >= r.再開) {
+    err(`${label}.再開 が 開始 以前です: ${r.開始} 〜 ${r.再開}`)
+  }
+}
+
 /** 徒歩でこれを超えるなら、実際はバス利用などの可能性が高い */
 const WALK_MINUTES_LIMIT = 30
 
@@ -167,28 +194,8 @@ export function validate(datasets, { stationMaster } = {}) {
         warn('開館時間が閉館時間以降', `${f.開館時間} 〜 ${f.閉館時間}`)
       }
 
-      // ── 貸館の休止・終了 ──
-      if (f.貸館 != null) {
-        const r = f.貸館
-        if (typeof r !== 'object' || Array.isArray(r)) err(`貸館 はマッピングで書いてください`)
-        else {
-          if (!RENTAL_STATES.includes(r.状態)) {
-            err(`貸館.状態 は ${RENTAL_STATES.join(' / ')} のいずれかです: ${JSON.stringify(r.状態)}`)
-          }
-          for (const k of ['開始', '再開']) {
-            if (r[k] != null && !isYearMonth(r[k])) {
-              err(`貸館.${k} は "YYYY-MM" 形式で書いてください: ${JSON.stringify(r[k])}`)
-            }
-          }
-          // 終了は再開しないことが定義なので、再開が入っていたら状態の取り違え
-          if (r.状態 === '終了' && r.再開 != null) {
-            err(`貸館.再開 があるなら 状態 は 休止 です（終了 は再開しないもの）`)
-          }
-          if (r.開始 && r.再開 && r.開始 >= r.再開) {
-            err(`貸館.再開 が 開始 以前です: ${r.開始} 〜 ${r.再開}`)
-          }
-        }
-      }
+      // ── 貸館の休止・終了（施設レベル。部屋レベルは 部屋 の節で同じ検査をする）──
+      checkRental(f.貸館, '貸館', err)
 
       // ── 設備の3値 ──
       checkAvailability(f, at, err)
@@ -222,6 +229,7 @@ export function validate(datasets, { stationMaster } = {}) {
             if (room.楽器制限 != null && typeof room.楽器制限 !== 'string') {
               err(`部屋[${i}] の 楽器制限 は文字列で書いてください`)
             }
+            checkRental(room.貸館, `部屋[${i}] の 貸館`, err)
           }
           const unnamed = f.部屋.filter(r => !r.部屋名).length
           if (f.部屋.length > 1 && unnamed > 0) {

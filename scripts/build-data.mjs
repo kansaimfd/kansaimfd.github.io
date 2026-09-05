@@ -44,11 +44,37 @@ function withLastVerified(facility) {
     : facility
 }
 
+/** 部屋が音楽に使えることを示す手掛かり。どれか一つでもあれば掲載する */
+const MUSIC_FIELDS = [
+  'ピアノ有無', '譜面台貸出', '管楽器', '打楽器', '楽器制限',
+  'パイプオルガン', '客席数', '舞台幅', '舞台奥行', 'ホール種別',
+]
+
+/** 設備が未調査でも、名前から音楽用と分かる部屋 */
+const MUSIC_ROOM_NAME = /ホール|練習|リハーサル|音楽|スタジオ|サロン|レッスン|楽器|録音|舞台|多目的/
+
+/**
+ * 会議室・和室・調理室のような、音楽の練習にも演奏会にも使えない部屋を落とす。
+ *
+ * 施設まるごとを再調査した結果、市民会館・区民センターの類は
+ * 陶工芸室や料理教室まで含めて全室が入ってくる。**YAMLには調査した事実として残す**が、
+ * 音楽施設のディレクトリとしてはノイズなので、ここでJSONに出さない。
+ *
+ * 判定はあくまで「落としてよいと言い切れるか」で、迷ったら残す側に倒している
+ * （ピアノが1台でもあれば会議室でも残る。設備が未調査の練習室も名前で残る）。
+ */
+function isMusicRoom(room) {
+  return MUSIC_FIELDS.some(k => room[k] !== undefined) || MUSIC_ROOM_NAME.test(room.部屋名 ?? '')
+}
+
 function normalize(facility) {
   const withStations = facility.最寄駅
     ? { ...facility, 最寄駅: fillWalkMinutes(facility.最寄駅) }
     : facility
-  return withLastVerified(withStations)
+  const withRooms = withStations.部屋
+    ? { ...withStations, 部屋: withStations.部屋.filter(isMusicRoom) }
+    : withStations
+  return withLastVerified(withRooms)
 }
 
 /**

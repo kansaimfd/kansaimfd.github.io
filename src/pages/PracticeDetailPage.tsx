@@ -7,6 +7,7 @@ import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
 import { rentalNotice } from '../rental'
+import RentalBadge from '../components/RentalBadge'
 
 export default function PracticeDetailPage() {
   const { id } = useParams()
@@ -91,6 +92,7 @@ export default function PracticeDetailPage() {
                   <tr key={i} className="border-b last:border-0 align-top">
                     <td className="px-3 py-2">
                       {r.部屋名}
+                      <RentalBadge 貸館={r.貸館} />
                       {r.楽器制限 && <span className="block text-xs text-gray-500 mt-0.5">{r.楽器制限}</span>}
                     </td>
                     <td className="px-3 py-2 text-right">{r.面積 ?? '—'}</td>

@@ -8,6 +8,7 @@ import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
 import { rentalNotice } from '../rental'
+import RentalBadge from '../components/RentalBadge'
 
 type Row = [string, string | number | undefined | null]
 
@@ -96,7 +97,10 @@ export default function ConcertHallDetailPage() {
               <tbody>
                 {rooms.map((r, i) => (
                   <tr key={i} className="border-b last:border-0">
-                    <td className="px-3 py-2">{r.部屋名 ?? '—'}</td>
+                    <td className="px-3 py-2">
+                      {r.部屋名 ?? '—'}
+                      <RentalBadge 貸館={r.貸館} />
+                    </td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.ホール種別 ?? '—'}</td>
                     <td className="px-3 py-2 text-right">{r.客席数 != null ? `${r.客席数}席` : '—'}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{stageLabel(r) ?? '—'}</td>
