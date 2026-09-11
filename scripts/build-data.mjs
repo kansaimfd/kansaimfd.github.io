@@ -54,6 +54,12 @@ const MUSIC_FIELDS = [
 const MUSIC_ROOM_NAME = /ホール|練習|リハーサル|音楽|スタジオ|サロン|レッスン|楽器|録音|舞台|多目的/
 
 /**
+ * 「ホール」を含んでも演奏には使わない広間。展示や受付に貸しているもので、
+ * 名前だけでは音楽用と言えない（音楽設備が書かれていれば、それを根拠に残す）。
+ */
+const NON_MUSIC_HALL = /エントランスホール|展示ホール|レセプションホール/
+
+/**
  * 会議室・和室・調理室のような、音楽の練習にも演奏会にも使えない部屋を落とす。
  *
  * 施設まるごとを再調査した結果、市民会館・区民センターの類は
@@ -64,7 +70,9 @@ const MUSIC_ROOM_NAME = /ホール|練習|リハーサル|音楽|スタジオ|�
  * （ピアノが1台でもあれば会議室でも残る。設備が未調査の練習室も名前で残る）。
  */
 function isMusicRoom(room) {
-  return MUSIC_FIELDS.some(k => room[k] !== undefined) || MUSIC_ROOM_NAME.test(room.部屋名 ?? '')
+  if (MUSIC_FIELDS.some(k => room[k] !== undefined)) return true
+  const name = room.部屋名 ?? ''
+  return MUSIC_ROOM_NAME.test(name) && !NON_MUSIC_HALL.test(name)
 }
 
 function normalize(facility) {
