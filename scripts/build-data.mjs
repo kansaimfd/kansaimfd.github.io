@@ -44,11 +44,15 @@ function withLastVerified(facility) {
     : facility
 }
 
-/** 部屋が音楽に使えることを示す手掛かり。どれか一つでもあれば掲載する */
-const MUSIC_FIELDS = [
-  'ピアノ有無', '譜面台貸出', '管楽器', '打楽器', '楽器制限',
-  'パイプオルガン', '客席数', '舞台幅', '舞台奥行', 'ホール種別',
-]
+/**
+ * 部屋が音楽に使えることを示す手掛かり。どれか一つでもあれば掲載する。
+ *
+ * **boolean は true のときだけ手掛かりになる。** 「楽器演奏は不可」と書かれた調理室に
+ * `管楽器: false` を記録すると、それを手掛かりに音楽室として載ってしまう。
+ * 否定の記録がそのまま掲載理由になるのはおかしいので、false は無視する。
+ */
+const MUSIC_BOOLEANS = ['ピアノ有無', '譜面台貸出', '管楽器', '打楽器', 'パイプオルガン']
+const MUSIC_VALUES = ['楽器制限', '客席数', '舞台幅', '舞台奥行', 'ホール種別']
 
 /** 設備が未調査でも、名前から音楽用と分かる部屋 */
 const MUSIC_ROOM_NAME = /ホール|練習|リハーサル|音楽|スタジオ|サロン|レッスン|楽器|録音|舞台|多目的/
@@ -70,7 +74,8 @@ const NON_MUSIC_HALL = /エントランスホール|展示ホール|レセプシ
  * （ピアノが1台でもあれば会議室でも残る。設備が未調査の練習室も名前で残る）。
  */
 function isMusicRoom(room) {
-  if (MUSIC_FIELDS.some(k => room[k] !== undefined)) return true
+  if (MUSIC_BOOLEANS.some(k => room[k] === true)) return true
+  if (MUSIC_VALUES.some(k => room[k] !== undefined)) return true
   const name = room.部屋名 ?? ''
   return MUSIC_ROOM_NAME.test(name) && !NON_MUSIC_HALL.test(name)
 }
