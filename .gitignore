@@ -37,3 +37,6 @@ data/research/
 
 # 作業用ドキュメント（コミット対象外）
 docs/schema-review.md
+
+# Playwright CLI の作業ログ（調査時に出る）
+.playwright-cli/
