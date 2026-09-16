@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Vite** — ビルドツール
 - **React + TypeScript** — UIフレームワーク
 - **Tailwind CSS v4** — スタイリング（`@tailwindcss/vite` プラグイン経由）
-- **React Router v7** — クライアントサイドルーティング（`basename="/kansai-mfd/"`）
+- **React Router v7** — クライアントサイドルーティング（`basename="/"`）
 - **Leaflet + react-leaflet + OpenStreetMap** — 地図表示
 - **js-yaml** — YAML→JSON変換（ビルドスクリプト内で使用）
 
@@ -263,7 +263,14 @@ React コンポーネント
 
 ## Deployment
 
-GitHub Pages にデプロイ（リポジトリ名 `kansai-mfd`）。`vite.config.ts` の `base` と React Router の `basename` はともに `/kansai-mfd/` に設定済み。
+GitHub Pages にデプロイ。リポジトリは `kansaimfd/kansaimfd.github.io` で、**User Pages なので
+https://kansaimfd.github.io/ のルートで配信される**（プロジェクトページのようなサブパスは付かない）。
+そのため `vite.config.ts` の `base` と React Router の `basename` はともに **`/`**。
+
+`.github/workflows/deploy.yml` は master への push で動き、ビルド後に
+**`index.html` を `404.html` にコピー**している。GitHub Pages は静的配信で SPA のルーティングを
+知らないため、`/concert/10` のような直リンクはこのフォールバックで表示される
+（**HTTPステータスは404のままだがアプリは正しく起動する**ので、404を見ても壊れているとは限らない）。
 
 ## Notes
 
