@@ -7,8 +7,9 @@ import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
-import { rentalNotice } from '../rental'
 import RentalBadge from '../components/RentalBadge'
+import RentalNotice from '../components/RentalNotice'
+import UsageConditionNote from '../components/UsageConditionNote'
 
 type Row = [string, string | number | undefined | null]
 
@@ -37,6 +38,9 @@ export default function ConcertHallDetailPage() {
   const f = facility
   const rooms = f.部屋 ?? []
 
+  // チェンバロを持つ施設は少ないので、記録がある施設でだけ列を出す
+  const showChembalo = rooms.some(r => r.チェンバロ != null)
+
   const rows: Row[] = [
     ['都道府県', f.都道府県],
     ['市区町村', f.市区町村],
@@ -52,11 +56,8 @@ export default function ConcertHallDetailPage() {
       <Link to="/concert" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">← コンサートホール一覧</Link>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{f.施設名}</h1>
       <p className="text-gray-500 mb-4">{fullAddress(f)}</p>
-      {rentalNotice(f.貸館) && (
-        <p className="mt-2 mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm font-medium">
-          {rentalNotice(f.貸館)}
-        </p>
-      )}
+      <RentalNotice 貸館={f.貸館} />
+      <UsageConditionNote 利用条件={f.利用条件} />
 
       <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} />
 
@@ -90,6 +91,7 @@ export default function ConcertHallDetailPage() {
                   <th className="px-3 py-2 text-right whitespace-nowrap">楽屋(名)</th>
                   <th className="px-3 py-2 text-left whitespace-nowrap">ピアノ</th>
                   <th className="px-3 py-2 text-center whitespace-nowrap">オルガン</th>
+                  {showChembalo && <th className="px-3 py-2 text-center whitespace-nowrap">チェンバロ</th>}
                   <th className="px-3 py-2 text-left whitespace-nowrap">譜面台</th>
                   <th className="px-3 py-2 text-center whitespace-nowrap">親子室</th>
                 </tr>
@@ -110,6 +112,7 @@ export default function ConcertHallDetailPage() {
                       {availabilityMark(r.パイプオルガン)}
                       {r.オルガン製作者 && <span className="ml-1 text-gray-600">{r.オルガン製作者}</span>}
                     </td>
+                    {showChembalo && <td className="px-3 py-2 text-center">{availabilityMark(r.チェンバロ)}</td>}
                     <td className="px-3 py-2 whitespace-nowrap">{standLabel(r)}</td>
                     <td className="px-3 py-2 text-center">{availabilityMark(r.親子室)}</td>
                   </tr>

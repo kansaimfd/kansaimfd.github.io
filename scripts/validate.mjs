@@ -19,12 +19,21 @@ const PREF_BOX = {
 
 const REQUIRED = ['施設名', '都道府県', '市区町村', '番地以下', '経度', '緯度']
 const URL_FIELDS = ['URL', '申込URL', '料金URL']
-const AVAILABILITY_FIELDS = ['ピアノ有無', 'パイプオルガン', '譜面台貸出', '親子室', '管楽器', '打楽器']
+const AVAILABILITY_FIELDS = ['ピアノ有無', 'パイプオルガン', 'チェンバロ', '譜面台貸出', '親子室', '管楽器', '打楽器']
 const PIANO_TYPES = ['グランド', 'アップライト', '電子']
 const HALL_TYPES = ['音楽専用', '多目的', '小ホール・サロン']
 const SEIREI_CITIES = ['大阪市', '神戸市', '京都市', '堺市']
 const TIME_FIELDS = ['開館時間', '閉館時間']
-const RENTAL_STATES = ['休止', '終了']
+const RENTAL_STATES = ['休止', '終了', '予定', '廃止']
+/** 再開しないことが定義の状態。再開 が書かれていたら状態の取り違え */
+const RENTAL_FINAL_STATES = ['終了', '廃止']
+const USAGE_CONDITION_TYPES = ['公募選考', '資格限定', '要紹介']
+
+/** "YYYY-MM"。貸館.状態 が 予定 のまま開始月を過ぎていないかを見るのに使う */
+function currentYearMonth() {
+  const d = new Date()
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+}
 const isYearMonth = v => typeof v === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(v)
 
 /**
@@ -46,8 +55,12 @@ function checkRental(r, label, err) {
     }
   }
   // 終了は再開しないことが定義なので、再開が入っていたら状態の取り違え
-  if (r.状態 === '終了' && r.再開 != null) {
-    err(`${label}.再開 があるなら 状態 は 休止 です（終了 は再開しないもの）`)
+  if (RENTAL_FINAL_STATES.includes(r.状態) && r.再開 != null) {
+    err(`${label}.再開 があるなら 状態 は 休止 か 予定 です（${r.状態} は再開しないもの）`)
+  }
+  // 予定は「まだ借りられる」の意味。開始が来てしまったら 休止 か 終了 に直す必要がある
+  if (r.状態 === '予定' && r.開始 != null && r.開始 <= currentYearMonth()) {
+    err(`${label}.開始 (${r.開始}) がもう来ています。状態 を 休止 か 終了 に直してください`)
   }
   if (r.開始 && r.再開 && r.開始 >= r.再開) {
     err(`${label}.再開 が 開始 以前です: ${r.開始} 〜 ${r.再開}`)
@@ -198,7 +211,30 @@ export function validate(datasets, { stationMaster } = {}) {
       checkRental(f.貸館, '貸館', err)
 
       // ── 設備の3値 ──
+      // 借りられる人が限られる施設（貸館 は休止・終了用なので、そこには書けない）
+      if (f.利用条件 != null) {
+        const c = f.利用条件
+        if (typeof c !== 'object' || Array.isArray(c)) {
+          err('利用条件 はマッピングで書いてください')
+        } else {
+          if (!USAGE_CONDITION_TYPES.includes(c.種別)) {
+            err(`利用条件.種別 は ${USAGE_CONDITION_TYPES.join(' / ')} のいずれかです: ${JSON.stringify(c.種別)}`)
+          }
+          if (typeof c.説明 !== 'string' || c.説明 === '') {
+            err('利用条件.説明 に公式の記載に沿った説明を書いてください')
+          }
+        }
+      }
+
       checkAvailability(f, at, err)
+
+      // 施設レベルの備品も「有無 ＋ 詳細」の形。詳細だけあって有無が立っていないのは矛盾
+      if (f.譜面台数 != null && !isPositive(f.譜面台数)) {
+        err(`譜面台数 が正の数ではありません: ${JSON.stringify(f.譜面台数)}`)
+      }
+      if (f.譜面台数 != null && f.譜面台貸出 === false) {
+        err('譜面台数 があるのに 譜面台貸出 が false です')
+      }
 
       // ── 部屋 ──
       if (f.部屋 != null) {

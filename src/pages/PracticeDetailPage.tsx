@@ -6,8 +6,9 @@ import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
-import { rentalNotice } from '../rental'
 import RentalBadge from '../components/RentalBadge'
+import RentalNotice from '../components/RentalNotice'
+import UsageConditionNote from '../components/UsageConditionNote'
 
 export default function PracticeDetailPage() {
   const { id } = useParams()
@@ -26,6 +27,9 @@ export default function PracticeDetailPage() {
 
   const stationText = p.最寄駅?.map(stationLabel).join(' / ')
 
+  // チェンバロを持つ施設は少ないので、記録がある施設でだけ列を出す
+  const showChembalo = p.部屋?.some(r => r.チェンバロ != null) ?? false
+
   const rows: [string, string | number | undefined | null][] = [
     ['都道府県', p.都道府県],
     ['市区町村', p.市区町村],
@@ -36,6 +40,8 @@ export default function PracticeDetailPage() {
     ['休館日', p.休館日],
     ['最寄駅', stationText],
     ['ピアノ有無', p.ピアノ有無 != null ? availabilityMark(p.ピアノ有無) : undefined],
+    // 施設レベルの備品は、受付で申し込む貸出備品で設置部屋が決まっていない施設のためのもの
+    ['譜面台', p.譜面台貸出 != null ? standLabel(p) : undefined],
   ]
 
   return (
@@ -43,11 +49,8 @@ export default function PracticeDetailPage() {
       <Link to="/practice" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">← 練習場一覧</Link>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{p.施設名}</h1>
       <p className="text-gray-500 mb-4">{fullAddress(p)}</p>
-      {rentalNotice(p.貸館) && (
-        <p className="mt-2 mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm font-medium">
-          {rentalNotice(p.貸館)}
-        </p>
-      )}
+      <RentalNotice 貸館={p.貸館} />
+      <UsageConditionNote 利用条件={p.利用条件} />
 
       <DetailMap lat={p.緯度} lng={p.経度} name={p.施設名} />
 
@@ -84,6 +87,7 @@ export default function PracticeDetailPage() {
                   <th className="px-3 py-2 text-center whitespace-nowrap">管楽器</th>
                   <th className="px-3 py-2 text-center whitespace-nowrap">打楽器</th>
                   <th className="px-3 py-2 text-left whitespace-nowrap">ピアノ</th>
+                  {showChembalo && <th className="px-3 py-2 text-center whitespace-nowrap">チェンバロ</th>}
                   <th className="px-3 py-2 text-left whitespace-nowrap">譜面台</th>
                 </tr>
               </thead>
@@ -100,6 +104,7 @@ export default function PracticeDetailPage() {
                     <td className="px-3 py-2 text-center">{availabilityMark(r.管楽器)}</td>
                     <td className="px-3 py-2 text-center">{availabilityMark(r.打楽器)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{pianoLabel(r)}</td>
+                    {showChembalo && <td className="px-3 py-2 text-center">{availabilityMark(r.チェンバロ)}</td>}
                     <td className="px-3 py-2 whitespace-nowrap">{standLabel(r)}</td>
                   </tr>
                 ))}
