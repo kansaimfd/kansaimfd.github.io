@@ -8,8 +8,10 @@ import type { Station } from '../types'
 import { stationLabel } from '../station'
 import { fullAddress } from '../address'
 
-// leaflet のデフォルトアイコン修正
-delete (L.Icon.Default.prototype as any)._getIconUrl
+// leaflet のデフォルトアイコン修正。
+// バンドラが画像URLを書き換えるため、leaflet が内部で組み立てるURLを消してから
+// mergeOptions で差し替える（_getIconUrl は型定義に無い内部プロパティ）。
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
   iconUrl: markerIcon,
