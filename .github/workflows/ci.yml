@@ -31,3 +31,7 @@ jobs:
       - run: npm run typecheck
 
       - run: npm test
+
+      # deploy.yml を止めているあいだ、vite build が壊れても気づく経路がここしかない。
+      # tsc -b が通っても vite build は別に落ちうる（JSONの読み込み・動的importなど）
+      - run: npm run build
