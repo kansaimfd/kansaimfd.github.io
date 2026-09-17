@@ -79,7 +79,7 @@ export interface UsageCondition {
 }
 
 /** 施設に共通する属性（住所・アクセス・連絡先など、部屋によらないもの） */
-interface FacilityBase {
+export interface FacilityBase {
   ID: number
   施設名: string
   /**
@@ -124,6 +124,19 @@ interface FacilityBase {
   出典?: Source[]
   /** 出典[].確認日 の最新値。build-data.mjs が派生生成する（YAMLには書かない） */
   最終確認日?: string
+}
+
+/**
+ * 地図に載せられる施設。コンサートホール（平坦化済み）と練習場の両方を受ける。
+ * FacilityMap が使う分だけを FacilityBase から取り、独自に型を書き写さない
+ * （書き写すとスキーマを直したときに片方だけ古いまま残る）。
+ */
+export type MappableFacility = Pick<
+  FacilityBase,
+  'ID' | '施設名' | '都道府県' | '市区町村' | '番地以下' | '建物' | '最寄駅' | '経度' | '緯度'
+> & {
+  /** 平坦化したコンサートホールだけが持つ */
+  部屋名?: string
 }
 
 export type PianoType = 'グランド' | 'アップライト' | '電子'

@@ -4,7 +4,7 @@ import L from 'leaflet'
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
-import type { Station } from '../types'
+import type { MappableFacility } from '../types'
 import { stationLabel } from '../station'
 import { fullAddress } from '../address'
 
@@ -18,21 +18,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 })
 
-interface Facility {
-  ID: number
-  施設名: string
-  部屋名?: string
-  都道府県: string
-  市区町村: string
-  番地以下: string
-  建物?: string
-  最寄駅?: Station[]
-  経度: number
-  緯度: number
-}
-
 interface Props {
-  facilities: Facility[]
+  facilities: MappableFacility[]
   detailBasePath: string
 }
 
