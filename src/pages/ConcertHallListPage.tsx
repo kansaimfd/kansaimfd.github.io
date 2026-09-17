@@ -16,14 +16,36 @@ const FacilityMap = lazy(() => import('../components/FacilityMap'))
 
 type SortKey = '施設名' | '都道府県' | '客席数' | '最寄駅徒歩'
 
-function useSize() {
-  const [w, setW] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1280))
+type Breakpoint = { isMobile: boolean; isTablet: boolean }
+
+const breakpointOf = (w: number): Breakpoint => ({
+  isMobile: w < 640,
+  isTablet: w >= 640 && w < 1024,
+})
+
+/**
+ * 画面幅の区分。**幅そのものを state に入れない**。
+ * resize は1ピクセル動かすごとに発火するので、幅を持つと284枚のカードが
+ * そのたびに再描画される。区分をまたいだときだけ新しい値を返す
+ * （同じなら前の参照をそのまま返し、React に再描画を省かせる）。
+ */
+function useSize(): Breakpoint {
+  const [bp, setBp] = useState(() =>
+    breakpointOf(typeof window !== 'undefined' ? window.innerWidth : 1280),
+  )
   useEffect(() => {
-    const fn = () => setW(window.innerWidth)
+    const fn = () => {
+      const next = breakpointOf(window.innerWidth)
+      setBp(prev =>
+        prev.isMobile === next.isMobile && prev.isTablet === next.isTablet ? prev : next,
+      )
+    }
+    // 初期値は描画前の window 幅で決めているので、マウントまでに変わっていれば合わせ直す
+    fn()
     window.addEventListener('resize', fn)
     return () => window.removeEventListener('resize', fn)
   }, [])
-  return { isMobile: w < 640, isTablet: w >= 640 && w < 1024 }
+  return bp
 }
 // Prefecture colour palette
 const PREF_PALETTES: Record<string, { accent: string; tint: string; chip: string; label: string }> =
@@ -524,11 +546,11 @@ export default function ConcertHallListPage() {
     })
 
     // 「設備なし」ではなく「未調査」のせいで消えた件数。黙って消さず利用者に開示する
+    const shown = new Set(list)
     const excluded =
       activeEquip.length === 0
         ? 0
-        : base.filter(h => !list.includes(h) && activeEquip.some(e => e.pick(h) === undefined))
-            .length
+        : base.filter(h => !shown.has(h) && activeEquip.some(e => e.pick(h) === undefined)).length
 
     const sorted = [...list].sort((a, b) => {
       // 施設名は五十音順（コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる）
