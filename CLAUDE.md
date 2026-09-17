@@ -22,16 +22,35 @@ npm install        # 依存関係インストール
 npm run dev        # 開発サーバー起動
 npm run build      # 本番ビルド（YAML→JSON変換 + Viteビルド）
 npm run preview    # ビルド結果のプレビュー
-npm run lint       # ESLintによるコードチェック
-npx tsc -b --noEmit # 型チェック（tsconfig.json は files:[] + references なので
-                    # `tsc --noEmit` は1ファイルも検査しない。必ず -b を付ける）
+npm run data       # YAML→JSON変換だけを実行（データ検査もここで走る）
+
+npm run check      # lint → 型チェック → 整形チェック → テスト を一括。CI と同じ内容
+npm run lint       # ESLintによるコードチェック（src と scripts/*.mjs の両方）
+npm run typecheck  # 型チェック。中身は `tsc -b --noEmit`（tsconfig.json は files:[] +
+                   # references なので `tsc --noEmit` は1ファイルも検査しない。-b が要る）
+npm test           # Vitest。`npm run test:watch` で監視実行
+npm run format     # Prettier で整形。`npm run format:check` は確認のみ
 
 node scripts/build-data.mjs --verbose # データ検査の警告を全件表示
 node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコーディングで検算（随時）
 ```
 
+**型チェックとテストの前には `npm run data` が要る**。`src/data/*.json` は `.gitignore` 済みで、
+`src/data.ts` がそれを import しているため、生成前は型チェックが落ちる。
+
 データ検査（`scripts/validate.mjs`）はビルド前に自動実行される。
 **エラーがあるとビルドは停止する**。警告は種類ごとに集約して表示され、ビルドは続行する。
+
+### 開発環境
+
+- **Node は 22 系**（`.nvmrc` / `package.json` の `engines`）。CI・デプロイとも `.nvmrc` を見る
+- **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す。
+  デプロイ（`deploy.yml`）とは独立したワークフローで、master への push では両方が動く
+- **Prettier の対象はコードだけ**。`data/` のYAMLと `*.md` は `.prettierignore` で除外している
+  （YAMLは桁を揃えたコメントや引用符の使い分けに意味があるため）。
+  コード側でも桁揃えを保ちたい箇所には `// prettier-ignore` を置く（`validate.mjs` の `PREF_BOX`）
+- **テストは純粋関数だけを対象にしている**。`vitest.config.ts` は `environment: 'node'` で、
+  DOM も React のプラグインも読み込まない。コンポーネントのテストを足すならまず環境設定から要る
 
 ## Architecture
 
@@ -58,7 +77,9 @@ React コンポーネント
 ### Key Directories
 
 - `data/facilities/` — 施設データのYAMLファイル群
-- `scripts/build-data.mjs` — YAML→JSON変換スクリプト
+- `scripts/build-data.mjs` — YAML→JSON変換の入口。ファイル入出力と検査の呼び出しだけを持つ
+- `scripts/transform.mjs` — 変換そのもの（駅徒歩の補完・音楽外の部屋の除外・平坦化）。
+  読み書きを伴わないので単体でテストできる（`scripts/transform.test.mjs`）
 - `scripts/validate.mjs` — データ検査（オフラインで完結するもののみ）。ビルド前に自動実行される
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
 - `scripts/build-station-master.mjs` — 駅座標マスタの生成（随時。出力はコミット済み）

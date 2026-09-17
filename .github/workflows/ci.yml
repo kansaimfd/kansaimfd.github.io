@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run format:check
+
+      # データ検査はここで走る（build-data.mjs が validate.mjs を呼ぶ）。
+      # src/data/*.json は .gitignore 済みなので、型チェックとテストより先に生成しておく必要がある
+      - run: npm run data
+
+      - run: npm run typecheck
+
+      - run: npm test

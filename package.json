@@ -17,6 +17,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check": "npm run lint && npm run typecheck && npm run format:check && npm run test",
     "sheet:export": "node scripts/yaml-to-xlsx.mjs",
     "sheet:import": "node scripts/xlsx-to-yaml.mjs"
   },
