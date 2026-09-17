@@ -15,7 +15,7 @@ export default function AboutPage() {
         <p className="text-gray-700 text-sm leading-relaxed">
           本サイトのソースコードは{' '}
           <a
-            href="https://github.com/kansaimfd/kansaimfd.github.io/blob/main/LICENSE"
+            href="https://github.com/kansaimfd/kansaimfd.github.io/blob/master/LICENSE"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline"
