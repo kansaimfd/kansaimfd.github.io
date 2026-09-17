@@ -23,6 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# カバレッジレポート
+coverage/
+
 # Generated data
 src/data/concerthalls.json
 src/data/concerthallFacilities.json

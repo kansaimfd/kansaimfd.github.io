@@ -11,5 +11,8 @@ data
 # 日本語の散文。整形しても読みやすくならず差分だけ増える
 *.md
 
+# カバレッジレポート
+coverage
+
 # Playwright CLI の作業ログ
 .playwright-cli

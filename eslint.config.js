@@ -6,8 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  // src/data は build-data.mjs の生成物、dist はビルド成果物
-  globalIgnores(['dist', 'src/data']),
+  // いずれも生成物。src/data は build-data.mjs、coverage は vitest が出す
+  globalIgnores(['dist', 'src/data', 'coverage']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

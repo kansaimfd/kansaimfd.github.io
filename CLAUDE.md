@@ -29,6 +29,7 @@ npm run lint       # ESLintによるコードチェック（src と scripts/*.mj
 npm run typecheck  # 型チェック。中身は `tsc -b --noEmit`（tsconfig.json は files:[] +
                    # references なので `tsc --noEmit` は1ファイルも検査しない。-b が要る）
 npm test           # Vitest。`npm run test:watch` で監視実行
+npm run test:coverage # カバレッジ計測（V8）。HTML は coverage/index.html
 npm run format     # Prettier で整形。`npm run format:check` は確認のみ
 
 node scripts/build-data.mjs --verbose # データ検査の警告を全件表示
@@ -51,6 +52,13 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
   コード側でも桁揃えを保ちたい箇所には `// prettier-ignore` を置く（`validate.mjs` の `PREF_BOX`）
 - **テストは純粋関数だけを対象にしている**。`vitest.config.ts` は `environment: 'node'` で、
   DOM も React のプラグインも読み込まない。コンポーネントのテストを足すならまず環境設定から要る
+- **カバレッジの `include` は src と scripts の全体**。テストから読み込まれなかったファイルも
+  0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
+  そのため全体の数字は2割前後にしかならない。**追うのは全体値ではなく、テスト対象7モジュール
+  （`transform` / `validate` / `station` / `availability` / `address` / `name` / `rental`）が
+  4指標とも100%であること**。UIコンポーネントとページ、調査系スクリプトは未着手で0%。
+  なお text レポーターは全項目100%のファイルを表から省く（`skipFull` とは無関係）。
+  一覧は `coverage/index.html` か `coverage-summary.json` を見る
 
 ## Architecture
 
