@@ -44,9 +44,9 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
 
 ### 開発環境
 
-- **Node は 22 系**（`.nvmrc` / `package.json` の `engines`）。CI・デプロイとも `.nvmrc` を見る
+- **Node は 22 系**（`.nvmrc` / `package.json` の `engines`）。CI は `.nvmrc` を見る
 - **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す。
-  デプロイ（`deploy.yml`）とは独立したワークフローで、master への push では両方が動く
+  **GitHub Actions で今も動いているのはこれだけ**（`deploy.yml` は停止中。→ Deployment）
 - **Prettier の対象はコードだけ**。`data/` のYAMLと `*.md` は `.prettierignore` で除外している
   （YAMLは桁を揃えたコメントや引用符の使い分けに意味があるため）。
   コード側でも桁揃えを保ちたい箇所には `// prettier-ignore` を置く（`validate.mjs` の `PREF_BOX`）
@@ -292,14 +292,31 @@ React コンポーネント
 
 ## Deployment
 
-GitHub Pages にデプロイ。リポジトリは `kansaimfd/kansaimfd.github.io` で、**User Pages なので
-https://kansaimfd.github.io/ のルートで配信される**（プロジェクトページのようなサブパスは付かない）。
-そのため `vite.config.ts` の `base` と React Router の `basename` はともに **`/`**。
+**現在デプロイは停止している。** リポジトリを private に変更し、GitHub Pages を無効化したうえで、
+`Deploy to GitHub Pages` ワークフローを Actions の画面から手動で停止してある
+（`gh workflow list --all` で `disabled_manually` と表示される）。
+**master に push してもデプロイは走らず**、https://kansaimfd.github.io/ も配信されていない。
 
-`.github/workflows/deploy.yml` は master への push で動き、ビルド後に
-**`index.html` を `404.html` にコピー**している。GitHub Pages は静的配信で SPA のルーティングを
-知らないため、`/concert/10` のような直リンクはこのフォールバックで表示される
-（**HTTPステータスは404のままだがアプリは正しく起動する**ので、404を見ても壊れているとは限らない）。
+`.github/workflows/deploy.yml` はファイルとしては残してある（削除していない）。
+動作確認はローカルの `npm run build` / `npm run preview` で行う。
+
+**CI は止めていない。** `ci.yml` は active のままで、push と PR で `npm run check` 相当が今も回る。
+
+### 再開するときに関係すること
+
+`deploy.yml` とアプリ側の設定は、再開すればそのまま動く状態で残っている。
+
+- **private のままでは GitHub Pages を使えない**（Pages を private リポジトリで配信するには
+  有料プランが要る）。public に戻すか、プランを上げるかの判断が先に要る
+- 手順としては Pages を有効化し、ワークフローを有効に戻す
+  （`gh workflow enable "Deploy to GitHub Pages"`）
+- リポジトリ名が `kansaimfd/kansaimfd.github.io` なので **User Pages となり、
+  https://kansaimfd.github.io/ のルートで配信される**（プロジェクトページのようなサブパスは付かない）。
+  そのため `vite.config.ts` の `base` と React Router の `basename` はともに **`/`**。
+  **この2つは現在の設定でもそうなっている**ので、デプロイ停止中に変更しないこと
+- `deploy.yml` はビルド後に **`index.html` を `404.html` にコピー**する。GitHub Pages は静的配信で
+  SPA のルーティングを知らないため、`/concert/10` のような直リンクはこのフォールバックで表示される
+  （**HTTPステータスは404のままだがアプリは正しく起動する**ので、404を見ても壊れているとは限らない）
 
 ## Notes
 
