@@ -19,7 +19,8 @@ export default function SortBar<T extends string>({ keys, sortKey, sortAsc, onTo
               : 'border-gray-300 hover:border-navy-700 hover:text-navy-700'
           }`}
         >
-          {k}{sortKey === k ? (sortAsc ? ' ▲' : ' ▼') : ''}
+          {k}
+          {sortKey === k ? (sortAsc ? ' ▲' : ' ▼') : ''}
         </button>
       ))}
     </div>

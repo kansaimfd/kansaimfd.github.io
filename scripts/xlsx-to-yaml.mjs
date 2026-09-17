@@ -34,7 +34,9 @@ function toStr(v) {
 function getSheetRows(sheet) {
   const headerRow = sheet.getRow(1).values.slice(1)
   const idx = {}
-  headerRow.forEach((col, i) => { if (col) idx[String(col).trim()] = i })
+  headerRow.forEach((col, i) => {
+    if (col) idx[String(col).trim()] = i
+  })
 
   const rows = []
   sheet.eachRow((row, rowNum) => {
@@ -78,14 +80,24 @@ for (const get of getSheetRows(concertSheet)) {
   }
 
   const hall = {}
-  hall['ID']       = Number(get('ID'))
-  hall['施設名']   = get('施設名')
+  hall['ID'] = Number(get('ID'))
+  hall['施設名'] = get('施設名')
   hall['都道府県'] = get('都道府県')
   hall['市区町村'] = get('市区町村')
   hall['番地以下'] = get('番地以下')
 
-  for (const k of ['部屋名', '分類', '築年月', 'URL', '申込URL', '料金URL',
-                    'ピアノ有無', 'パイプオルガン', '譜面台貸出', '親子室']) {
+  for (const k of [
+    '部屋名',
+    '分類',
+    '築年月',
+    'URL',
+    '申込URL',
+    '料金URL',
+    'ピアノ有無',
+    'パイプオルガン',
+    '譜面台貸出',
+    '親子室',
+  ]) {
     const v = toStr(get(k))
     if (v) hall[k] = v
   }
@@ -102,7 +114,11 @@ for (const get of getSheetRows(concertSheet)) {
   halls.push(hall)
 }
 
-writeFileSync('data/facilities/concerthall.yaml', dump(halls, { allowUnicode: true, lineWidth: 120, indent: 2 }), 'utf8')
+writeFileSync(
+  'data/facilities/concerthall.yaml',
+  dump(halls, { allowUnicode: true, lineWidth: 120, indent: 2 }),
+  'utf8',
+)
 console.log(`Written: data/facilities/concerthall.yaml (${halls.length} entries)`)
 
 // ── 練習場 シート → practice.yaml ──────────────────────────
@@ -114,13 +130,23 @@ for (const get of getSheetRows(practiceSheet)) {
   if (!get('ID')) continue
 
   const practice = {}
-  practice['ID']       = Number(get('ID'))
-  practice['施設名']   = get('施設名')
+  practice['ID'] = Number(get('ID'))
+  practice['施設名'] = get('施設名')
   practice['都道府県'] = get('都道府県')
   practice['市区町村'] = get('市区町村')
   practice['番地以下'] = get('番地以下')
 
-  for (const k of ['URL', '申込URL', '料金URL', 'TEL', '開館時間', '閉館時間', '休館日', '分類', 'ピアノ有無']) {
+  for (const k of [
+    'URL',
+    '申込URL',
+    '料金URL',
+    'TEL',
+    '開館時間',
+    '閉館時間',
+    '休館日',
+    '分類',
+    'ピアノ有無',
+  ]) {
     const v = toStr(get(k))
     if (v) practice[k] = v
   }
@@ -145,7 +171,7 @@ for (const get of getSheetRows(practiceSheet)) {
   for (let n = 1; n <= 5; n++) {
     const name = toStr(get(`部屋${n}_部屋名`))
     if (!name) continue
-    const room = { '部屋名': name }
+    const room = { 部屋名: name }
     const area = toNum(get(`部屋${n}_面積`))
     if (area != null) room['面積'] = area
     const cap = toNum(get(`部屋${n}_定員`))
@@ -161,5 +187,9 @@ for (const get of getSheetRows(practiceSheet)) {
   practices.push(practice)
 }
 
-writeFileSync('data/facilities/practice.yaml', dump(practices, { allowUnicode: true, lineWidth: 120, indent: 2 }), 'utf8')
+writeFileSync(
+  'data/facilities/practice.yaml',
+  dump(practices, { allowUnicode: true, lineWidth: 120, indent: 2 }),
+  'utf8',
+)
 console.log(`Written: data/facilities/practice.yaml (${practices.length} entries)`)

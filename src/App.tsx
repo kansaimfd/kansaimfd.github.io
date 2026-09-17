@@ -15,14 +15,24 @@ export default function App() {
             <span className="text-gold-400 ml-1">Directory</span>
           </Link>
           <nav className="flex items-center gap-6">
-            <NavLink to="/concert" className={({ isActive }) =>
-              isActive ? 'text-gold-400 font-medium text-sm' : 'text-navy-100 hover:text-white text-sm transition-colors'
-            }>
+            <NavLink
+              to="/concert"
+              className={({ isActive }) =>
+                isActive
+                  ? 'text-gold-400 font-medium text-sm'
+                  : 'text-navy-100 hover:text-white text-sm transition-colors'
+              }
+            >
               コンサートホール
             </NavLink>
-            <NavLink to="/about" className={({ isActive }) =>
-              isActive ? 'text-gold-400 font-medium text-sm' : 'text-navy-100 hover:text-white text-sm transition-colors'
-            }>
+            <NavLink
+              to="/about"
+              className={({ isActive }) =>
+                isActive
+                  ? 'text-gold-400 font-medium text-sm'
+                  : 'text-navy-100 hover:text-white text-sm transition-colors'
+              }
+            >
               このサイトについて
             </NavLink>
           </nav>

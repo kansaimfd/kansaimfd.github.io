@@ -18,7 +18,9 @@ export default function PracticeDetailPage() {
     return (
       <div>
         <p className="text-gray-500">施設が見つかりません。</p>
-        <Link to="/practice" className="text-blue-600 hover:underline mt-2 inline-block">← 一覧に戻る</Link>
+        <Link to="/practice" className="text-blue-600 hover:underline mt-2 inline-block">
+          ← 一覧に戻る
+        </Link>
       </div>
     )
   }
@@ -46,7 +48,9 @@ export default function PracticeDetailPage() {
 
   return (
     <div className="max-w-2xl">
-      <Link to="/practice" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">← 練習場一覧</Link>
+      <Link to="/practice" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">
+        ← 練習場一覧
+      </Link>
       <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{p.施設名}</h1>
       <p className="text-gray-500 mb-4">{fullAddress(p)}</p>
       <RentalNotice 貸館={p.貸館} />
@@ -56,20 +60,45 @@ export default function PracticeDetailPage() {
 
       <div className="mt-4 flex flex-wrap gap-2">
         {p.URL && (
-          <a href={p.URL} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-navy-700 text-white rounded-lg text-sm hover:bg-navy-800 transition-colors">公式サイト</a>
+          <a
+            href={p.URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-navy-700 text-white rounded-lg text-sm hover:bg-navy-800 transition-colors"
+          >
+            公式サイト
+          </a>
         )}
         {p.申込URL && (
-          <a href={p.申込URL} target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-navy-700 text-navy-700 rounded-lg text-sm hover:bg-navy-50 transition-colors">申込</a>
+          <a
+            href={p.申込URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 border border-navy-700 text-navy-700 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+          >
+            申込
+          </a>
         )}
         {p.料金URL && (
-          <a href={p.料金URL} target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-navy-700 text-navy-700 rounded-lg text-sm hover:bg-navy-50 transition-colors">料金</a>
+          <a
+            href={p.料金URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 border border-navy-700 text-navy-700 rounded-lg text-sm hover:bg-navy-50 transition-colors"
+          >
+            料金
+          </a>
         )}
       </div>
 
       <table className="w-full mt-4 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <tbody>
           {rows.map(([label, value]) => (
-            <InfoRow key={label} label={label as string} value={value as string | number | undefined} />
+            <InfoRow
+              key={label}
+              label={label as string}
+              value={value as string | number | undefined}
+            />
           ))}
         </tbody>
       </table>
@@ -87,7 +116,9 @@ export default function PracticeDetailPage() {
                   <th className="px-3 py-2 text-center whitespace-nowrap">管楽器</th>
                   <th className="px-3 py-2 text-center whitespace-nowrap">打楽器</th>
                   <th className="px-3 py-2 text-left whitespace-nowrap">ピアノ</th>
-                  {showChembalo && <th className="px-3 py-2 text-center whitespace-nowrap">チェンバロ</th>}
+                  {showChembalo && (
+                    <th className="px-3 py-2 text-center whitespace-nowrap">チェンバロ</th>
+                  )}
                   <th className="px-3 py-2 text-left whitespace-nowrap">譜面台</th>
                 </tr>
               </thead>
@@ -97,14 +128,18 @@ export default function PracticeDetailPage() {
                     <td className="px-3 py-2">
                       {r.部屋名}
                       <RentalBadge 貸館={r.貸館} />
-                      {r.楽器制限 && <span className="block text-xs text-gray-500 mt-0.5">{r.楽器制限}</span>}
+                      {r.楽器制限 && (
+                        <span className="block text-xs text-gray-500 mt-0.5">{r.楽器制限}</span>
+                      )}
                     </td>
                     <td className="px-3 py-2 text-right">{r.面積 ?? '—'}</td>
                     <td className="px-3 py-2 text-right">{r.定員 ?? '—'}</td>
                     <td className="px-3 py-2 text-center">{availabilityMark(r.管楽器)}</td>
                     <td className="px-3 py-2 text-center">{availabilityMark(r.打楽器)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{pianoLabel(r)}</td>
-                    {showChembalo && <td className="px-3 py-2 text-center">{availabilityMark(r.チェンバロ)}</td>}
+                    {showChembalo && (
+                      <td className="px-3 py-2 text-center">{availabilityMark(r.チェンバロ)}</td>
+                    )}
                     <td className="px-3 py-2 whitespace-nowrap">{standLabel(r)}</td>
                   </tr>
                 ))}

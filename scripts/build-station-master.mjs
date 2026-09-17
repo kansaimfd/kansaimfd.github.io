@@ -77,8 +77,11 @@ for (const [name, segs] of byName) {
       hit.事業者.add(s.事業者)
     } else {
       clusters.push({
-        緯度: s.pos[0], 経度: s.pos[1], count: 1,
-        路線: new Set([s.路線]), 事業者: new Set([s.事業者]),
+        緯度: s.pos[0],
+        経度: s.pos[1],
+        count: 1,
+        路線: new Set([s.路線]),
+        事業者: new Set([s.事業者]),
       })
     }
   }
@@ -107,4 +110,6 @@ const path = resolve(root, 'data/stations.json')
 writeFileSync(path, JSON.stringify(out, null, 1), 'utf8')
 
 const dupes = stations.length - new Set(stations.map(s => s.駅)).size
-console.log(`✓ data/stations.json に ${stations.length}駅を書き出しました（同名の別駅 ${dupes}件を含む）`)
+console.log(
+  `✓ data/stations.json に ${stations.length}駅を書き出しました（同名の別駅 ${dupes}件を含む）`,
+)

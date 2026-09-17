@@ -8,6 +8,7 @@
  */
 
 /** 府県ごとの概略範囲 [南, 北, 西, 東]。厳密な境界ではなく、桁違いの誤りを捕まえるためのもの */
+// prettier-ignore
 const PREF_BOX = {
   大阪府:   [34.27, 35.05, 135.09, 135.75],
   京都府:   [34.70, 35.78, 134.85, 136.06],
@@ -19,7 +20,15 @@ const PREF_BOX = {
 
 const REQUIRED = ['施設名', '都道府県', '市区町村', '番地以下', '経度', '緯度']
 const URL_FIELDS = ['URL', '申込URL', '料金URL']
-const AVAILABILITY_FIELDS = ['ピアノ有無', 'パイプオルガン', 'チェンバロ', '譜面台貸出', '親子室', '管楽器', '打楽器']
+const AVAILABILITY_FIELDS = [
+  'ピアノ有無',
+  'パイプオルガン',
+  'チェンバロ',
+  '譜面台貸出',
+  '親子室',
+  '管楽器',
+  '打楽器',
+]
 const PIANO_TYPES = ['グランド', 'アップライト', '電子']
 const HALL_TYPES = ['音楽専用', '多目的', '小ホール・サロン']
 const SEIREI_CITIES = ['大阪市', '神戸市', '京都市', '堺市']
@@ -201,7 +210,8 @@ export function validate(datasets, { stationMaster } = {}) {
 
       // ── 時刻 ──
       for (const k of TIME_FIELDS) {
-        if (f[k] != null && !isTime(f[k])) err(`${k} は "HH:MM" 形式で書いてください: ${JSON.stringify(f[k])}`)
+        if (f[k] != null && !isTime(f[k]))
+          err(`${k} は "HH:MM" 形式で書いてください: ${JSON.stringify(f[k])}`)
       }
       if (f.開館時間 && f.閉館時間 && f.開館時間 >= f.閉館時間) {
         warn('開館時間が閉館時間以降', `${f.開館時間} 〜 ${f.閉館時間}`)
@@ -218,7 +228,9 @@ export function validate(datasets, { stationMaster } = {}) {
           err('利用条件 はマッピングで書いてください')
         } else {
           if (!USAGE_CONDITION_TYPES.includes(c.種別)) {
-            err(`利用条件.種別 は ${USAGE_CONDITION_TYPES.join(' / ')} のいずれかです: ${JSON.stringify(c.種別)}`)
+            err(
+              `利用条件.種別 は ${USAGE_CONDITION_TYPES.join(' / ')} のいずれかです: ${JSON.stringify(c.種別)}`,
+            )
           }
           if (typeof c.説明 !== 'string' || c.説明 === '') {
             err('利用条件.説明 に公式の記載に沿った説明を書いてください')
@@ -241,23 +253,38 @@ export function validate(datasets, { stationMaster } = {}) {
         if (!Array.isArray(f.部屋)) err(`部屋 は配列で書いてください`)
         else {
           for (const [i, room] of f.部屋.entries()) {
-            for (const k of ['客席数', '面積', '定員', '舞台幅', '舞台奥行', '譜面台数', '楽屋収容人数']) {
+            for (const k of [
+              '客席数',
+              '面積',
+              '定員',
+              '舞台幅',
+              '舞台奥行',
+              '譜面台数',
+              '楽屋収容人数',
+            ]) {
               if (room[k] != null && !isPositive(room[k])) {
                 err(`部屋[${i}] の ${k} が正の数ではありません: ${JSON.stringify(room[k])}`)
               }
             }
             if (room.ピアノ種別 != null && !PIANO_TYPES.includes(room.ピアノ種別)) {
-              err(`部屋[${i}] の ピアノ種別 は ${PIANO_TYPES.join(' / ')} のいずれかです: ${room.ピアノ種別}`)
+              err(
+                `部屋[${i}] の ピアノ種別 は ${PIANO_TYPES.join(' / ')} のいずれかです: ${room.ピアノ種別}`,
+              )
             }
             // 「有無 ＋ 詳細」の形なので、詳細だけあって有無が立っていないのは矛盾
-            if ((room.ピアノ種別 != null || room.ピアノメーカー != null) && room.ピアノ有無 !== true) {
+            if (
+              (room.ピアノ種別 != null || room.ピアノメーカー != null) &&
+              room.ピアノ有無 !== true
+            ) {
               err(`部屋[${i}] にピアノの詳細があるのに ピアノ有無 が true ではありません`)
             }
             if (room.譜面台数 != null && room.譜面台貸出 === false) {
               err(`部屋[${i}] に 譜面台数 があるのに 譜面台貸出 が false です`)
             }
             if (room.ホール種別 != null && !HALL_TYPES.includes(room.ホール種別)) {
-              err(`部屋[${i}] の ホール種別 は ${HALL_TYPES.join(' / ')} のいずれかです: ${room.ホール種別}`)
+              err(
+                `部屋[${i}] の ホール種別 は ${HALL_TYPES.join(' / ')} のいずれかです: ${room.ホール種別}`,
+              )
             }
             if (room.オルガン製作者 != null && room.パイプオルガン !== true) {
               err(`部屋[${i}] に オルガン製作者 があるのに パイプオルガン が true ではありません`)
@@ -279,7 +306,10 @@ export function validate(datasets, { stationMaster } = {}) {
       // ── 最寄駅 ──
       for (const [i, s] of (f.最寄駅 ?? []).entries()) {
         const where = `最寄駅[${i}]`
-        if (!s.駅) { err(`${where} に 駅 がありません`); continue }
+        if (!s.駅) {
+          err(`${where} に 駅 がありません`)
+          continue
+        }
         if (!/(駅|停留場|バス停|港|IC)$/.test(s.駅)) {
           warn('駅名の語尾が不自然', `${where} ${s.駅}`)
         }
@@ -300,7 +330,10 @@ export function validate(datasets, { stationMaster } = {}) {
           // 公正競争規約は道路距離80m=徒歩1分・切り上げ。1分ぶんの余裕を見て矛盾を判定する
           const expected = Math.ceil(s.駅距離 / 80)
           if (Math.abs(s.駅徒歩 - expected) > 1) {
-            warn('駅徒歩と駅距離が食い違う', `${where} 駅徒歩${s.駅徒歩}分 / 駅距離${s.駅距離}m→約${expected}分`)
+            warn(
+              '駅徒歩と駅距離が食い違う',
+              `${where} 駅徒歩${s.駅徒歩}分 / 駅距離${s.駅距離}m→約${expected}分`,
+            )
           }
         }
         if (s.駅徒歩 != null && s.駅徒歩 > WALK_MINUTES_LIMIT) {
@@ -315,13 +348,15 @@ export function validate(datasets, { stationMaster } = {}) {
             warn('駅がマスタに見つからない（表記ゆれの疑い）', `${where} ${s.駅}`)
           } else {
             // 同名の別駅（JR福島と阪神福島など）があるので、施設に最も近いものを採る
-            const straight = Math.min(...candidates.map(c => distance(f.緯度, f.経度, c.緯度, c.経度)))
+            const straight = Math.min(
+              ...candidates.map(c => distance(f.緯度, f.経度, c.緯度, c.経度)),
+            )
             const claimed = s.駅距離 ?? (s.駅徒歩 != null ? s.駅徒歩 * 80 : null)
             if (claimed != null && straight > claimed * STRAIGHT_RATIO + STRAIGHT_MARGIN) {
               warn(
                 '駅までの距離が実際より近く書かれている',
                 `${where} ${s.駅} 直線${Math.round(straight)}m に対し ` +
-                (s.駅距離 != null ? `駅距離${s.駅距離}m` : `徒歩${s.駅徒歩}分(≒${claimed}m)`)
+                  (s.駅距離 != null ? `駅距離${s.駅距離}m` : `徒歩${s.駅徒歩}分(≒${claimed}m)`),
               )
             }
           }
@@ -336,8 +371,10 @@ export function validate(datasets, { stationMaster } = {}) {
       } else {
         for (const [i, s] of f.出典.entries()) {
           if (!isHttpUrl(s.URL)) err(`出典[${i}] の URL がURLの形式ではありません: ${s.URL}`)
-          if (!isDate(s.確認日)) err(`出典[${i}] の 確認日 は YYYY-MM-DD で書いてください: ${JSON.stringify(s.確認日)}`)
-          if (s.項目 != null && !Array.isArray(s.項目)) err(`出典[${i}] の 項目 は配列で書いてください`)
+          if (!isDate(s.確認日))
+            err(`出典[${i}] の 確認日 は YYYY-MM-DD で書いてください: ${JSON.stringify(s.確認日)}`)
+          if (s.項目 != null && !Array.isArray(s.項目))
+            err(`出典[${i}] の 項目 は配列で書いてください`)
         }
       }
     }
@@ -355,11 +392,14 @@ export function validate(datasets, { stationMaster } = {}) {
 
 /** 〇/× が残っていないか。false と「未調査」を混同しないための検査 */
 function checkAvailability(obj, at, err, path = '') {
-  if (Array.isArray(obj)) return obj.forEach((v, i) => checkAvailability(v, at, err, `${path}[${i}]`))
+  if (Array.isArray(obj))
+    return obj.forEach((v, i) => checkAvailability(v, at, err, `${path}[${i}]`))
   if (obj == null || typeof obj !== 'object') return
   for (const [k, v] of Object.entries(obj)) {
     if (AVAILABILITY_FIELDS.includes(k) && v != null && typeof v !== 'boolean') {
-      err(`${path}.${k} が boolean ではありません: ${JSON.stringify(v)}（〇→true / ×→false、未調査はキーごと省略）`)
+      err(
+        `${path}.${k} が boolean ではありません: ${JSON.stringify(v)}（〇→true / ×→false、未調査はキーごと省略）`,
+      )
     }
     checkAvailability(v, at, err, path ? `${path}.${k}` : k)
   }

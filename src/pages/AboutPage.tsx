@@ -21,8 +21,8 @@ export default function AboutPage() {
             className="text-blue-600 hover:underline"
           >
             MIT ライセンス
-          </a>
-          {' '}です。商用利用を問わず、自由に利用することができます。
+          </a>{' '}
+          です。商用利用を問わず、自由に利用することができます。
         </p>
         <p className="text-gray-700 text-sm leading-relaxed mt-2">
           著作権表示とライセンス全文を同梱すれば、自由に改変・再配布が可能です。
@@ -69,9 +69,7 @@ export default function AboutPage() {
 
       <section>
         <h2 className="text-lg font-semibold mb-2">ソースコード</h2>
-        <p className="text-gray-700 text-sm">
-          本サイトのソースコードは GitHub で公開しています。
-        </p>
+        <p className="text-gray-700 text-sm">本サイトのソースコードは GitHub で公開しています。</p>
         <a
           href="https://github.com/kansaimfd/kansaimfd.github.io"
           target="_blank"

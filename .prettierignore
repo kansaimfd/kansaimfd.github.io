@@ -1,0 +1,15 @@
+dist
+node_modules
+package-lock.json
+
+# build-data.mjs の生成物
+src/data
+
+# 施設データ。列を揃えたコメントや引用符の使い分けに意味があるので整形しない
+data
+
+# 日本語の散文。整形しても読みやすくならず差分だけ増える
+*.md
+
+# Playwright CLI の作業ログ
+.playwright-cli

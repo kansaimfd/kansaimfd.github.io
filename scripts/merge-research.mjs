@@ -25,25 +25,74 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
  * （調査した13施設のうち5件がDNS切れ・410・別施設のサイトだった）。
  */
 const FACILITY_FIELDS = [
-  'URL', '築年月', '駐車場', 'TEL', '開館時間', '閉館時間', '休館日',
-  '申込URL', '料金URL', '最寄駅', '貸館', '利用条件', '部屋',
-  'ピアノ有無', '譜面台貸出', '譜面台数', '出典',
+  'URL',
+  '築年月',
+  '駐車場',
+  'TEL',
+  '開館時間',
+  '閉館時間',
+  '休館日',
+  '申込URL',
+  '料金URL',
+  '最寄駅',
+  '貸館',
+  '利用条件',
+  '部屋',
+  'ピアノ有無',
+  '譜面台貸出',
+  '譜面台数',
+  '出典',
 ]
 
 const FACILITY_ORDER = [
-  'ID', '施設名', '施設名かな', '都道府県', '市区町村', '番地以下', '建物',
-  '築年月', 'TEL', '開館時間', '閉館時間', '休館日',
-  'URL', '申込URL', '料金URL', '駐車場', '最寄駅', '貸館', '利用条件', '部屋',
-  'ピアノ有無', '譜面台貸出', '譜面台数', '出典',
-  '経度', '緯度',
+  'ID',
+  '施設名',
+  '施設名かな',
+  '都道府県',
+  '市区町村',
+  '番地以下',
+  '建物',
+  '築年月',
+  'TEL',
+  '開館時間',
+  '閉館時間',
+  '休館日',
+  'URL',
+  '申込URL',
+  '料金URL',
+  '駐車場',
+  '最寄駅',
+  '貸館',
+  '利用条件',
+  '部屋',
+  'ピアノ有無',
+  '譜面台貸出',
+  '譜面台数',
+  '出典',
+  '経度',
+  '緯度',
 ]
 const ROOM_ORDER = [
-  '部屋名', 'ホール種別', '客席数', '面積', '定員',
-  '舞台幅', '舞台奥行',
-  '管楽器', '打楽器', '楽器制限',
-  'ピアノ有無', 'ピアノ種別', 'ピアノメーカー',
-  'パイプオルガン', 'オルガン製作者', 'チェンバロ',
-  '譜面台貸出', '譜面台数', '楽屋収容人数', '親子室',
+  '部屋名',
+  'ホール種別',
+  '客席数',
+  '面積',
+  '定員',
+  '舞台幅',
+  '舞台奥行',
+  '管楽器',
+  '打楽器',
+  '楽器制限',
+  'ピアノ有無',
+  'ピアノ種別',
+  'ピアノメーカー',
+  'パイプオルガン',
+  'オルガン製作者',
+  'チェンバロ',
+  '譜面台貸出',
+  '譜面台数',
+  '楽屋収容人数',
+  '親子室',
   '貸館',
 ]
 
@@ -55,12 +104,18 @@ if (!batch) {
 }
 
 const dir = resolve(root, 'data/research', batch)
-if (!existsSync(dir)) { console.error(`${dir} がありません`); process.exit(1) }
+if (!existsSync(dir)) {
+  console.error(`${dir} がありません`)
+  process.exit(1)
+}
 
 const results = new Map() // "file:ID" → 調査結果
 for (const name of readdirSync(dir).filter(n => n.endsWith('.yaml'))) {
   const m = name.match(/^(concerthall|practice)-(\d+)\.yaml$/)
-  if (!m) { console.warn(`⚠ 命名規則に合わないので無視: ${name}`); continue }
+  if (!m) {
+    console.warn(`⚠ 命名規則に合わないので無視: ${name}`)
+    continue
+  }
   let data = yaml.load(readFileSync(resolve(dir, name), 'utf8'))
   // 元データが施設の配列なので、1件だけのリストとして書かれてくることがある。
   // 黙って捨てると取りこぼすので、要素1つのリストは中身を取り出して受け入れる
@@ -114,7 +169,11 @@ for (const file of ['concerthall', 'practice']) {
 
   if (touched && apply) {
     const out = records.map(r => order(r, FACILITY_ORDER, true))
-    writeFileSync(path, yaml.dump(out, { allowUnicode: true, lineWidth: -1, indent: 2, noRefs: true }), 'utf8')
+    writeFileSync(
+      path,
+      yaml.dump(out, { allowUnicode: true, lineWidth: -1, indent: 2, noRefs: true }),
+      'utf8',
+    )
   }
 }
 

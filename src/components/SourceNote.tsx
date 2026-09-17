@@ -14,8 +14,8 @@ export default function SourceNote({ 出典, 最終確認日 }: Props) {
   if (!出典 || 出典.length === 0) {
     return (
       <p className="mt-6 text-xs text-gray-500 border-t border-gray-200 pt-3 leading-relaxed">
-        <span className="text-amber-700">出典・確認日は未記録です。</span>
-        {' '}掲載内容の裏が取れていないため、利用前に公式サイトでご確認ください。
+        <span className="text-amber-700">出典・確認日は未記録です。</span>{' '}
+        掲載内容の裏が取れていないため、利用前に公式サイトでご確認ください。
       </p>
     )
   }
@@ -29,7 +29,12 @@ export default function SourceNote({ 出典, 最終確認日 }: Props) {
       <ul className="mt-1.5 space-y-1">
         {出典.map((s, i) => (
           <li key={i}>
-            <a href={s.URL} target="_blank" rel="noopener noreferrer" className="text-navy-700 hover:text-gold-500 hover:underline break-all">
+            <a
+              href={s.URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-navy-700 hover:text-gold-500 hover:underline break-all"
+            >
               {s.URL}
             </a>
             <span className="text-gray-400 ml-1">（{s.確認日}）</span>

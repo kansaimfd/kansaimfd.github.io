@@ -22,21 +22,24 @@ import jsyaml from 'js-yaml'
 const { load: parse, dump } = jsyaml
 
 const LM_STUDIO_BASE = 'http://localhost:1234/v1'
-const MCP_SERVER     = 'C:/mcp-servers/web-search-mcp/dist/index.js'
-const MCP_CWD        = 'C:/mcp-servers/web-search-mcp'
-const YAML_PATH      = 'data/facilities/concerthall.yaml'   // 読み取り専用ソース
-const DRAFT_DIR      = 'data/facilities/draft'
-const MAX_TOOL_TURNS = 8  // ループ上限
+const MCP_SERVER = 'C:/mcp-servers/web-search-mcp/dist/index.js'
+const MCP_CWD = 'C:/mcp-servers/web-search-mcp'
+const YAML_PATH = 'data/facilities/concerthall.yaml' // 読み取り専用ソース
+const DRAFT_DIR = 'data/facilities/draft'
+const MAX_TOOL_TURNS = 8 // ループ上限
 
 // ── CLI 引数パース ────────────────────────────────────────────
 const args = process.argv.slice(2)
-const getArg = (name) => { const i = args.indexOf(name); return i !== -1 ? args[i + 1] : null }
-const hasFlag = (name) => args.includes(name)
+const getArg = name => {
+  const i = args.indexOf(name)
+  return i !== -1 ? args[i + 1] : null
+}
+const hasFlag = name => args.includes(name)
 
 const targetId = getArg('--id') ? Number(getArg('--id')) : null
-const limit    = getArg('--limit') ? Number(getArg('--limit')) : Infinity
-const dryRun   = hasFlag('--dry-run')
-const debug    = hasFlag('--debug')
+const limit = getArg('--limit') ? Number(getArg('--limit')) : Infinity
+const dryRun = hasFlag('--dry-run')
+const debug = hasFlag('--debug')
 const modelArg = getArg('--model')
 
 // ── ラン番号の決定（dry-run は既存番号を再利用） ─────────────
@@ -46,8 +49,8 @@ function detectRunNumber() {
   while (existsSync(`${DRAFT_DIR}/concerthall_${n}.yaml`)) n++
   return n
 }
-const RUN_NUMBER    = detectRunNumber()
-const DRAFT_PATH    = `${DRAFT_DIR}/concerthall_${RUN_NUMBER}.yaml`
+const RUN_NUMBER = detectRunNumber()
+const DRAFT_PATH = `${DRAFT_DIR}/concerthall_${RUN_NUMBER}.yaml`
 const PROGRESS_PATH = `data/facilities/.research-progress-${RUN_NUMBER}.json`
 
 // ── MCP クライアント ──────────────────────────────────────────
@@ -74,7 +77,10 @@ class McpClient {
       // サーバー起動完了メッセージを検出
       if (line.includes('Web Search MCP Server started')) {
         this.#started = true
-        if (this.#readyResolve) { this.#readyResolve(); this.#readyResolve = null }
+        if (this.#readyResolve) {
+          this.#readyResolve()
+          this.#readyResolve = null
+        }
         return
       }
 
@@ -84,7 +90,10 @@ class McpClient {
         const msg = JSON.parse(line)
         if (msg.jsonrpc !== '2.0' || msg.id == null) return
         const cb = this.#pending.get(Number(msg.id))
-        if (cb) { this.#pending.delete(Number(msg.id)); cb(msg) }
+        if (cb) {
+          this.#pending.delete(Number(msg.id))
+          cb(msg)
+        }
       } catch {}
     })
   }
@@ -150,8 +159,12 @@ class McpClient {
   }
 
   close() {
-    try { this.#rl.close() } catch {}
-    try { this.#proc.kill() } catch {}
+    try {
+      this.#rl.close()
+    } catch {}
+    try {
+      this.#proc.kill()
+    } catch {}
   }
 }
 
@@ -167,11 +180,11 @@ const TOOLS = [
       parameters: {
         type: 'object',
         properties: {
-          query: { type: 'string', description: '検索クエリ' }
+          query: { type: 'string', description: '検索クエリ' },
         },
-        required: ['query']
-      }
-    }
+        required: ['query'],
+      },
+    },
   },
   {
     type: 'function',
@@ -181,12 +194,12 @@ const TOOLS = [
       parameters: {
         type: 'object',
         properties: {
-          url: { type: 'string', description: '取得するURL' }
+          url: { type: 'string', description: '取得するURL' },
         },
-        required: ['url']
-      }
-    }
-  }
+        required: ['url'],
+      },
+    },
+  },
 ]
 
 // ── ツール実装（MCP 経由）────────────────────────────────────
@@ -219,8 +232,8 @@ async function getModel() {
 
 // ── LM Studio へリクエスト（ツール呼び出しループ込み）────────
 async function research(hall, model) {
-  const address  = `${hall['都道府県']}${hall['市区町村']}${hall['番地以下']}`
-  const urlLine  = hall['URL'] ? `公式URL: ${hall['URL']}` : ''
+  const address = `${hall['都道府県']}${hall['市区町村']}${hall['番地以下']}`
+  const urlLine = hall['URL'] ? `公式URL: ${hall['URL']}` : ''
   const roomLine = hall['部屋名'] ? `部屋名: ${hall['部屋名']}` : ''
 
   const userPrompt = `
@@ -241,7 +254,8 @@ ${urlLine}
   const messages = [
     {
       role: 'system',
-      content: 'あなたは日本のコンサートホール情報を調査するアシスタントです。必ず web_search や fetch_page ツールを使って情報を調べてから回答してください。',
+      content:
+        'あなたは日本のコンサートホール情報を調査するアシスタントです。必ず web_search や fetch_page ツールを使って情報を調べてから回答してください。',
     },
     { role: 'user', content: userPrompt },
   ]
@@ -266,17 +280,17 @@ ${urlLine}
           schema: {
             type: 'object',
             properties: {
-              客席数:   { type: ['integer', 'null'] },
-              舞台幅:   { type: ['number',  'null'] },
-              舞台奥行: { type: ['number',  'null'] },
+              客席数: { type: ['integer', 'null'] },
+              舞台幅: { type: ['number', 'null'] },
+              舞台奥行: { type: ['number', 'null'] },
               最寄駅: {
                 type: ['array', 'null'],
                 items: {
                   type: 'object',
                   properties: {
-                    路線:   { type: ['array', 'null'], items: { type: 'string' } },
-                    駅:     { type: 'string' },
-                    出口:   { type: ['string', 'null'] },
+                    路線: { type: ['array', 'null'], items: { type: 'string' } },
+                    駅: { type: 'string' },
+                    出口: { type: ['string', 'null'] },
                     駅徒歩: { type: ['integer', 'null'] },
                     駅距離: { type: ['integer', 'null'] },
                   },
@@ -285,7 +299,7 @@ ${urlLine}
                 },
               },
               出典URL: { type: ['string', 'null'] },
-              備考:    { type: ['string', 'null'], maxLength: 200 },
+              備考: { type: ['string', 'null'], maxLength: 200 },
             },
             required: ['客席数', '舞台幅', '舞台奥行', '最寄駅', '出典URL', '備考'],
             additionalProperties: false,
@@ -333,7 +347,10 @@ ${urlLine}
     if (debug) console.log(`  RAW: ${content}`)
 
     try {
-      const json = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+      const json = content
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```\s*$/, '')
+        .trim()
       return JSON.parse(json)
     } catch (e) {
       if (!debug) console.log(`  RAW: ${content}`)
@@ -444,20 +461,25 @@ for (const hall of targets) {
     const result = await research(hall, model)
 
     const update = {
-      客席数:   toValidNum(result['客席数']),
-      舞台幅:   toValidNum(result['舞台幅']),
+      客席数: toValidNum(result['客席数']),
+      舞台幅: toValidNum(result['舞台幅']),
       舞台奥行: toValidNum(result['舞台奥行']),
-      最寄駅:   toValidStations(result['最寄駅']),
+      最寄駅: toValidStations(result['最寄駅']),
     }
 
-    const filled = Object.entries(update).filter(([, v]) => v != null).map(([k]) => k)
+    const filled = Object.entries(update)
+      .filter(([, v]) => v != null)
+      .map(([k]) => k)
     console.log(filled.length > 0 ? `  ✓ ${filled.join(', ')} を取得` : '  （情報なし）')
     if (result['備考']) console.log(`  📝 ${result['備考']}`)
 
     if (!dryRun) {
       const written = []
       for (const [key, val] of Object.entries(update)) {
-        if (val != null && hall[key] == null) { hall[key] = val; written.push(key) }
+        if (val != null && hall[key] == null) {
+          hall[key] = val
+          written.push(key)
+        }
       }
       // 出典を YAML に残す。どこから取った値なのか後から検証できるようにするため
       const source = toSource(result['出典URL'], written, result['備考'])
@@ -476,7 +498,6 @@ for (const hall of targets) {
       備考: result['備考'] ?? null,
     }
     if (!dryRun) writeFileSync(PROGRESS_PATH, JSON.stringify(progress, null, 2), 'utf8')
-
   } catch (e) {
     console.log(`  ⚠ スキップ: ${e.message}`)
   }

@@ -35,7 +35,10 @@ const SUSPECT = 500
 const COARSE_LIMIT = 5000
 
 const args = process.argv.slice(2)
-const getArg = n => { const i = args.indexOf(n); return i !== -1 ? args[i + 1] : null }
+const getArg = n => {
+  const i = args.indexOf(n)
+  return i !== -1 ? args[i + 1] : null
+}
 const onlyFile = getArg('--file')
 const onlyId = getArg('--id') ? Number(getArg('--id')) : null
 const jsonOut = getArg('--json')
@@ -66,7 +69,8 @@ async function geocode(address) {
 }
 
 function load(file) {
-  return yaml.load(readFileSync(resolve(root, `data/facilities/${file}.yaml`), 'utf8'))
+  return yaml
+    .load(readFileSync(resolve(root, `data/facilities/${file}.yaml`), 'utf8'))
     .map(r => ({ ...r, _file: file }))
 }
 
@@ -75,7 +79,9 @@ const targets = ['concerthall', 'practice']
   .flatMap(load)
   .filter(r => onlyId === null || r.ID === onlyId)
 
-console.log(`対象: ${targets.length}件  （間隔 ${INTERVAL}ms、推定 ${Math.ceil(targets.length * INTERVAL / 1000)}秒）\n`)
+console.log(
+  `対象: ${targets.length}件  （間隔 ${INTERVAL}ms、推定 ${Math.ceil((targets.length * INTERVAL) / 1000)}秒）\n`,
+)
 
 const results = []
 for (const [i, f] of targets.entries()) {
@@ -97,7 +103,15 @@ for (const [i, f] of targets.entries()) {
     row = { 判定: 'エラー', 距離: null, 照合先: null, error: e.message }
   }
 
-  results.push({ file: f._file, ID: f.ID, 施設名: f.施設名, 住所: address, 緯度: f.緯度, 経度: f.経度, ...row })
+  results.push({
+    file: f._file,
+    ID: f.ID,
+    施設名: f.施設名,
+    住所: address,
+    緯度: f.緯度,
+    経度: f.経度,
+    ...row,
+  })
   process.stdout.write(`\r  ${i + 1}/${targets.length}`)
   if (i < targets.length - 1) await new Promise(r => setTimeout(r, INTERVAL))
 }
@@ -108,7 +122,8 @@ const order = ['要修正', '要確認', '精度不足', '該当なし', 'エラ
 const byVerdict = Object.fromEntries(order.map(v => [v, results.filter(r => r.判定 === v)]))
 
 console.log('=== 集計 ===')
-for (const v of order) if (byVerdict[v].length) console.log(`  ${v.padEnd(6)} ${byVerdict[v].length}件`)
+for (const v of order)
+  if (byVerdict[v].length) console.log(`  ${v.padEnd(6)} ${byVerdict[v].length}件`)
 
 for (const v of ['要修正', '要確認', '該当なし', 'エラー']) {
   if (!byVerdict[v].length) continue
@@ -117,7 +132,10 @@ for (const v of ['要修正', '要確認', '該当なし', 'エラー']) {
     console.log(`  [${r.file} ID:${r.ID}] ${r.施設名}`)
     console.log(`    住所   ${r.住所}`)
     console.log(`    保存   ${r.緯度}, ${r.経度}`)
-    if (r.照合先) console.log(`    国土地理院 ${r.照合先.lat}, ${r.照合先.lon}  (${r.照合先.title})  差 ${r.距離}m`)
+    if (r.照合先)
+      console.log(
+        `    国土地理院 ${r.照合先.lat}, ${r.照合先.lon}  (${r.照合先.title})  差 ${r.距離}m`,
+      )
     if (r.error) console.log(`    ${r.error}`)
   }
 }
