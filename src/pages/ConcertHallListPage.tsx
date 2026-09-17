@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { concerthalls } from '../data'
 import type { ConcertHall, HallType } from '../types'
 import { NO_WALK, lineLabel, minWalk, walkLabel } from '../station'
@@ -297,7 +298,8 @@ function ConcertHallCard({
         {/* Name + address + access */}
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-            <span
+            <Link
+              to={`/concert/${h.ID}`}
               style={{
                 fontFamily: '"Noto Serif JP", serif',
                 fontWeight: 600,
@@ -305,10 +307,14 @@ function ConcertHallCard({
                 color: '#1B2E4B',
                 letterSpacing: '-0.01em',
                 lineHeight: 1.3,
+                textDecoration: 'none',
+                borderBottom: '1px solid transparent',
               }}
+              onMouseEnter={e => (e.currentTarget.style.borderBottomColor = '#B8962E')}
+              onMouseLeave={e => (e.currentTarget.style.borderBottomColor = 'transparent')}
             >
               {h.施設名}
-            </span>
+            </Link>
             {h.部屋名 && (
               <span style={{ fontSize: isMobile ? 11 : 12, color: '#9ca3af' }}>（{h.部屋名}）</span>
             )}
@@ -891,10 +897,10 @@ export default function ConcertHallListPage() {
               {filtered.map(h => (
                 <tr key={h.キー} className="border-b hover:bg-gray-50">
                   <td className="px-3 py-2">
-                    <span className="text-navy-700">
+                    <Link to={`/concert/${h.ID}`} className="text-navy-700 hover:text-gold-500">
                       {h.施設名}
                       {h.部屋名 ? `（${h.部屋名}）` : ''}
-                    </span>
+                    </Link>
                     <RentalBadge 貸館={h.貸館} />
                     <UsageConditionBadge 利用条件={h.利用条件} />
                   </td>
