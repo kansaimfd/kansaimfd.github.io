@@ -34,9 +34,13 @@ data/facilities/.research-progress*.json
 data/facilities/concerthall.csv
 data/facilities/concerthall.xlsx
 data/facilities/draft/
-.claude/
 
+# 調査の作業ファイル
 data/research/
+
+# Claude Code（個人設定のみ除外。settings.json やコマンド類は共有する）
+.claude/settings.local.json
+.claude/*.local.json
 
 # 作業用ドキュメント（コミット対象外）
 docs/schema-review.md
