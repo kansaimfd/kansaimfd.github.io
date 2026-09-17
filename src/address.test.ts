@@ -22,6 +22,10 @@ describe('localAddress', () => {
   it('府県が別に表示されている場所向けに都道府県を省く', () => {
     expect(localAddress(施設)).toBe('大阪市中央区1-2-3 テストビル5F')
   })
+
+  it('建物がなければ余分な空白を残さない', () => {
+    expect(localAddress({ ...施設, 建物: undefined })).toBe('大阪市中央区1-2-3')
+  })
 })
 
 describe('geocodableAddress', () => {

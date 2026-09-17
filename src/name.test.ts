@@ -56,6 +56,14 @@ describe('compareByName', () => {
     expect(sorted(['KOKO PLAZA', '7th Note'])).toEqual(['7th Note', 'KOKO PLAZA'])
   })
 
+  // 引数の順で結果が変わると、ソートの実装によって並びが揺れる
+  it('読みの有無による前後関係は引数の順に依らない', () => {
+    const 読みあり = { 施設名: 'アイホール' }
+    const 読みなし = { 施設名: 'KOKO PLAZA' }
+    expect(compareByName(読みあり, 読みなし)).toBeLessThan(0)
+    expect(compareByName(読みなし, 読みあり)).toBeGreaterThan(0)
+  })
+
   it('施設名かな があれば漢字の施設も五十音に混ざる', () => {
     const list = [
       { 施設名: 'ホルトホール' },

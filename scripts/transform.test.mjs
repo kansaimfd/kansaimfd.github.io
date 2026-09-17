@@ -41,6 +41,12 @@ describe('fillWalkMinutes', () => {
   it('どちらも分からなければそのまま', () => {
     expect(fillWalkMinutes([{ 駅: '大阪駅' }])).toEqual([{ 駅: '大阪駅' }])
   })
+
+  // YAML の書き損じで配列でない値が来ても、検査がエラーとして報告するまで落とさない
+  it('配列でなければそのまま返す', () => {
+    expect(fillWalkMinutes(undefined)).toBeUndefined()
+    expect(fillWalkMinutes('大阪駅')).toBe('大阪駅')
+  })
 })
 
 describe('isMusicRoom', () => {
@@ -55,6 +61,11 @@ describe('isMusicRoom', () => {
 
   it('客席数や舞台寸法があればホールとみなす', () => {
     expect(isMusicRoom({ 部屋名: '大集会室', 客席数: 500 })).toBe(true)
+  })
+
+  // 単一の部屋では部屋名を省略できるので、名前が無い部屋が実際に来る
+  it('部屋名も設備も無ければ落とす', () => {
+    expect(isMusicRoom({})).toBe(false)
   })
 
   it('設備が未調査でも部屋名が音楽用なら残す', () => {
