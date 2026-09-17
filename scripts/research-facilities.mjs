@@ -28,8 +28,6 @@ const YAML_PATH      = 'data/facilities/concerthall.yaml'   // 読み取り専�
 const DRAFT_DIR      = 'data/facilities/draft'
 const MAX_TOOL_TURNS = 8  // ループ上限
 
-const TARGET_FIELDS = ['客席数', '舞台幅', '舞台奥行', '最寄駅']
-
 // ── CLI 引数パース ────────────────────────────────────────────
 const args = process.argv.slice(2)
 const getArg = (name) => { const i = args.indexOf(name); return i !== -1 ? args[i + 1] : null }

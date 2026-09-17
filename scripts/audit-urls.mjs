@@ -74,7 +74,7 @@ for (const r of rows) {
   const host = new URL(r.URL).hostname
   const visible = (title + ' ' + body)
     .replace(SCRIPT_OR_STYLE, ' ').replace(TAG, ' ')
-    .split(new RegExp(host.replace(/\./g, '\.'), 'gi')).join(' ')
+    .split(new RegExp(host.replace(/\./g, '\\.'), 'gi')).join(' ')
     .replace(URL_IN_TEXT, ' ')
   const ratio = nameHitRatio(r.施設名, visible)
   const enUS = /inLanguage":"en-US"|<html[^>]+lang="en(-US)?"/.test(body)
