@@ -84,12 +84,26 @@ export function normalize(facility) {
 }
 
 /**
+ * 平坦化した一覧には載せないフィールド。
+ *
+ * 平坦化は施設の属性をホールの数だけ複製するので、一覧が読まない大きなフィールドが
+ * そのまま件数倍になる。`出典` は施設あたり最大5KBあり、これだけで平坦化後のJSONの
+ * 8割を占めていた。**出典を捨てているわけではない**。詳細ページは施設単位の
+ * concerthallFacilities.json から読むので、そちらには従来どおり残る。
+ *
+ * `最終確認日` は `出典[].確認日` の派生値で、出典と並べて詳細ページが出すもの。
+ * 出典なしで確認日だけ見せても裏が取れないため、一緒に落とす。
+ */
+const DETAIL_ONLY_FIELDS = ['出典', '最終確認日']
+
+/**
  * 施設 × ホール に平坦化する。
  * 部屋が未登録の施設も一覧から消えないよう、空の部屋を1つ補う。
  */
 export function flattenHalls(facilities) {
   return facilities.flatMap(facility => {
     const { 部屋, ...rest } = facility
+    for (const key of DETAIL_ONLY_FIELDS) delete rest[key]
     const rooms = 部屋?.length ? 部屋 : [{}]
     return rooms.map((room, i) => ({
       ...rest,

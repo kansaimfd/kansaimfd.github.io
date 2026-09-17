@@ -211,8 +211,14 @@ export interface ConcertHallFacility extends FacilityBase {
 /**
  * 一覧・地図用にビルド時へ平坦化した「施設 × ホール」1件。
  * ID は施設IDなので、同一施設の複数ホールでは重複する。React key には キー を使うこと。
+ *
+ * 出典・最終確認日は持たない。平坦化は施設の属性をホールの数だけ複製するため、
+ * 一覧が読まない大きなフィールドを載せると転送量が件数倍で膨らむ
+ * （transform.mjs の DETAIL_ONLY_FIELDS）。出典が要る詳細ページは
+ * 施設単位の ConcertHallFacility を使うこと。
  */
-export type ConcertHall = Omit<ConcertHallFacility, '部屋'> & Hall & { キー: string }
+export type ConcertHall = Omit<ConcertHallFacility, '部屋' | '出典' | '最終確認日'> &
+  Hall & { キー: string }
 
 export interface PracticeRoom extends RoomBase {
   部屋名: string

@@ -135,6 +135,29 @@ describe('flattenHalls', () => {
     expect(hall).not.toHaveProperty('部屋')
   })
 
+  // 出典は施設あたり最大5KB。ホールの数だけ複製すると一覧の転送量を無駄に増やす
+  it('詳細ページでしか使わない 出典・最終確認日 は載せない', () => {
+    const [hall] = flattenHalls([
+      {
+        ID: 10,
+        施設名: 'テスト文化会館',
+        出典: [{ URL: 'https://example.com', 確認日: '2026-01-01' }],
+        最終確認日: '2026-01-01',
+        部屋: [{ 部屋名: '大ホール' }],
+      },
+    ])
+    expect(hall).not.toHaveProperty('出典')
+    expect(hall).not.toHaveProperty('最終確認日')
+    expect(hall.施設名).toBe('テスト文化会館')
+  })
+
+  // 落とすのは平坦化した一覧だけ。渡された施設オブジェクトには触らない
+  it('元の施設オブジェクトからは 出典 を消さない', () => {
+    const facility = { ID: 10, 出典: [{ URL: 'https://example.com' }], 部屋: [{}] }
+    flattenHalls([facility])
+    expect(facility.出典).toHaveLength(1)
+  })
+
   // 部屋が未登録の施設も一覧から消えないようにする
   it('部屋が未登録でも1件は出す', () => {
     expect(flattenHalls([{ ID: 20, 施設名: 'テストホール' }])).toEqual([
