@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { concerthallFacilities } from '../data'
+import { concerthallFacilities } from '../datasets/concerthallFacilities'
 import { stationLabel } from '../station'
 import type { Hall } from '../types'
 import DetailMap from '../components/DetailMap'

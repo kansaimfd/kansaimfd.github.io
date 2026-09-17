@@ -1,9 +1,14 @@
+import { Suspense, lazy } from 'react'
 import { Routes, Route, Link, NavLink } from 'react-router-dom'
-import AboutPage from './pages/AboutPage'
 import ConcertHallListPage from './pages/ConcertHallListPage'
-import ConcertHallDetailPage from './pages/ConcertHallDetailPage'
-import PracticeListPage from './pages/PracticeListPage'
-import PracticeDetailPage from './pages/PracticeDetailPage'
+
+// 入口のコンサートホール一覧だけ静的に読む。残りはルート単位で分割する。
+// 施設データはページごとに別のJSONなので、練習場79件（239KB）を
+// コンサートホールしか見ない利用者に読ませずに済む
+const ConcertHallDetailPage = lazy(() => import('./pages/ConcertHallDetailPage'))
+const PracticeListPage = lazy(() => import('./pages/PracticeListPage'))
+const PracticeDetailPage = lazy(() => import('./pages/PracticeDetailPage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
 
 export default function App() {
   return (
@@ -49,14 +54,16 @@ export default function App() {
         </div>
       </header>
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
-        <Routes>
-          <Route path="/" element={<ConcertHallListPage />} />
-          <Route path="/concert" element={<ConcertHallListPage />} />
-          <Route path="/concert/:id" element={<ConcertHallDetailPage />} />
-          <Route path="/practice" element={<PracticeListPage />} />
-          <Route path="/practice/:id" element={<PracticeDetailPage />} />
-          <Route path="/about" element={<AboutPage />} />
-        </Routes>
+        <Suspense fallback={<p className="text-gray-400 py-8 text-center">読み込み中…</p>}>
+          <Routes>
+            <Route path="/" element={<ConcertHallListPage />} />
+            <Route path="/concert" element={<ConcertHallListPage />} />
+            <Route path="/concert/:id" element={<ConcertHallDetailPage />} />
+            <Route path="/practice" element={<PracticeListPage />} />
+            <Route path="/practice/:id" element={<PracticeDetailPage />} />
+            <Route path="/about" element={<AboutPage />} />
+          </Routes>
+        </Suspense>
       </main>
     </div>
   )

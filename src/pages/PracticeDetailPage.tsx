@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
-import { practices } from '../data'
+import { practices } from '../datasets/practices'
 import { stationLabel } from '../station'
 import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'

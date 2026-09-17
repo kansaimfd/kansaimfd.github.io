@@ -37,7 +37,7 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
 ```
 
 **型チェックとテストの前には `npm run data` が要る**。`src/data/*.json` は `.gitignore` 済みで、
-`src/data.ts` がそれを import しているため、生成前は型チェックが落ちる。
+`src/datasets/*.ts` がそれを import しているため、生成前は型チェックが落ちる。
 
 データ検査（`scripts/validate.mjs`）はビルド前に自動実行される。
 **エラーがあるとビルドは停止する**。警告は種類ごとに集約して表示され、ビルドは続行する。
@@ -74,7 +74,7 @@ src/data/concerthallFacilities.json       src/data/practices.json
   施設単位（詳細ページ用）                   施設単位
 src/data/concerthalls.json
   施設 × ホール に平坦化（一覧・地図用）
-        ↓ (src/data.ts でimport)
+        ↓ (src/datasets/*.ts でimport)
 React コンポーネント
 ```
 
@@ -94,7 +94,9 @@ React コンポーネント
 - `data/stations.json` — 関西1,793駅の座標。出典: 国土数値情報（鉄道データ）国土交通省
 - `src/data/` — 変換後JSONの出力先（`.gitignore` 済み）
 - `src/types.ts` — `ConcertHallFacility` / `ConcertHall` / `Practice` 型定義
-- `src/data.ts` — JSONデータの読み込みと型付け
+- `src/datasets/` — 変換後JSONの読み込みと型付け。**データセットごとにファイルを分ける**
+  （1モジュールで全部を import するとバンドルが分割できず、入口の一覧しか見ない利用者にも
+  全データが配られる。`src/datasets/README.md`）
 - `src/station.ts` — 最寄駅の表記・徒歩分数まわりの共通ヘルパー
 - `src/address.ts` — 住所の連結（`geocodableAddress()` は建物名を含めない）
 - `src/availability.ts` — 設備の3値（あり／なし／未調査）の表示と絞り込み

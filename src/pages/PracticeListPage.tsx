@@ -1,18 +1,20 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
-import { practices } from '../data'
+import { practices } from '../datasets/practices'
 import type { Practice } from '../types'
 import { NO_WALK, minWalk, stationNames, walkLabel } from '../station'
 import { availabilityMark } from '../availability'
 import { fullAddress } from '../address'
 import { compareByName } from '../name'
-import FacilityMap from '../components/FacilityMap'
 import ViewToggle, { type ViewMode } from '../components/ViewToggle'
 import SortBar from '../components/SortBar'
 import SortableTh from '../components/SortableTh'
 import FilterPanel from '../components/FilterPanel'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
+
+// 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
+const FacilityMap = lazy(() => import('../components/FacilityMap'))
 
 type SortKey = '施設名' | '都道府県' | '最寄駅徒歩'
 
@@ -341,7 +343,13 @@ export default function PracticeListPage() {
         </div>
       )}
 
-      {view === 'map' && <FacilityMap facilities={filtered} detailBasePath="/practice" />}
+      {view === 'map' && (
+        <Suspense
+          fallback={<p className="text-gray-400 py-8 text-center">地図を読み込んでいます…</p>}
+        >
+          <FacilityMap facilities={filtered} detailBasePath="/practice" />
+        </Suspense>
+      )}
     </div>
   )
 }

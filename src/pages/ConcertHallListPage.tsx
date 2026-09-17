@@ -1,16 +1,18 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
-import { concerthalls } from '../data'
+import { concerthalls } from '../datasets/concerthalls'
 import type { ConcertHall, HallType } from '../types'
 import { NO_WALK, lineLabel, minWalk, walkLabel } from '../station'
 import { hasEquipment } from '../availability'
 import { fullAddress, localAddress } from '../address'
 import { compareByName } from '../name'
-import FacilityMap from '../components/FacilityMap'
 import { type ViewMode } from '../components/ViewToggle'
 import SortableTh from '../components/SortableTh'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
+
+// 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
+const FacilityMap = lazy(() => import('../components/FacilityMap'))
 
 type SortKey = '施設名' | '都道府県' | '客席数' | '最寄駅徒歩'
 
@@ -942,7 +944,11 @@ export default function ConcertHallListPage() {
       )}
 
       {view === 'map' && (
-        <FacilityMap facilities={dedupeByFacility(filtered)} detailBasePath="/concert" />
+        <Suspense
+          fallback={<p className="text-gray-400 py-8 text-center">地図を読み込んでいます…</p>}
+        >
+          <FacilityMap facilities={dedupeByFacility(filtered)} detailBasePath="/concert" />)
+        </Suspense>
       )}
 
       {view === 'list' && (
