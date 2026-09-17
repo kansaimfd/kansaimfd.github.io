@@ -1,0 +1,11 @@
+# 改行は作業ツリーでも LF に統一する。
+# このマシンの git は core.autocrlf=true なので、これが無いと checkout のたびに
+# 作業ツリーが CRLF になり、.editorconfig（end_of_line = lf）とも
+# Prettier（既定で endOfLine: "lf"）とも食い違って format:check が全ファイルで落ちる。
+* text=auto eol=lf
+
+# 行単位の差分が意味を持たないもの
+*.png binary
+*.jpg binary
+*.ico binary
+*.xlsx binary

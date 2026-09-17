@@ -1,0 +1,18 @@
+# https://editorconfig.org
+# Windows で編集しても改行・文字コードが混ざらないようにするためのもの。
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# 施設データ。列を揃えたコメントがあるので末尾空白の自動削除だけ外す
+[data/**.yaml]
+trim_trailing_whitespace = false
+
+[*.md]
+trim_trailing_whitespace = false

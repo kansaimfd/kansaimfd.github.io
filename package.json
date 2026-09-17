@@ -3,11 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node scripts/build-data.mjs && vite",
     "build": "node scripts/build-data.mjs && tsc -b && vite build",
-    "lint": "eslint .",
     "preview": "vite preview",
+    "data": "node scripts/build-data.mjs",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
     "sheet:export": "node scripts/yaml-to-xlsx.mjs",
     "sheet:import": "node scripts/xlsx-to-yaml.mjs"
   },

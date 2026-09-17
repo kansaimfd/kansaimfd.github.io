@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // src/data は build-data.mjs の生成物、dist はビルド成果物
+  globalIgnores(['dist', 'src/data']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -18,6 +19,20 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+  },
+  // ビルド・検査スクリプト。Node で直接動かす素の ESM なので React 系の規則は当てない
+  {
+    files: ['**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: globals.node,
+    },
+    rules: {
+      // 失敗を既定値で握り潰すのが正しい箇所（fetch のフォールバック・best-effort な close）がある
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
 ])
