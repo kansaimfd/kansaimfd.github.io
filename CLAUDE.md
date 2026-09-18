@@ -24,7 +24,7 @@ npm run build      # 本番ビルド（YAML→JSON変換 + Viteビルド）
 npm run preview    # ビルド結果のプレビュー
 npm run data       # YAML→JSON変換だけを実行（データ検査もここで走る）
 
-npm run check      # lint → 型チェック → 整形チェック → テスト を一括。CI と同じ内容
+npm run check      # データ生成 → lint → 型チェック → 整形チェック → テスト を一括。CI と同じ内容
 npm run lint       # ESLintによるコードチェック（src と scripts/*.mjs の両方）
 npm run typecheck  # 型チェック。中身は `tsc -b --noEmit`（tsconfig.json は files:[] +
                    # references なので `tsc --noEmit` は1ファイルも検査しない。-b が要る）
@@ -38,6 +38,8 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
 
 **型チェックとテストの前には `npm run data` が要る**。`src/data/*.json` は `.gitignore` 済みで、
 `src/datasets/*.ts` がそれを import しているため、生成前は型チェックが落ちる。
+`npm run check` は先頭で `npm run data` を回すので、クローン直後でもそのまま通る
+（CI も `npm run data` を型チェックより前に置いている）。
 
 データ検査（`scripts/validate.mjs`）はビルド前に自動実行される。
 **エラーがあるとビルドは停止する**。警告は種類ごとに集約して表示され、ビルドは続行する。
@@ -68,7 +70,7 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
   `concerthall` / `practice` / `toggle` / `title`）が4指標とも100%であること**。
   ページとコンポーネントの数字はスモークテストが通りがかりに
   踏んだ結果で、**その値を上げにいかない**（導線以外を見ないテストなので、数字を追うと
-  スモークテストの目的から外れる）。調査系スクリプトは未着手で0%。
+  スモークテストの目的から外れる）。監査スクリプト（`audit-coordinates` / `audit-urls`）は未着手で0%。
   なお text レポーターは全項目100%のファイルを表から省く（`skipFull` とは無関係）。
   一覧は `coverage/index.html` か `coverage-summary.json` を見る
 
@@ -382,3 +384,5 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
 - `concerthall.yaml` の `築年月` は `YYYY-MM` 形式で記述する（Excelシリアル値は変換済み）
 - 同一施設の複数ホールは `部屋:` 配列に入れる。一覧では `build-data.mjs` が平坦化した別エントリとして表示される
 - スキーマの設計方針と未対応の課題は `docs/schema-review.md`（コミット対象外）で管理している
+- **`data/facilities/*.xlsx` は `sheet:export` の出力なので追跡しない**（正はYAML）。
+  表計算で編集したいときは `npm run sheet:export` → 編集 → `npm run sheet:import` で戻す

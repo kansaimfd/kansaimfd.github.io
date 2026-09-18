@@ -28,10 +28,11 @@ coverage/
 
 # Generated data（build-data.mjs が毎回作り直す。src/data/ の中身は全部生成物）
 src/data/
-data/facilities/.research-progress*.json
 data/facilities/concerthall.csv
-data/facilities/concerthall.xlsx
 data/facilities/draft/
+
+# 表計算の書き出し（sheet:export の出力。正はYAMLなので追跡しない）
+data/facilities/*.xlsx
 
 # 調査の作業ファイル
 data/research/
