@@ -1,0 +1,26 @@
+# 依存の更新を見る仕組みが無く、手で気づくまで古いままになっていた。
+#
+# まとめて1本のPRにするのは、CI が回るのが push と PR のときだけで、
+# 細かいPRが並ぶと確認が追いつかないため。セキュリティ更新は
+# GitHub 側から別途届く（このまとめ方の影響を受けない）。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      # 開発ツール（lint・整形・テスト・型）は挙動が変わってもサイトには出ないので束ねる
+      dev:
+        dependency-type: development
+      # React・Router・Leaflet は表示に直結するので、まとめても別の束にする
+      runtime:
+        dependency-type: production
+
+  # ワークフローが使う actions も古くなる（actions/checkout など）
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2

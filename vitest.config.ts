@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
 // vite.config.ts とは別に置いている。大半のテストは純粋関数が対象で、
-// Tailwind のプラグインも DOM も要らないため。
+// ビルド用のプラグインも DOM も要らないため。
 //
 // 既定は node のまま。DOM が要るのはルーティングのスモークテストだけなので、
 // そのファイルの先頭で `// @vitest-environment jsdom` を宣言させる
@@ -24,6 +24,29 @@ export default defineConfig({
       ],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: 'coverage',
+      /**
+       * **中心モジュールは4指標とも100%を保つ。**
+       *
+       * 全体の数字は追わない（ページとコンポーネントの数字はスモークテストが
+       * 通りがかりに踏んだ結果で、上げにいくとスモークテストの目的から外れる）。
+       * 代わりに、絞り込み・並び替え・変換・検査といった**中身のあるモジュールだけ**を
+       * ここで固定する。CLAUDE.md に文章で書いてあっても、検査が無ければ
+       * 気づかないうちに落ちていく。
+       *
+       * ここに載せるのは「テストで全部辿れる純粋なモジュール」に限る。
+       * datasets/facility.ts を入れていないのは、import.meta.glob が施設の数だけ
+       * 動的 import の関数を作るためで、100%にするには167施設を全部読むしかない。
+       */
+      thresholds: {
+        'src/{address,availability,concerthall,filter,name,practice,query,rental,station,title,toggle}.ts':
+          { statements: 100, branches: 100, functions: 100, lines: 100 },
+        'scripts/{coverage,transform,validate}.mjs': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
+        },
+      },
     },
   },
 })

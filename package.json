@@ -18,7 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test"
+    "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

@@ -24,7 +24,10 @@ npm run build      # 本番ビルド（YAML→JSON変換 + Viteビルド）
 npm run preview    # ビルド結果のプレビュー
 npm run data       # YAML→JSON変換だけを実行（データ検査もここで走る）
 
-npm run check      # データ生成 → lint → 型チェック → 整形チェック → テスト を一括。CI と同じ内容
+npm run check      # データ生成 → lint → 型チェック → 整形チェック → テスト（カバレッジ付き）
+                   # → 本番ビルド を一括。CI と同じ内容。
+                   # **ビルドまで含めるのは、tsc が通っても vite build は別に落ちうるため**
+                   # （JSONの読み込み・動的import）。入れる前はローカル緑・CI赤になりえた
 npm run lint       # ESLintによるコードチェック（src と scripts/*.mjs の両方）
 npm run typecheck  # 型チェック。中身は `tsc -b --noEmit`（tsconfig.json は files:[] +
                    # references なので `tsc --noEmit` は1ファイルも検査しない。-b が要る）
@@ -55,7 +58,8 @@ node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへ
 ### 開発環境
 
 - **Node は 22 系**（`.nvmrc` / `package.json` の `engines`）。CI は `.nvmrc` を見る
-- **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す
+- **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す。
+  依存と actions の更新は Dependabot（`.github/dependabot.yml`）が月次でまとめて出す
 - **月次のリンク検査**（`.github/workflows/audit-urls.yml`）が毎月1日に `audit-urls.mjs` を回し、
   結果を Issue にまとめる（題名が `リンク切れ検査:` で始まる Issue を**使い回して更新**する。
   毎月新しく立てると同じ施設の話が何本も並んで追えなくなる。全件正常になれば自動で閉じる）。
@@ -77,10 +81,14 @@ node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへ
   スモークテストの側で見るのは「押せること」と「押した結果が一覧に反映されること」まで
 - **カバレッジの `include` は src と scripts の全体**。テストから読み込まれなかったファイルも
   0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
-  そのため全体の数字は3割台にしかならない。**追うのは全体値ではなく、テスト対象モジュール
+  そのため全体の数字は追わない。**追うのは全体値ではなく、テスト対象モジュール
   （`transform` / `validate` / `coverage` / `station` / `availability` / `address` / `name` /
-  `rental` / `concerthall` / `practice` / `filter` / `query` / `toggle` / `title` /
-  `datasets/facility`）が4指標とも100%であること**。
+  `rental` / `concerthall` / `practice` / `filter` / `query` / `toggle` / `title`）が
+  4指標とも100%であること**。これは `vitest.config.ts` の `thresholds` で固定してあり、
+  下回ると `npm run check` と CI が落ちる（文章で書いてあるだけでは気づかないうちに落ちていく）。
+  **しきい値は `--coverage` のときしか効かない**ので、`check` と CI は `test:coverage` を回す。
+  `datasets/facility.ts` を対象にしていないのは、`import.meta.glob` が施設の数だけ
+  動的 import の関数を作るためで、100%にするには167施設を全部読むしかない
   ページとコンポーネントの数字はスモークテストが通りがかりに
   踏んだ結果で、**その値を上げにいかない**（導線以外を見ないテストなので、数字を追うと
   スモークテストの目的から外れる）。外部アクセスを伴う監査スクリプト

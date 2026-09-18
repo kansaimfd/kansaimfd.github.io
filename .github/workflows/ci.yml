@@ -30,7 +30,9 @@ jobs:
 
       - run: npm run typecheck
 
-      - run: npm test
+      # カバレッジ付きで回す。vitest.config.ts のしきい値（中心モジュールは
+      # 4指標とも100%）は --coverage のときしか効かないため
+      - run: npm run test:coverage
 
       # deploy.yml を止めているあいだ、vite build が壊れても気づく経路がここしかない。
       # tsc -b が通っても vite build は別に落ちうる（JSONの読み込み・動的importなど）
