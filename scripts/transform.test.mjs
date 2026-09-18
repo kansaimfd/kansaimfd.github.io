@@ -135,20 +135,48 @@ describe('flattenHalls', () => {
     expect(hall).not.toHaveProperty('部屋')
   })
 
-  // 出典は施設あたり最大5KB。ホールの数だけ複製すると一覧の転送量を無駄に増やす
-  it('詳細ページでしか使わない 出典・最終確認日 は載せない', () => {
+  /**
+   * 一覧に載せるフィールドは挙げた側だけ。
+   * 出典は施設あたり最大5KBあり、ホールの数だけ複製すると一覧の転送量を無駄に増やす。
+   * 料金URL・申込URL・休館日・TEL も一覧では読まない
+   */
+  it('一覧が読まないフィールドは載せない', () => {
     const [hall] = flattenHalls([
       {
         ID: 10,
         施設名: 'テスト文化会館',
         出典: [{ URL: 'https://example.com', 確認日: '2026-01-01' }],
         最終確認日: '2026-01-01',
-        部屋: [{ 部屋名: '大ホール' }],
+        TEL: '06-0000-0000',
+        休館日: '月曜',
+        申込URL: 'https://example.com/apply',
+        料金URL: 'https://example.com/price',
+        築年月: '1995-04',
+        部屋: [{ 部屋名: '大ホール', 楽屋収容人数: 48, ピアノメーカー: 'スタインウェイ' }],
       },
     ])
-    expect(hall).not.toHaveProperty('出典')
-    expect(hall).not.toHaveProperty('最終確認日')
+    for (const key of [
+      '出典',
+      '最終確認日',
+      'TEL',
+      '休館日',
+      '申込URL',
+      '料金URL',
+      '築年月',
+      '楽屋収容人数',
+      'ピアノメーカー',
+    ]) {
+      expect(hall).not.toHaveProperty(key)
+    }
     expect(hall.施設名).toBe('テスト文化会館')
+    expect(hall.部屋名).toBe('大ホール')
+  })
+
+  // 値の無いキーで埋めない（undefined を書き出すとJSONが無駄に太る）
+  it('値の無いフィールドはキーごと出さない', () => {
+    const [hall] = flattenHalls([{ ID: 10, 施設名: 'テストホール', 部屋: [{}] }])
+    expect(hall).not.toHaveProperty('建物')
+    expect(hall).not.toHaveProperty('客席数')
   })
 
   // 落とすのは平坦化した一覧だけ。渡された施設オブジェクトには触らない
@@ -156,6 +184,23 @@ describe('flattenHalls', () => {
     const facility = { ID: 10, 出典: [{ URL: 'https://example.com' }], 部屋: [{}] }
     flattenHalls([facility])
     expect(facility.出典).toHaveLength(1)
+  })
+
+  /**
+   * あましんアルカイックホールは大ホールが休止・中ホールが営業中・小ホールが終了。
+   * 施設側の 貸館 は「全室が対象」の意味なので、部屋側があればそちらが勝つ
+   */
+  it('部屋の 貸館 が施設の 貸館 を上書きする', () => {
+    const halls = flattenHalls([
+      {
+        ID: 10,
+        施設名: 'テスト文化会館',
+        貸館: { 状態: '休止', 理由: '改修' },
+        部屋: [{ 部屋名: '大ホール' }, { 部屋名: '小ホール', 貸館: { 状態: '終了' } }],
+      },
+    ])
+    expect(halls[0].貸館).toEqual({ 状態: '休止', 理由: '改修' })
+    expect(halls[1].貸館).toEqual({ 状態: '終了' })
   })
 
   // 部屋が未登録の施設も一覧から消えないようにする

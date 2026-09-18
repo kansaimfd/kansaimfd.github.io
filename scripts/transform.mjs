@@ -84,17 +84,66 @@ export function normalize(facility) {
 }
 
 /**
- * 平坦化した一覧には載せないフィールド。
+ * 平坦化した一覧に**載せる**フィールド。
  *
- * 平坦化は施設の属性をホールの数だけ複製するので、一覧が読まない大きなフィールドが
- * そのまま件数倍になる。`出典` は施設あたり最大5KBあり、これだけで平坦化後のJSONの
- * 8割を占めていた。**出典を捨てているわけではない**。詳細ページは施設単位の
- * concerthallFacilities.json から読むので、そちらには従来どおり残る。
+ * 平坦化は施設の属性をホールの数だけ複製するので、一覧が読まないフィールドが
+ * そのまま件数倍になる（88施設が284ホールに増える）。`出典` は施設あたり最大5KBあり、
+ * これだけで平坦化後のJSONの8割を占めていた。
  *
- * `最終確認日` は `出典[].確認日` の派生値で、出典と並べて詳細ページが出すもの。
- * 出典なしで確認日だけ見せても裏が取れないため、一緒に落とす。
+ * **落とすものではなく載せるものを挙げる。** 除外リストで書いていたころ、
+ * 一覧が読まない 料金URL・申込URL・休館日・TEL などが漏れて43KB残っていた。
+ * スキーマにフィールドを足すたび除外を書き足すのは忘れるが、
+ * こちらの形なら「一覧で使う」と決めたときにしか増えない。
+ *
+ * **捨てているわけではない**。詳細ページは施設単位の
+ * concerthallFacilities.json を読むので、そちらには全フィールドが残る。
+ * 対応する型は types.ts の ConcertHall（ここを変えたらあちらも変える）。
  */
-const DETAIL_ONLY_FIELDS = ['出典', '最終確認日']
+const LIST_FACILITY_FIELDS = [
+  'ID',
+  '施設名',
+  '施設名かな', // 五十音順の並び替えに要る
+  '都道府県',
+  '市区町村',
+  '番地以下',
+  '建物',
+  '最寄駅',
+  'URL', // カードの「公式サイト」
+  '貸館',
+  '利用条件',
+  '駐車場', // 「駐車場あり」の絞り込みとバッジ
+  '経度',
+  '緯度',
+]
+
+/**
+ * 同じく、部屋から一覧に載せるフィールド。
+ *
+ * `貸館` が施設側と部屋側の両方にあるのは、部屋ごとに休止・終了が分かれる施設が
+ * あるため（あましんアルカイックホールは大ホール休止・中ホール営業・小ホール終了）。
+ * 下の平坦化で部屋の値があとに来るので、部屋側が施設側を上書きする。
+ */
+const LIST_ROOM_FIELDS = [
+  '部屋名',
+  'ホール種別',
+  '客席数',
+  '舞台幅',
+  '舞台奥行',
+  'ピアノ有無',
+  'パイプオルガン',
+  '譜面台貸出',
+  '親子室',
+  '貸館',
+]
+
+/** 指定したキーのうち、値を持つものだけを写す */
+function pick(source, fields) {
+  const out = {}
+  for (const key of fields) {
+    if (source[key] !== undefined) out[key] = source[key]
+  }
+  return out
+}
 
 /**
  * 施設 × ホール に平坦化する。
@@ -102,12 +151,11 @@ const DETAIL_ONLY_FIELDS = ['出典', '最終確認日']
  */
 export function flattenHalls(facilities) {
   return facilities.flatMap(facility => {
-    const { 部屋, ...rest } = facility
-    for (const key of DETAIL_ONLY_FIELDS) delete rest[key]
-    const rooms = 部屋?.length ? 部屋 : [{}]
+    const rest = pick(facility, LIST_FACILITY_FIELDS)
+    const rooms = facility.部屋?.length ? facility.部屋 : [{}]
     return rooms.map((room, i) => ({
       ...rest,
-      ...room,
+      ...pick(room, LIST_ROOM_FIELDS),
       キー: `${facility.ID}-${room.部屋名 ?? i}`,
     }))
   })

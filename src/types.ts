@@ -225,13 +225,45 @@ export interface ConcertHallFacility extends FacilityBase {
  * 一覧・地図用にビルド時へ平坦化した「施設 × ホール」1件。
  * ID は施設IDなので、同一施設の複数ホールでは重複する。React key には キー を使うこと。
  *
- * 出典・最終確認日は持たない。平坦化は施設の属性をホールの数だけ複製するため、
- * 一覧が読まない大きなフィールドを載せると転送量が件数倍で膨らむ
- * （transform.mjs の DETAIL_ONLY_FIELDS）。出典が要る詳細ページは
- * 施設単位の ConcertHallFacility を使うこと。
+ * **一覧で使うフィールドだけを挙げる。** 平坦化は施設の属性をホールの数だけ
+ * 複製するので（88施設→284ホール）、一覧が読まないフィールドを載せると
+ * 転送量が件数倍で膨らむ。TEL・休館日・料金URL・出典などはここに無い。
+ * それらが要る詳細ページは、施設単位の ConcertHallFacility を使うこと。
+ *
+ * 実際に載せる値は transform.mjs の LIST_FACILITY_FIELDS / LIST_ROOM_FIELDS で
+ * 決まる。**片方だけ足すと、型にはあるのに値が来ない**ので必ず両方を直す。
  */
-export type ConcertHall = Omit<ConcertHallFacility, '部屋' | '出典' | '最終確認日'> &
-  Hall & { キー: string }
+export type ConcertHall = Pick<
+  ConcertHallFacility,
+  | 'ID'
+  | '施設名'
+  | '施設名かな'
+  | '都道府県'
+  | '市区町村'
+  | '番地以下'
+  | '建物'
+  | '最寄駅'
+  | 'URL'
+  | '貸館'
+  | '利用条件'
+  | '駐車場'
+  | '経度'
+  | '緯度'
+> &
+  Pick<
+    Hall,
+    | '部屋名'
+    | 'ホール種別'
+    | '客席数'
+    | '舞台幅'
+    | '舞台奥行'
+    | 'ピアノ有無'
+    | 'パイプオルガン'
+    | '譜面台貸出'
+    | '親子室'
+    /** 部屋ごとに休止・終了が分かれる施設があるので、施設側の値を上書きする */
+    | '貸館'
+  > & { キー: string }
 
 export interface PracticeRoom extends RoomBase {
   部屋名: string
