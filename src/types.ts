@@ -273,3 +273,36 @@ export interface PracticeRoom extends RoomBase {
 export interface Practice extends FacilityBase {
   部屋?: PracticeRoom[]
 }
+
+/**
+ * 一覧用に絞った練習場。
+ *
+ * 一覧と詳細ページで同じJSONを配っていたころ、練習場しか見ない利用者にも
+ * 出典（施設あたり最大5KB）やTEL・休館日・申込URLまで全件ぶん届いていた。
+ * 部屋も「最大の定員・面積」と「設備の3値」に畳んでしか読まないので、
+ * 一覧が見る項目だけを残す。
+ *
+ * 実際に載せる値は transform.mjs の LIST_PRACTICE_FIELDS /
+ * LIST_PRACTICE_ROOM_FIELDS で決まる。**片方だけ足すと型にはあるのに値が来ない。**
+ */
+export type PracticeListItem = Pick<
+  Practice,
+  | 'ID'
+  | '施設名'
+  | '施設名かな'
+  | '都道府県'
+  | '市区町村'
+  | '番地以下'
+  | '建物'
+  | '最寄駅'
+  | 'URL'
+  | '貸館'
+  | '利用条件'
+  | '駐車場'
+  | '経度'
+  | '緯度'
+  /** 施設レベルの貸出備品。部屋側と合わせて3値を出す */
+  | 'ピアノ有無'
+> & {
+  部屋?: Pick<PracticeRoom, '定員' | '面積' | 'ピアノ有無' | '管楽器' | '打楽器' | 'チェンバロ'>[]
+}

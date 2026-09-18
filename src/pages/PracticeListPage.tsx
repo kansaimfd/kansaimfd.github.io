@@ -1,7 +1,7 @@
 import { useState, useMemo, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { practices } from '../datasets/practices'
-import type { Practice } from '../types'
+import type { PracticeListItem } from '../types'
 import { NO_WALK, minWalk, stationNames } from '../station'
 import { fullAddress } from '../address'
 import { compareByName } from '../name'
@@ -55,12 +55,12 @@ function facilityState(values: (boolean | undefined)[]): boolean | undefined {
  * 施設内で最も定員の多い部屋の定員。分からなければ 0。
  * 「◯名で使えるか」は部屋単位の話なので、施設としては最大の部屋で判断する。
  */
-function maxCapacity(p: Practice): number {
+function maxCapacity(p: PracticeListItem): number {
   return Math.max(0, ...(p.部屋?.map(r => r.定員 ?? 0) ?? []))
 }
 
 /** 施設内で最も広い部屋の面積（㎡）。分からなければ 0 */
-function maxArea(p: Practice): number {
+function maxArea(p: PracticeListItem): number {
   return Math.max(0, ...(p.部屋?.map(r => r.面積 ?? 0) ?? []))
 }
 
@@ -73,7 +73,7 @@ const EQUIP_FILTERS = [
     label: 'ピアノあり',
     badge: 'ピアノ',
     unknownLabel: 'ピアノの有無',
-    state: (p: Practice) =>
+    state: (p: PracticeListItem) =>
       facilityState([p.ピアノ有無, ...(p.部屋?.map(r => r.ピアノ有無) ?? [])]),
   },
   {
@@ -81,21 +81,21 @@ const EQUIP_FILTERS = [
     label: '管楽器可',
     badge: '管楽器',
     unknownLabel: '管楽器の可否',
-    state: (p: Practice) => facilityState(p.部屋?.map(r => r.管楽器) ?? []),
+    state: (p: PracticeListItem) => facilityState(p.部屋?.map(r => r.管楽器) ?? []),
   },
   {
     key: 'perc',
     label: '打楽器可',
     badge: '打楽器',
     unknownLabel: '打楽器の可否',
-    state: (p: Practice) => facilityState(p.部屋?.map(r => r.打楽器) ?? []),
+    state: (p: PracticeListItem) => facilityState(p.部屋?.map(r => r.打楽器) ?? []),
   },
   {
     key: 'cembalo',
     label: 'チェンバロあり',
     badge: 'チェンバロ',
     unknownLabel: 'チェンバロの有無',
-    state: (p: Practice) => facilityState(p.部屋?.map(r => r.チェンバロ) ?? []),
+    state: (p: PracticeListItem) => facilityState(p.部屋?.map(r => r.チェンバロ) ?? []),
   },
 ] as const
 

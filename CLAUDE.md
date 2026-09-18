@@ -79,13 +79,23 @@ YAML（正規化・人間が編集）を、UIが消費しやすい非正規化JS
 data/facilities/concerthall.yaml          data/facilities/practice.yaml
   1レコード = 1施設（部屋[] を内包）        1レコード = 1施設（部屋[] を内包）
         ↓ (scripts/build-data.mjs)               ↓
-src/data/concerthallFacilities.json       src/data/practices.json
-  施設単位（詳細ページ用）                   施設単位
-src/data/concerthalls.json
-  施設 × ホール に平坦化（一覧・地図用）
+src/data/concerthalls.json                src/data/practices.json
+  施設 × ホール に平坦化（一覧・地図用）     一覧用に絞ったもの
+src/data/concert/<ID>.json                src/data/practice/<ID>.json
+  施設1件（詳細ページ用）                    施設1件（詳細ページ用）
         ↓ (src/datasets/*.ts でimport)
 React コンポーネント
 ```
+
+**一覧用と詳細用でJSONを分ける。** 一覧用には一覧が読むフィールドだけを載せる
+（`transform.mjs` の `LIST_*_FIELDS`。TEL・休館日・料金URL・出典などは入らない）。
+除外リストではなく採用リストで書くのは、スキーマにフィールドが増えたときに
+書き足しを忘れても漏れないようにするため。
+
+**詳細ページ用は1施設1ファイルに分ける。** 全施設をまとめた1つのJSONを
+静的 import していたころ、`/concert/10` を直接開いた利用者は1施設を見るために
+88施設ぶん（gzip 171KB）を落としていた。`src/datasets/facility.ts` が
+`import.meta.glob` で1件ずつ動的に読む（施設1件あたり gzip 約4KB）。
 
 **重要**: YAMLは常に「1レコード = 1施設」で書く。同一施設に複数のホール／練習室がある場合は
 行を分けず `部屋:` 配列に入れる。住所・URL・最寄駅などの施設属性を複製しないため。
@@ -101,11 +111,14 @@ React コンポーネント
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
 - `scripts/build-station-master.mjs` — 駅座標マスタの生成（随時。出力はコミット済み）
 - `data/stations.json` — 関西1,793駅の座標。出典: 国土数値情報（鉄道データ）国土交通省
-- `src/data/` — 変換後JSONの出力先（`.gitignore` 済み）
-- `src/types.ts` — `ConcertHallFacility` / `ConcertHall` / `Practice` 型定義
+- `src/data/` — 変換後JSONの出力先（`.gitignore` 済み。ビルドのたびに作り直す）
+- `src/types.ts` — `ConcertHallFacility` / `ConcertHall` / `Practice` / `PracticeListItem` 型定義。
+  **一覧用の型（`ConcertHall` / `PracticeListItem`）は `transform.mjs` の採用リストと対になっている。**
+  片方だけ足すと、型にはあるのに値が来ない
 - `src/datasets/` — 変換後JSONの読み込みと型付け。**データセットごとにファイルを分ける**
   （1モジュールで全部を import するとバンドルが分割できず、入口の一覧しか見ない利用者にも
-  全データが配られる。`src/datasets/README.md`）
+  全データが配られる。`src/datasets/README.md`）。
+  詳細ページは `datasets/facility.ts` から1施設ずつ動的に読む
 - `src/station.ts` — 最寄駅の表記・徒歩分数まわりの共通ヘルパー
 - `src/address.ts` — 住所の連結（`geocodableAddress()` は建物名を含めない）
 - `src/availability.ts` — 設備の3値（あり／なし／未調査）の表示と絞り込み

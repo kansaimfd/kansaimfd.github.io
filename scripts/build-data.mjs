@@ -2,19 +2,24 @@
  * YAML（正規化・人間が編集）→ JSON（非正規化・UIが消費）
  *
  *   data/facilities/concerthall.yaml  1レコード = 1施設（部屋[] を内包）
- *     ├→ src/data/concerthallFacilities.json  施設単位（詳細ページ用）
- *     └→ src/data/concerthalls.json           施設 × ホール に平坦化（一覧・地図用）
+ *     ├→ src/data/concerthalls.json           施設 × ホール に平坦化（一覧・地図用）
+ *     └→ src/data/concert/<ID>.json           施設1件（詳細ページ用）
  *   data/facilities/practice.yaml
- *     └→ src/data/practices.json              施設単位
+ *     ├→ src/data/practices.json              一覧用に絞ったもの
+ *     └→ src/data/practice/<ID>.json          施設1件（詳細ページ用）
+ *
+ * **詳細ページ用は1施設1ファイルに分ける。** 全施設を1つのJSONにまとめていたころ、
+ * `/concert/10` を直接開いた利用者は1施設を見るために88施設ぶん（gzip 171KB）を
+ * 落としていた。ファイルを分ければ、動的importで見る施設のぶんだけが届く。
  *
  * ここは読み書きと検査の呼び出しだけ。変換の規則は transform.mjs にある。
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import yaml from 'js-yaml'
 import { validate, report } from './validate.mjs'
-import { normalize, flattenHalls } from './transform.mjs'
+import { normalize, flattenHalls, toPracticeList } from './transform.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -54,21 +59,34 @@ if (
 }
 
 const concerthallFacilities = rawConcerthalls.map(normalize)
-const practices = rawPractices.map(normalize)
+const practiceFacilities = rawPractices.map(normalize)
 const concerthalls = flattenHalls(concerthallFacilities)
+const practices = toPracticeList(practiceFacilities)
 
 const outDir = resolve(root, 'src/data')
+// 施設を削除したりIDを変えたりしたときに、前回の出力が残らないよう作り直す
+rmSync(outDir, { recursive: true, force: true })
 mkdirSync(outDir, { recursive: true })
 
 const write = (name, data) =>
   writeFileSync(resolve(outDir, name), JSON.stringify(data, null, 2), 'utf-8')
 
-write('concerthallFacilities.json', concerthallFacilities)
 write('concerthalls.json', concerthalls)
 write('practices.json', practices)
 
+/** 詳細ページ用に1施設1ファイルで書き出す。ファイル名は詳細ページのURLと同じID */
+function writeEach(dir, facilities) {
+  mkdirSync(resolve(outDir, dir), { recursive: true })
+  for (const facility of facilities) {
+    write(`${dir}/${facility.ID}.json`, facility)
+  }
+}
+
+writeEach('concert', concerthallFacilities)
+writeEach('practice', practiceFacilities)
+
 const estimated = concerthalls
-  .concat(practices)
+  .concat(practiceFacilities)
   .flatMap(f => f.最寄駅 ?? [])
   .filter(s => s.駅徒歩推定).length
 

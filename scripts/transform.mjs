@@ -136,6 +136,39 @@ const LIST_ROOM_FIELDS = [
   '貸館',
 ]
 
+/**
+ * 練習場の一覧に載せるフィールド。考え方はコンサートホールと同じで、
+ * 一覧が読むものだけを挙げる。
+ *
+ * 練習場は平坦化しない（1施設1行）が、詳細ページと同じJSONを一覧にも配っていたので
+ * 出典・TEL・休館日・申込URLといった詳細ページ専用の値まで全員に届いていた。
+ */
+const LIST_PRACTICE_FIELDS = [
+  'ID',
+  '施設名',
+  '施設名かな',
+  '都道府県',
+  '市区町村',
+  '番地以下',
+  '建物',
+  '最寄駅',
+  'URL',
+  '貸館',
+  '利用条件',
+  '駐車場',
+  '経度',
+  '緯度',
+  'ピアノ有無', // 施設レベルの貸出備品。部屋側と合わせて3値を出す
+]
+
+/**
+ * 同じく、部屋から一覧に載せるフィールド。
+ *
+ * 部屋名を載せていないのは、一覧が部屋を「最大の定員・面積」と「設備の3値」に
+ * 畳んでしか使わないため。部屋ごとの表は詳細ページにある。
+ */
+const LIST_PRACTICE_ROOM_FIELDS = ['定員', '面積', 'ピアノ有無', '管楽器', '打楽器', 'チェンバロ']
+
 /** 指定したキーのうち、値を持つものだけを写す */
 function pick(source, fields) {
   const out = {}
@@ -158,5 +191,19 @@ export function flattenHalls(facilities) {
       ...pick(room, LIST_ROOM_FIELDS),
       キー: `${facility.ID}-${room.部屋名 ?? i}`,
     }))
+  })
+}
+
+/**
+ * 練習場を一覧用に絞る。部屋は一覧が読む項目だけに畳む。
+ *
+ * 一覧と詳細で同じJSONを配っていたころ、練習場しか見ない利用者にも
+ * 出典（施設あたり最大5KB）が全件ぶん届いていた。
+ */
+export function toPracticeList(facilities) {
+  return facilities.map(facility => {
+    const item = pick(facility, LIST_PRACTICE_FIELDS)
+    if (facility.部屋) item.部屋 = facility.部屋.map(room => pick(room, LIST_PRACTICE_ROOM_FIELDS))
+    return item
   })
 }

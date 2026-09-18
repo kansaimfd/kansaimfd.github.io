@@ -26,10 +26,8 @@ dist-ssr
 # カバレッジレポート
 coverage/
 
-# Generated data
-src/data/concerthalls.json
-src/data/concerthallFacilities.json
-src/data/practices.json
+# Generated data（build-data.mjs が毎回作り直す。src/data/ の中身は全部生成物）
+src/data/
 data/facilities/.research-progress*.json
 data/facilities/concerthall.csv
 data/facilities/concerthall.xlsx

@@ -1,5 +1,6 @@
+import { use } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { concerthallFacilities } from '../datasets/concerthallFacilities'
+import { concertHallFacility } from '../datasets/facility'
 import { stationLabel } from '../station'
 import type { Hall } from '../types'
 import DetailMap from '../components/DetailMap'
@@ -26,9 +27,12 @@ function stageLabel(h: Hall): string | undefined {
 
 export default function ConcertHallDetailPage() {
   const { id } = useParams()
-  const facility = concerthallFacilities.find(f => f.ID === Number(id))
+  // 知らないIDはその場で分かる。あれば、JSONが届くまでこの画面は中断する
+  // （App の Suspense が読み込み中を出す）
+  const pending = concertHallFacility(Number(id))
+  const facility = pending ? use(pending) : null
 
-  // 施設が見つからない場合も題名は要るので、早期 return より前で呼ぶ
+  // 見つからない場合も題名は要るので、早期 return より前で呼ぶ
   useDocumentTitle(facility?.施設名 ?? '施設が見つかりません')
 
   if (!facility) {

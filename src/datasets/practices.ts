@@ -1,5 +1,5 @@
-import type { Practice } from '../types'
+import type { PracticeListItem } from '../types'
 import raw from '../data/practices.json'
 
-/** 練習場。施設単位（一覧・詳細とも同じものを使う） */
-export const practices = raw as Practice[]
+/** 練習場の一覧用。詳細ページは datasets/facility.ts から1施設ずつ読む */
+export const practices = raw as PracticeListItem[]
