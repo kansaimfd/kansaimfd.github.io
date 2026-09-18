@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   fillWalkMinutes,
   flattenHalls,
+  toPracticeList,
   isMusicRoom,
   normalize,
   withLastVerified,
@@ -233,5 +234,54 @@ describe('normalize', () => {
   it('最寄駅も部屋も未登録の施設をそのまま通す', () => {
     const f = { ID: 10, 施設名: 'テストホール' }
     expect(normalize(f)).toEqual(f)
+  })
+})
+
+describe('toPracticeList', () => {
+  // 一覧と詳細で同じJSONを配っていたころ、練習場しか見ない利用者にも出典が全件届いていた
+  it('一覧が読まないフィールドは載せない', () => {
+    const [item] = toPracticeList([
+      {
+        ID: 10,
+        施設名: 'テスト練習場',
+        都道府県: '大阪府',
+        TEL: '06-0000-0000',
+        休館日: '月曜',
+        申込URL: 'https://example.com/apply',
+        出典: [{ URL: 'https://example.com', 確認日: '2026-01-01' }],
+        最終確認日: '2026-01-01',
+      },
+    ])
+    for (const key of ['TEL', '休館日', '申込URL', '出典', '最終確認日']) {
+      expect(item).not.toHaveProperty(key)
+    }
+    expect(item).toMatchObject({ ID: 10, 施設名: 'テスト練習場', 都道府県: '大阪府' })
+  })
+
+  /**
+   * 一覧は部屋を「最大の定員・面積」と「設備の3値」に畳んでしか読まない。
+   * 部屋名・楽器制限は詳細ページの表にしか出ない
+   */
+  it('部屋は一覧が読む項目だけに畳む', () => {
+    const [item] = toPracticeList([
+      {
+        ID: 10,
+        施設名: 'テスト練習場',
+        部屋: [{ 部屋名: '第1練習室', 定員: 30, 面積: 50, 管楽器: true, 楽器制限: '音量制限あり' }],
+      },
+    ])
+    expect(item.部屋).toEqual([{ 定員: 30, 面積: 50, 管楽器: true }])
+  })
+
+  // 部屋が未登録の施設でもキーを生やさない（空配列と未登録は別の意味）
+  it('部屋が無ければ 部屋 を持たせない', () => {
+    const [item] = toPracticeList([{ ID: 10, 施設名: 'テスト練習場' }])
+    expect(item).not.toHaveProperty('部屋')
+  })
+
+  // 設備の3値のうち false は「なし」。undefined（未調査）と潰さずに残す
+  it('設備の false は残す', () => {
+    const [item] = toPracticeList([{ ID: 10, 部屋: [{ 打楽器: false }] }])
+    expect(item.部屋).toEqual([{ 打楽器: false }])
   })
 })
