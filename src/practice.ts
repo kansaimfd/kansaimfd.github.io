@@ -1,8 +1,23 @@
 import type { PracticeListItem, Availability } from './types'
+import type { ViewMode } from './components/ViewToggle'
 import { fullAddress } from './address'
 import { compareByName } from './name'
 import { minWalk, stationNames } from './station'
 import type { FilterResult } from './concerthall'
+import { ALL_PREFS } from './pref'
+import {
+  readList,
+  readNumber,
+  readSet,
+  readSort,
+  readText,
+  readView,
+  writeList,
+  writeSet,
+  writeSort,
+  writeText,
+  writeView,
+} from './query'
 
 /**
  * 練習場一覧の絞り込みと並び替え。理由はコンサートホール側と同じで、
@@ -132,4 +147,51 @@ export function sortPractices(
     if (av > bv) return dir
     return 0
   })
+}
+
+/** 一覧ページの状態。**絞り込みだけでなく表示と並び替えもURLに載せる** */
+export interface PracticePageState extends PracticeCriteria {
+  view: ViewMode
+  sortKey: PracticeSortKey
+  sortAsc: boolean
+}
+
+export const PRACTICE_SORT_KEYS: PracticeSortKey[] = ['施設名', '都道府県', '最寄駅徒歩']
+
+const PRACTICE_EQUIP_KEYS = PRACTICE_EQUIP_FIELDS.map(e => e.key)
+
+/**
+ * URLから一覧の状態を読む。
+ *
+ * 府県と設備は**知っている値だけ**を通す。市区町村・最寄駅はデータ側にしか
+ * 一覧が無いのでそのまま通す（該当なしになるだけで、フリーワードと同じ扱い）。
+ */
+export function practiceStateFromParams(params: URLSearchParams): PracticePageState {
+  const { key, asc } = readSort(params, PRACTICE_SORT_KEYS, '施設名')
+  return {
+    query: readText(params, 'q'),
+    prefs: readList(params, 'pref', ALL_PREFS),
+    city: readText(params, 'city'),
+    capacity: readNumber(params, 'cap'),
+    station: readText(params, 'station'),
+    walk: readNumber(params, 'walk'),
+    equip: readSet(params, 'equip', PRACTICE_EQUIP_KEYS),
+    view: readView(params),
+    sortKey: key,
+    sortAsc: asc,
+  }
+}
+
+export function practiceStateToParams(s: PracticePageState): URLSearchParams {
+  const params = new URLSearchParams()
+  writeText(params, 'q', s.query)
+  writeList(params, 'pref', s.prefs)
+  writeText(params, 'city', s.city)
+  writeText(params, 'cap', s.capacity)
+  writeText(params, 'station', s.station)
+  writeText(params, 'walk', s.walk)
+  writeSet(params, 'equip', s.equip, PRACTICE_EQUIP_KEYS)
+  writeView(params, s.view)
+  writeSort(params, s.sortKey, s.sortAsc, '施設名')
+  return params
 }

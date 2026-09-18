@@ -67,7 +67,7 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
   0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
   そのため全体の数字は3割台にしかならない。**追うのは全体値ではなく、テスト対象モジュール
   （`transform` / `validate` / `station` / `availability` / `address` / `name` / `rental` /
-  `concerthall` / `practice` / `toggle` / `title`）が4指標とも100%であること**。
+  `concerthall` / `practice` / `query` / `toggle` / `title`）が4指標とも100%であること**。
   ページとコンポーネントの数字はスモークテストが通りがかりに
   踏んだ結果で、**その値を上げにいかない**（導線以外を見ないテストなので、数字を追うと
   スモークテストの目的から外れる）。監査スクリプト（`audit-coordinates` / `audit-urls`）は未着手で0%。
@@ -102,6 +102,26 @@ React コンポーネント
 88施設ぶん（gzip 171KB）を落としていた。`src/datasets/facility.ts` が
 `import.meta.glob` で1件ずつ動的に読む（施設1件あたり gzip 約4KB）。
 
+### 一覧の状態はURLが持つ
+
+**一覧の絞り込み・並び替え・表示は `useState` ではなくURLのクエリに持つ。**
+`useState` だったころは、絞り込んだ結果を人に送れず、戻るボタンが一覧そのものを離れ、
+地図から詳細へ行って戻ると条件が消えていた。置き場所をURLにすると3つとも同時に解ける。
+
+```
+/concert?pref=大阪府,兵庫県&seats=1000-&equip=piano,organ&view=table&sort=客席数.desc
+```
+
+- 変換は `src/query.ts`（汎用の読み書き）と `concerthall.ts` / `practice.ts` の
+  `*StateFromParams` / `*StateToParams`。**Reactに触れないので往復を単体でテストできる**
+- **既定値は書かない。** 何も絞り込んでいない `/concert` にクエリが付いて回ると、
+  共有したときに条件が付いているように見える
+- **読む側は知っている値だけを通す。** URLは手で書き換えられるので、知らない府県名や
+  設備キーをそのまま絞り込みに渡すと「0件だがなぜか分からない」画面になる
+- **条件をひとつ変えるたびに履歴をひとつ積む**（戻るで直前の絞り込みに戻る）。
+  ただしフリーワードは置き換える。打鍵ごとに積むと戻るが文字を1つ消すだけの操作になる
+- 集合（設備）は選択肢の並び順に揃えてから書く。同じ条件なら同じURLになるようにするため
+
 **重要**: YAMLは常に「1レコード = 1施設」で書く。同一施設に複数のホール／練習室がある場合は
 行を分けず `部屋:` 配列に入れる。住所・URL・最寄駅などの施設属性を複製しないため。
 一覧表示に必要な「1行 = 1ホール」の形は `build-data.mjs` が派生生成する。
@@ -124,8 +144,9 @@ React コンポーネント
   （1モジュールで全部を import するとバンドルが分割できず、入口の一覧しか見ない利用者にも
   全データが配られる。`src/datasets/README.md`）。
   詳細ページは `datasets/facility.ts` から1施設ずつ動的に読む
-- `src/concerthall.ts` / `src/practice.ts` — 一覧の絞り込みと並び替え。
+- `src/concerthall.ts` / `src/practice.ts` — 一覧の絞り込みと並び替え、URLクエリとの相互変換。
   **ページから出しているのは、中心機能なのに描画しないと動かせずテストが書けなかったため**
+- `src/query.ts` — URLクエリと絞り込み条件の相互変換（→ 一覧の状態はURLが持つ）
 - `src/station.ts` — 最寄駅の表記・徒歩分数まわりの共通ヘルパー
 - `src/address.ts` — 住所の連結（`geocodableAddress()` は建物名を含めない）
 - `src/availability.ts` — 設備の3値（あり／なし／未調査）の表示と絞り込み

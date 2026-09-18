@@ -1,8 +1,27 @@
 import type { ConcertHall, HallType, Availability } from './types'
+import type { ViewMode } from './components/ViewToggle'
 import { hasEquipment } from './availability'
 import { fullAddress } from './address'
 import { compareByName } from './name'
 import { minWalk } from './station'
+import { ALL_PREFS } from './pref'
+import {
+  readList,
+  readRange,
+  readSet,
+  readSort,
+  readText,
+  readView,
+  writeList,
+  writeRange,
+  writeSet,
+  writeSort,
+  writeText,
+  writeView,
+  type Range,
+} from './query'
+
+export type { Range }
 
 /**
  * コンサートホール一覧の絞り込みと並び替え。
@@ -36,9 +55,6 @@ export const HALL_EQUIP_FIELDS = [
       h.駐車場 == null ? undefined : h.駐車場 > 0,
   },
 ] as const
-
-/** 数値の範囲。空文字は「指定なし」 */
-export type Range = [string, string]
 
 export interface HallCriteria {
   query: string
@@ -123,4 +139,50 @@ export function dedupeByFacility(halls: ConcertHall[]): ConcertHall[] {
   const seen = new Map<number, ConcertHall>()
   for (const h of halls) if (!seen.has(h.ID)) seen.set(h.ID, h)
   return [...seen.values()]
+}
+
+/** 一覧ページの状態。**絞り込みだけでなく表示と並び替えもURLに載せる** */
+export interface HallPageState extends HallCriteria {
+  view: ViewMode
+  sortKey: HallSortKey
+  sortAsc: boolean
+}
+
+export const HALL_SORT_KEYS: HallSortKey[] = ['施設名', '都道府県', '客席数', '最寄駅徒歩']
+
+const HALL_EQUIP_KEYS = HALL_EQUIP_FIELDS.map(e => e.key)
+
+/**
+ * URLから一覧の状態を読む。
+ * 府県・ホール種別・設備は**知っている値だけ**を通す（手で書き換えられるため）。
+ * フリーワードは何でも通す（絞り込みの結果が0件になるだけで、誤解は生まない）。
+ */
+export function hallStateFromParams(params: URLSearchParams): HallPageState {
+  const { key, asc } = readSort(params, HALL_SORT_KEYS, '施設名')
+  return {
+    query: readText(params, 'q'),
+    prefs: readList(params, 'pref', ALL_PREFS),
+    hallTypes: readList(params, 'type', ALL_HALL_TYPES),
+    seats: readRange(params, 'seats'),
+    stageW: readRange(params, 'stagew'),
+    stageD: readRange(params, 'staged'),
+    equip: readSet(params, 'equip', HALL_EQUIP_KEYS),
+    view: readView(params),
+    sortKey: key,
+    sortAsc: asc,
+  }
+}
+
+export function hallStateToParams(s: HallPageState): URLSearchParams {
+  const params = new URLSearchParams()
+  writeText(params, 'q', s.query)
+  writeList(params, 'pref', s.prefs)
+  writeList(params, 'type', s.hallTypes)
+  writeRange(params, 'seats', s.seats)
+  writeRange(params, 'stagew', s.stageW)
+  writeRange(params, 'staged', s.stageD)
+  writeSet(params, 'equip', s.equip, HALL_EQUIP_KEYS)
+  writeView(params, s.view)
+  writeSort(params, s.sortKey, s.sortAsc, '施設名')
+  return params
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toggleIn, toggleKey } from './toggle'
+import { nextSort, toggleIn, toggleKey } from './toggle'
 
 describe('toggleIn', () => {
   it('入っていなければ足す', () => {
@@ -28,5 +28,17 @@ describe('toggleKey', () => {
     const equip = new Set(['piano'])
     toggleKey(equip, 'organ')
     expect([...equip]).toEqual(['piano'])
+  })
+})
+
+describe('nextSort', () => {
+  it('同じキーなら向きを反転する', () => {
+    expect(nextSort({ key: '施設名', asc: true }, '施設名')).toEqual({ key: '施設名', asc: false })
+    expect(nextSort({ key: '施設名', asc: false }, '施設名')).toEqual({ key: '施設名', asc: true })
+  })
+
+  // 別のキーに移ったのに降順のままだと、押した本人の意図と合わない
+  it('違うキーなら昇順から始める', () => {
+    expect(nextSort({ key: '施設名', asc: false }, '客席数')).toEqual({ key: '客席数', asc: true })
   })
 })

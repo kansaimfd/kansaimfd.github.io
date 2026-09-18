@@ -9,7 +9,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import App from './App'
 import { concerthalls } from './datasets/concerthalls'
 import { practices } from './datasets/practices'
@@ -24,10 +24,19 @@ vi.mock('./components/FacilityMap', () => ({ default: () => <div data-testid="ma
 
 afterEach(cleanup)
 
+/** 現在のURLを読めるようにする。絞り込みの状態がURLに載っているため */
+function LocationProbe() {
+  const { pathname, search } = useLocation()
+  return <span data-testid="location">{pathname + search}</span>
+}
+
+const currentUrl = () => decodeURIComponent(screen.getByTestId('location').textContent ?? '')
+
 function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <App />
+      <LocationProbe />
     </MemoryRouter>,
   )
 }
@@ -180,5 +189,33 @@ describe('導線', () => {
     // 表に切り替えたら表が出る（ボタンはあるが中身が繋がっていない、を捕まえる）
     fireEvent.click(screen.getByRole('button', { name: '表' }))
     expect(await screen.findByRole('table')).toBeDefined()
+  })
+})
+
+/**
+ * 絞り込みの状態はURLが持つ。**共有したリンクが同じ条件で開くこと**が肝で、
+ * 状態を `useState` に戻してしまうと型チェックも lint も通ったまま静かに壊れる。
+ */
+describe('絞り込みとURL', () => {
+  it('絞り込むとURLに条件が載る', () => {
+    renderAt('/concert')
+    expect(currentUrl()).toBe('/concert')
+
+    fireEvent.click(screen.getByRole('button', { name: '大阪府' }))
+    expect(currentUrl()).toBe('/concert?pref=大阪府')
+  })
+
+  it('条件の付いたURLで開くと、その条件で絞り込まれている', () => {
+    renderAt('/concert?pref=大阪府')
+
+    expect(screen.getByRole('button', { name: /大阪府/ })).toHaveProperty('ariaPressed', 'true')
+    const 大阪の件数 = concerthalls.filter(h => h.都道府県 === '大阪府').length
+    expect(screen.getByText(String(大阪の件数))).toBeDefined()
+  })
+
+  it('表示の切り替えもURLに載る', () => {
+    renderAt('/practice')
+    fireEvent.click(screen.getByRole('button', { name: '表' }))
+    expect(currentUrl()).toBe('/practice?view=table')
   })
 })

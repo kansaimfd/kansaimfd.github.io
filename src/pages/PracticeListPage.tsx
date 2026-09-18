@@ -1,20 +1,22 @@
-import { useState, useMemo, Suspense, lazy } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, Suspense, lazy } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { practices } from '../datasets/practices'
 import { NO_WALK, minWalk, stationLabels, stationNames } from '../station'
 import { ALL_PREFS } from '../pref'
-import { toggleIn, toggleKey } from '../toggle'
-import useSort from '../useSort'
+import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
 import {
   PRACTICE_EQUIP_FIELDS,
   filterPractices,
   maxArea,
   maxCapacity,
+  practiceStateFromParams,
+  practiceStateToParams,
   sortPractices,
+  type PracticePageState,
   type PracticeSortKey,
 } from '../practice'
-import ViewToggle, { type ViewMode } from '../components/ViewToggle'
+import ViewToggle from '../components/ViewToggle'
 import SortSelect, { type SortOption } from '../components/SortSelect'
 import SearchBox from '../components/SearchBox'
 import FilterPanel from '../components/FilterPanel'
@@ -52,15 +54,26 @@ const hasCapacityData = practices.some(p => maxCapacity(p) > 0)
 export default function PracticeListPage() {
   useDocumentTitle('練習場一覧')
 
-  const [view, setView] = useState<ViewMode>('list')
-  const [query, setQuery] = useState('')
-  const [prefs, setPrefs] = useState<string[]>([])
-  const [city, setCity] = useState('')
-  const [capacity, setCapacity] = useState('')
-  const [station, setStation] = useState('')
-  const [walk, setWalk] = useState('')
-  const [equip, setEquip] = useState<Set<string>>(new Set())
-  const { sortKey, sortAsc, toggleSort, setSort } = useSort<PracticeSortKey>('施設名')
+  /**
+   * 一覧の状態はURLが持つ。**`useState` に持たない。**
+   * 絞り込んだ結果をそのまま人に送れて、詳細ページから戻っても条件が残る。
+   */
+  const [params, setParams] = useSearchParams()
+  const state = useMemo(() => practiceStateFromParams(params), [params])
+  const { query, prefs, city, capacity, station, walk, equip, view, sortKey, sortAsc } = state
+
+  /**
+   * 条件をひとつ変えるたびに履歴をひとつ積む（戻るで直前の絞り込みに戻れる）。
+   * **フリーワードだけは置き換える。** 打鍵ごとに積むと、戻るボタンが
+   * 文字を1つずつ消すだけの操作になってしまう。
+   */
+  const update = (patch: Partial<PracticePageState>, replace = false) =>
+    setParams(practiceStateToParams({ ...state, ...patch }), { replace })
+
+  const toggleSort = (key: PracticeSortKey) => {
+    const next = nextSort({ key: sortKey, asc: sortAsc }, key)
+    update({ sortKey: next.key, sortAsc: next.asc })
+  }
 
   // データが1件も無い設備は選択肢に出さない。必ず0件になる絞り込みを見せないため
   const equipOptions = useMemo(
@@ -100,8 +113,7 @@ export default function PracticeListPage() {
 
   function togglePref(pref: string) {
     // 府県を変えると選べる市区町村が変わるので、選択済みの市区町村は落とす
-    setCity('')
-    setPrefs(toggleIn(prefs, pref))
+    update({ prefs: toggleIn(prefs, pref), city: '' })
   }
 
   const sortTh = (k: PracticeSortKey, label: string) => (
@@ -119,12 +131,12 @@ export default function PracticeListPage() {
       <FilterPanel
         head={
           <>
-            <SearchBox value={query} onChange={setQuery} />
+            <SearchBox value={query} onChange={v => update({ query: v }, true)} />
             <SortSelect
               options={SORT_OPTIONS}
               sortKey={sortKey}
               sortAsc={sortAsc}
-              onChange={setSort}
+              onChange={(key, asc) => update({ sortKey: key, sortAsc: asc })}
             />
           </>
         }
@@ -154,7 +166,7 @@ export default function PracticeListPage() {
             placeholder="市区町村（すべて）"
             value={city}
             options={cities}
-            onChange={setCity}
+            onChange={v => update({ city: v })}
           />
           <FilterSelect
             label="最寄駅"
@@ -162,7 +174,7 @@ export default function PracticeListPage() {
             value={station}
             options={stations}
             formatOption={v => stationDisplay.get(v) ?? v}
-            onChange={setStation}
+            onChange={v => update({ station: v })}
           />
         </FilterRow>
 
@@ -175,7 +187,7 @@ export default function PracticeListPage() {
                   key={e.key}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => setEquip(toggleKey(equip, e.key))}
+                  onClick={() => update({ equip: toggleKey(equip, e.key) })}
                   className={on ? 'pill pill--equip pill--on' : 'pill pill--equip'}
                 >
                   {on && <span className="pill__check">✓</span>}
@@ -193,7 +205,7 @@ export default function PracticeListPage() {
               title="定員"
               suffix="名以上"
               value={capacity}
-              onChange={setCapacity}
+              onChange={v => update({ capacity: v })}
             />
           )}
           <BoundInput
@@ -201,12 +213,12 @@ export default function PracticeListPage() {
             title="最寄駅から"
             suffix="分以内"
             value={walk}
-            onChange={setWalk}
+            onChange={v => update({ walk: v })}
           />
         </div>
       </FilterPanel>
 
-      <ViewToggle view={view} onChangeView={setView} count={filtered.length} />
+      <ViewToggle view={view} onChangeView={v => update({ view: v })} count={filtered.length} />
 
       {unknownExcluded > 0 && (
         <div className="notice notice--warn" role="status">

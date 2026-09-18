@@ -5,6 +5,8 @@ import {
   filterPractices,
   maxArea,
   maxCapacity,
+  practiceStateFromParams,
+  practiceStateToParams,
   sortPractices,
   type PracticeCriteria,
 } from './practice'
@@ -218,5 +220,39 @@ describe('sortPractices', () => {
     const list = [practice({ ID: 20, 都道府県: '京都府' }), practice({ ID: 10 })]
     sortPractices(list, '都道府県', true)
     expect(list.map(p => p.ID)).toEqual([20, 10])
+  })
+})
+
+describe('URLとの往復', () => {
+  it('何も絞り込んでいなければクエリは空', () => {
+    const state = practiceStateFromParams(new URLSearchParams(''))
+    expect(practiceStateToParams(state).toString()).toBe('')
+  })
+
+  it('条件をひととおり載せて読み戻せる', () => {
+    const params = practiceStateToParams({
+      query: 'スタジオ',
+      prefs: ['京都府'],
+      city: '京都市中京区',
+      capacity: '50',
+      station: '烏丸駅',
+      walk: '10',
+      equip: new Set(['piano', 'perc']),
+      view: 'map',
+      sortKey: '最寄駅徒歩',
+      sortAsc: true,
+    })
+    expect(practiceStateFromParams(params)).toEqual({
+      query: 'スタジオ',
+      prefs: ['京都府'],
+      city: '京都市中京区',
+      capacity: '50',
+      station: '烏丸駅',
+      walk: '10',
+      equip: new Set(['piano', 'perc']),
+      view: 'map',
+      sortKey: '最寄駅徒歩',
+      sortAsc: true,
+    })
   })
 })

@@ -1,22 +1,22 @@
-import { useState, useMemo, Suspense, lazy } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, Suspense, lazy } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { concerthalls } from '../datasets/concerthalls'
-import type { HallType } from '../types'
 import { NO_WALK, minWalk } from '../station'
 import { ALL_PREFS } from '../pref'
-import { toggleIn, toggleKey } from '../toggle'
-import useSort from '../useSort'
+import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
 import {
   ALL_HALL_TYPES,
   HALL_EQUIP_FIELDS,
   dedupeByFacility,
   filterHalls,
+  hallStateFromParams,
+  hallStateToParams,
   sortHalls,
+  type HallPageState,
   type HallSortKey,
-  type Range,
 } from '../concerthall'
-import ViewToggle, { type ViewMode } from '../components/ViewToggle'
+import ViewToggle from '../components/ViewToggle'
 import SortSelect, { type SortOption } from '../components/SortSelect'
 import SearchBox from '../components/SearchBox'
 import FilterPanel from '../components/FilterPanel'
@@ -48,15 +48,26 @@ const SORT_OPTIONS: SortOption<HallSortKey>[] = [
 export default function ConcertHallListPage() {
   useDocumentTitle('コンサートホール一覧')
 
-  const [view, setView] = useState<ViewMode>('list')
-  const [query, setQuery] = useState('')
-  const [prefs, setPrefs] = useState<string[]>([])
-  const [equip, setEquip] = useState<Set<string>>(new Set())
-  const [hallTypes, setHallTypes] = useState<HallType[]>([])
-  const [seats, setSeats] = useState<Range>(['', ''])
-  const [stageW, setStageW] = useState<Range>(['', ''])
-  const [stageD, setStageD] = useState<Range>(['', ''])
-  const { sortKey, sortAsc, toggleSort, setSort } = useSort<HallSortKey>('施設名')
+  /**
+   * 一覧の状態はURLが持つ。**`useState` に持たない。**
+   * 絞り込んだ結果をそのまま人に送れて、詳細ページから戻っても条件が残る。
+   */
+  const [params, setParams] = useSearchParams()
+  const state = useMemo(() => hallStateFromParams(params), [params])
+  const { query, prefs, hallTypes, seats, stageW, stageD, equip, view, sortKey, sortAsc } = state
+
+  /**
+   * 条件をひとつ変えるたびに履歴をひとつ積む（戻るで直前の絞り込みに戻れる）。
+   * **フリーワードだけは置き換える。** 打鍵ごとに積むと、戻るボタンが
+   * 文字を1つずつ消すだけの操作になってしまう。
+   */
+  const update = (patch: Partial<HallPageState>, replace = false) =>
+    setParams(hallStateToParams({ ...state, ...patch }), { replace })
+
+  const toggleSort = (key: HallSortKey) => {
+    const next = nextSort({ key: sortKey, asc: sortAsc }, key)
+    update({ sortKey: next.key, sortAsc: next.asc })
+  }
 
   // データが1件も無い種別は選択肢に出さない。必ず0件になる絞り込みを見せないため
   const hallTypeOptions = useMemo(
@@ -92,12 +103,12 @@ export default function ConcertHallListPage() {
       <FilterPanel
         head={
           <>
-            <SearchBox value={query} onChange={setQuery} />
+            <SearchBox value={query} onChange={v => update({ query: v }, true)} />
             <SortSelect
               options={SORT_OPTIONS}
               sortKey={sortKey}
               sortAsc={sortAsc}
-              onChange={setSort}
+              onChange={(key, asc) => update({ sortKey: key, sortAsc: asc })}
             />
           </>
         }
@@ -111,7 +122,7 @@ export default function ConcertHallListPage() {
                 type="button"
                 data-pref={pref}
                 aria-pressed={on}
-                onClick={() => setPrefs(toggleIn(prefs, pref))}
+                onClick={() => update({ prefs: toggleIn(prefs, pref) })}
                 className={on ? 'pill pill--on' : 'pill'}
               >
                 {on && <span className="pill__check">✓</span>}
@@ -130,7 +141,7 @@ export default function ConcertHallListPage() {
                   key={t}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => setHallTypes(toggleIn(hallTypes, t))}
+                  onClick={() => update({ hallTypes: toggleIn(hallTypes, t) })}
                   className={on ? 'pill pill--on' : 'pill'}
                 >
                   {on && <span className="pill__check">✓</span>}
@@ -149,7 +160,7 @@ export default function ConcertHallListPage() {
                 key={key}
                 type="button"
                 aria-pressed={on}
-                onClick={() => setEquip(toggleKey(equip, key))}
+                onClick={() => update({ equip: toggleKey(equip, key) })}
                 className={on ? 'pill pill--equip pill--on' : 'pill pill--equip'}
               >
                 {on && <span className="pill__check">✓</span>}
@@ -160,25 +171,31 @@ export default function ConcertHallListPage() {
         </FilterRow>
 
         <div className="ranges">
-          <RangeInput label="CAPACITY" title="客席数" unit="席" value={seats} onChange={setSeats} />
+          <RangeInput
+            label="CAPACITY"
+            title="客席数"
+            unit="席"
+            value={seats}
+            onChange={v => update({ seats: v })}
+          />
           <RangeInput
             label="STAGE WIDTH"
             title="舞台幅"
             unit="m"
             value={stageW}
-            onChange={setStageW}
+            onChange={v => update({ stageW: v })}
           />
           <RangeInput
             label="STAGE DEPTH"
             title="舞台奥行き"
             unit="m"
             value={stageD}
-            onChange={setStageD}
+            onChange={v => update({ stageD: v })}
           />
         </div>
       </FilterPanel>
 
-      <ViewToggle view={view} onChangeView={setView} count={filtered.length} />
+      <ViewToggle view={view} onChangeView={v => update({ view: v })} count={filtered.length} />
 
       {unknownExcluded > 0 && (
         <div className="notice notice--warn" role="status">

@@ -4,6 +4,8 @@ import {
   HALL_EQUIP_FIELDS,
   dedupeByFacility,
   filterHalls,
+  hallStateFromParams,
+  hallStateToParams,
   sortHalls,
   type HallCriteria,
 } from './concerthall'
@@ -298,5 +300,51 @@ describe('dedupeByFacility', () => {
       hall({ ID: 20, キー: '20-0' }),
     ]
     expect(dedupeByFacility(halls).map(h => h.キー)).toEqual(['10-大ホール', '20-0'])
+  })
+})
+
+/**
+ * URLと状態の往復。**URLが一覧の状態の置き場所**なので、
+ * ここが崩れると共有したリンクが別の条件で開く。
+ */
+describe('URLとの往復', () => {
+  it('何も絞り込んでいなければクエリは空', () => {
+    const state = hallStateFromParams(new URLSearchParams(''))
+    expect(hallStateToParams(state).toString()).toBe('')
+  })
+
+  it('条件をひととおり載せて読み戻せる', () => {
+    const params = hallStateToParams({
+      query: 'ホール',
+      prefs: ['大阪府', '兵庫県'],
+      hallTypes: ['音楽専用'],
+      seats: ['500', '1200'],
+      stageW: ['', '20'],
+      stageD: ['10', ''],
+      equip: new Set(['piano', 'organ']),
+      view: 'table',
+      sortKey: '客席数',
+      sortAsc: false,
+    })
+    expect(hallStateFromParams(params)).toEqual({
+      query: 'ホール',
+      prefs: ['大阪府', '兵庫県'],
+      hallTypes: ['音楽専用'],
+      seats: ['500', '1200'],
+      stageW: ['', '20'],
+      stageD: ['10', ''],
+      equip: new Set(['piano', 'organ']),
+      view: 'table',
+      sortKey: '客席数',
+      sortAsc: false,
+    })
+  })
+
+  // 手で書き換えられるので、知らない値は黙って落とす（0件の理由が分からない画面にしない）
+  it('知らない府県・種別・設備は落とす', () => {
+    const state = hallStateFromParams(new URLSearchParams('pref=東京都&type=野外&equip=karaoke'))
+    expect(state.prefs).toEqual([])
+    expect(state.hallTypes).toEqual([])
+    expect(state.equip.size).toBe(0)
   })
 })

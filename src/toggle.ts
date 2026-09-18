@@ -14,3 +14,16 @@ export function toggleKey(keys: Set<string>, key: string): Set<string> {
   else next.add(key)
   return next
 }
+
+/**
+ * 表の見出しを押したときの並び替え。
+ * 同じキーなら向きを反転し、違うキーなら昇順から始める。
+ *
+ * 状態をURLに移したので、`useSort` が持っていたこの規則だけを関数として残した。
+ */
+export function nextSort<T extends string>(
+  current: { key: T; asc: boolean },
+  key: T,
+): { key: T; asc: boolean } {
+  return current.key === key ? { key, asc: !current.asc } : { key, asc: true }
+}
