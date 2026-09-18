@@ -31,7 +31,7 @@ src/data/
 data/facilities/concerthall.csv
 data/facilities/draft/
 
-# 表計算の書き出し（sheet:export の出力。正はYAMLなので追跡しない）
+# 表計算の副本（変換スクリプトは廃止したが、手元で作ったものを誤って追跡しないよう残す。正はYAML）
 data/facilities/*.xlsx
 
 # 調査の作業ファイル

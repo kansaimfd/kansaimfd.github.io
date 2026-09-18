@@ -14,10 +14,6 @@
 サイトが読むJSONは、ここからビルド時に生成しています（`src/data/` 以下。コミット対象外）。
 **JSONを直接編集しても次のビルドで消えます。**
 
-`data/facilities/facilities.xlsx` とスプレッドシートは、表形式で見比べるための副本です。
-`npm run sheet:export` / `npm run sheet:import` で行き来できますが、
-**取り込んだあとのYAMLが正**であり、突き合わせはYAML側で確認してください。
-
 ## 編集の手順
 
 ```bash
