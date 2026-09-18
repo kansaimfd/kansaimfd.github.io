@@ -32,8 +32,10 @@ npm test           # Vitest。`npm run test:watch` で監視実行
 npm run test:coverage # カバレッジ計測（V8）。HTML は coverage/index.html
 npm run format     # Prettier で整形。`npm run format:check` は確認のみ
 
-node scripts/build-data.mjs --verbose # データ検査の警告を全件表示
-node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコーディングで検算（随時）
+node scripts/build-data.mjs --verbose  # データ検査の警告を全件表示
+node scripts/build-data.mjs --coverage # 項目別の調査カバレッジと確認日の鮮度を表で出す
+node scripts/audit-coordinates.mjs     # 座標を国土地理院のジオコーディングで検算（随時）
+node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへの転用」を検査（月次CIでも回る）
 ```
 
 **型チェックとテストの前には `npm run data` が要る**。`src/data/*.json` は `.gitignore` 済みで、
@@ -44,11 +46,21 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
 データ検査（`scripts/validate.mjs`）はビルド前に自動実行される。
 **エラーがあるとビルドは停止する**。警告は種類ごとに集約して表示され、ビルドは続行する。
 
+**検査が見るのは「書かれている値が正しいか」だけで、書かれていないことは何も言わない。**
+設備の3値は未調査をキーの省略で表すので、黙っていると「調べていない」と「無い」の区別が
+数の上で見えない。項目別の埋まり具合は `scripts/coverage.mjs` が数え、`npm run data` が
+1行の要約を、`--coverage` が項目別の表を出す。未調査の多い項目はそのまま
+**使えない絞り込み**になる（ホール種別は掲載している284ホールのうち33%しか埋まっていない）。
+
 ### 開発環境
 
 - **Node は 22 系**（`.nvmrc` / `package.json` の `engines`）。CI は `.nvmrc` を見る
-- **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す。
-  **GitHub Actions で今も動いているのはこれだけ**（`deploy.yml` は停止中。→ Deployment）
+- **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す
+- **月次のリンク検査**（`.github/workflows/audit-urls.yml`）が毎月1日に `audit-urls.mjs` を回し、
+  結果を Issue にまとめる（題名が `リンク切れ検査:` で始まる Issue を**使い回して更新**する。
+  毎月新しく立てると同じ施設の話が何本も並んで追えなくなる。全件正常になれば自動で閉じる）。
+  外部アクセスを伴うので `ci.yml` には入れない
+- 動いている GitHub Actions はこの2つ（`deploy.yml` は停止中。→ Deployment）
 - **Prettier の対象はコードだけ**。`data/` のYAMLと `*.md` は `.prettierignore` で除外している
   （YAMLは桁を揃えたコメントや引用符の使い分けに意味があるため）。
   コード側でも桁揃えを保ちたい箇所には `// prettier-ignore` を置く（`validate.mjs` の `PREF_BOX`）
@@ -66,11 +78,12 @@ node scripts/audit-coordinates.mjs    # 座標を国土地理院のジオコー�
 - **カバレッジの `include` は src と scripts の全体**。テストから読み込まれなかったファイルも
   0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
   そのため全体の数字は3割台にしかならない。**追うのは全体値ではなく、テスト対象モジュール
-  （`transform` / `validate` / `station` / `availability` / `address` / `name` / `rental` /
-  `concerthall` / `practice` / `query` / `toggle` / `title`）が4指標とも100%であること**。
+  （`transform` / `validate` / `coverage` / `station` / `availability` / `address` / `name` /
+  `rental` / `concerthall` / `practice` / `query` / `toggle` / `title`）が4指標とも100%であること**。
   ページとコンポーネントの数字はスモークテストが通りがかりに
   踏んだ結果で、**その値を上げにいかない**（導線以外を見ないテストなので、数字を追うと
-  スモークテストの目的から外れる）。監査スクリプト（`audit-coordinates` / `audit-urls`）は未着手で0%。
+  スモークテストの目的から外れる）。外部アクセスを伴う監査スクリプト
+  （`audit-coordinates` / `audit-urls`）は未着手で0%。
   なお text レポーターは全項目100%のファイルを表から省く（`skipFull` とは無関係）。
   一覧は `coverage/index.html` か `coverage-summary.json` を見る
 

@@ -1,0 +1,112 @@
+# 登録URLの生死を月次で見る。
+#
+# 167施設の公式サイトURLは、こちらが何もしなくても壊れていく。実際に第6バッチの
+# 再調査では登録URL5件すべてが死んでいた（DNS切れ2・404が3）。さらに SAYAKAホールの
+# ドメインは失効後に無関係な英語サイトへ転用されていて、**開くのに別サイト**という
+# 404より気づきにくい壊れ方をしていた。
+#
+# 外部アクセスを伴うのでビルド（ci.yml）には入れず、ここで別に回す。
+# 結果は Issue に集約する（実行ログは流れていくので、放っておくと誰も見ない）。
+name: Audit URLs
+
+on:
+  schedule:
+    # 毎月1日 09:00 JST（cron はUTC）
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # 失敗させない。検査そのものが通らなかったのか、リンクが切れていたのかを
+      # Issue の側で見分けたいので、結果はファイルに落として次のステップで読む
+      - name: リンクを検査する
+        run: node scripts/audit-urls.mjs --json > audit.json
+
+      - name: 結果を Issue にまとめる
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const { dead, suspect, ok, total } = JSON.parse(fs.readFileSync('audit.json', 'utf8'))
+            const TITLE_PREFIX = 'リンク切れ検査:'
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+
+            const list = (rows) => rows.map(r =>
+              `- [ ] **${r.施設名}**（${r.file} ID:${r.ID}${r.出典 ? '' : '・出典なし'}）\n` +
+              `  - ${r.URL}\n` +
+              `  - ${r.why}${r.title ? ` / title: ${r.title}` : ''}`
+            ).join('\n')
+
+            // 既存の Issue を探す。ラベルを作らずに済むよう題名で見分ける
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo, state: 'open', per_page: 100,
+            })
+            const existing = issues.find(i => i.title.startsWith(TITLE_PREFIX))
+
+            if (dead.length === 0 && suspect.length === 0) {
+              core.info(`全${total}件が正常。Issue は作らない`)
+              if (existing) {
+                await github.rest.issues.createComment({
+                  ...context.repo, issue_number: existing.number,
+                  body: `全${total}件が正常に開けるようになりました。閉じます。\n\n実行: ${run}`,
+                })
+                await github.rest.issues.update({
+                  ...context.repo, issue_number: existing.number, state: 'closed',
+                })
+              }
+              return
+            }
+
+            const body = [
+              `公式サイトURL ${total}件のうち、${dead.length + suspect.length}件に問題があります。`,
+              ``,
+              `**直し方**: 公式サイトを開いて現在のURLを確かめ、`,
+              `\`data/facilities/*.yaml\` の \`URL\` と \`出典\` を更新してください。`,
+              `施設ごと無くなっている場合は \`貸館.状態\` を \`廃止\` にします（CLAUDE.md の記述ルール）。`,
+              ``,
+              `## 到達不可（${dead.length}件）`,
+              ``,
+              dead.length ? list(dead) : 'なし',
+              ``,
+              `## 別サイトの疑い（${suspect.length}件）`,
+              ``,
+              `ページは開くが、施設名がほとんど出てこないもの。**404より危険**で、`,
+              `失効したドメインが別の用途に転用されている可能性があります`,
+              `（SAYAKAホールのドメインは英語の賃貸物件サイトになっていました）。`,
+              ``,
+              suspect.length ? list(suspect) : 'なし',
+              ``,
+              `---`,
+              `正常 ${ok}件 / 到達不可 ${dead.length}件 / 別サイトの疑い ${suspect.length}件`,
+              `（\`Audit URLs\` ワークフローが自動で作成・更新しています。実行: ${run}）`,
+            ].join('\n')
+
+            const title = `${TITLE_PREFIX} 到達不可 ${dead.length}件・別サイトの疑い ${suspect.length}件`
+
+            if (existing) {
+              // 毎月新しい Issue を立てると、同じ施設の話が何本も並んで追えなくなる
+              await github.rest.issues.update({
+                ...context.repo, issue_number: existing.number, title, body,
+              })
+              core.info(`#${existing.number} を更新しました`)
+            } else {
+              const { data: created } = await github.rest.issues.create({
+                ...context.repo, title, body,
+              })
+              core.info(`#${created.number} を作成しました`)
+            }

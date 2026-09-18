@@ -20,6 +20,7 @@ import { fileURLToPath } from 'url'
 import yaml from 'js-yaml'
 import { validate, report } from './validate.mjs'
 import { normalize, flattenHalls, toPracticeList } from './transform.mjs'
+import { reportCoverage } from './coverage.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -42,6 +43,7 @@ try {
 }
 
 const verbose = process.argv.includes('--verbose')
+const detailedCoverage = process.argv.includes('--coverage')
 if (
   report(
     validate(
@@ -94,4 +96,22 @@ console.log(
   `Built: ${concerthallFacilities.length} hall facilities ` +
     `→ ${concerthalls.length} halls, ${practices.length} practices` +
     (estimated > 0 ? ` (徒歩分数を距離から補完: ${estimated}件)` : ''),
+)
+
+// 検査は「書かれている値が正しいか」しか見ない。書かれていない項目の多さはここで出す。
+// 部屋の母数は normalize 後（会議室などを落としたあと）＝利用者が実際に見る部屋にする
+reportCoverage(
+  [
+    {
+      file: 'concerthall',
+      records: rawConcerthalls,
+      rooms: concerthallFacilities.flatMap(f => f.部屋 ?? []),
+    },
+    {
+      file: 'practice',
+      records: rawPractices,
+      rooms: practiceFacilities.flatMap(f => f.部屋 ?? []),
+    },
+  ],
+  { detailed: detailedCoverage },
 )
