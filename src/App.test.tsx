@@ -14,6 +14,10 @@ import App from './App'
 import { concerthalls } from './datasets/concerthalls'
 import { practices } from './datasets/practices'
 
+// jsdom は window.scrollTo を実装していない。ScrollToTop が呼ぶだけで
+// 「Not implemented」が出てテスト出力が埋まるので差し替えておく
+vi.stubGlobal('scrollTo', vi.fn())
+
 // 地図そのものは対象外。leaflet は jsdom に無い API を使う
 vi.mock('./components/DetailMap', () => ({ default: () => <div data-testid="map" /> }))
 vi.mock('./components/FacilityMap', () => ({ default: () => <div data-testid="map" /> }))
@@ -51,6 +55,19 @@ describe('ルーティング', () => {
   it('存在しないIDでは見つからない旨を出す', async () => {
     renderAt('/concert/999999')
     expect(await screen.findByText('施設が見つかりません。')).toBeDefined()
+  })
+
+  /**
+   * GitHub Pages は存在しないパスにも index.html（を複製した 404.html）を返すので、
+   * どんなURLもこのSPAまで届く。受け皿のルートが無いと、ヘッダーとフッターだけが出て
+   * 本文が空になる。空白は型チェックにも lint にも引っかからない
+   */
+  it('知らないURLでは404の案内を出す', async () => {
+    renderAt('/no-such-page')
+    const heading = await screen.findByRole('heading', { name: 'ページが見つかりません' })
+    expect(heading).toBeDefined()
+    // 行き止まりにしない（一覧へ戻る導線があること）
+    expect(linkHrefs()).toContain('/concert')
   })
 })
 

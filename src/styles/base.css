@@ -110,3 +110,18 @@ strong {
 svg {
   display: block;
 }
+
+/*
+ * 動きを減らす設定をしている利用者には、色などの遷移を止める。
+ * 前庭障害では画面内の動きが不調の引き金になりうるため、OSの設定を尊重する。
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

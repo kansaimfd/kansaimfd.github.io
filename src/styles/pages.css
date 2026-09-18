@@ -157,3 +157,41 @@
   display: inline-block;
   margin-top: 0.5rem;
 }
+
+/* ── ページが見つかりません ─────────────────── */
+
+.notfound {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.notfound__code {
+  color: var(--color-gold-500);
+  font-family: var(--font-serif);
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: var(--tracking-caption);
+  line-height: 1;
+}
+
+.notfound__title {
+  margin-top: 0.75rem;
+  color: var(--color-navy-700);
+  font-size: 1.5rem;
+}
+
+.notfound__lead {
+  margin-top: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: var(--fs-base);
+}
+
+.notfound__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}

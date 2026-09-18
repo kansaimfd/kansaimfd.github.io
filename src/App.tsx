@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Routes, Route, Link, NavLink } from 'react-router-dom'
 import ConcertHallListPage from './pages/ConcertHallListPage'
+import ScrollToTop from './components/ScrollToTop'
 
 // 入口のコンサートホール一覧だけ静的に読む。残りはルート単位で分割する。
 // 施設データはページごとに別のJSONなので、練習場79件（239KB）を
@@ -9,6 +10,7 @@ const ConcertHallDetailPage = lazy(() => import('./pages/ConcertHallDetailPage')
 const PracticeListPage = lazy(() => import('./pages/PracticeListPage'))
 const PracticeDetailPage = lazy(() => import('./pages/PracticeDetailPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 const NAV = [
   { to: '/concert', label: 'コンサートホール' },
@@ -19,6 +21,10 @@ const NAV = [
 export default function App() {
   return (
     <div className="app">
+      <ScrollToTop />
+      <a href="#main" className="skip-link">
+        本文へスキップ
+      </a>
       <header className="site-header">
         <div className="site-header__inner">
           <Link to="/" className="brand">
@@ -41,7 +47,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="site-main">
+      <main className="site-main" id="main">
         <Suspense fallback={<p className="loading">読み込み中…</p>}>
           <Routes>
             <Route path="/" element={<ConcertHallListPage />} />
@@ -50,6 +56,11 @@ export default function App() {
             <Route path="/practice" element={<PracticeListPage />} />
             <Route path="/practice/:id" element={<PracticeDetailPage />} />
             <Route path="/about" element={<AboutPage />} />
+            {/*
+              GitHub Pages は 404.html として index.html を返すので、存在しないパスも
+              ここまで届く。受け皿が無いと本文が空のまま何も出ない
+            */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
       </main>
