@@ -29,6 +29,7 @@ import SortableTh from '../components/SortableTh'
 import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
+import UnknownNotice from '../components/UnknownNotice'
 
 // 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
@@ -75,7 +76,7 @@ export default function ConcertHallListPage() {
     [],
   )
 
-  const { filtered, unknownExcluded } = useMemo(() => {
+  const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
     const result = filterHalls(concerthalls, {
       query,
       prefs,
@@ -197,15 +198,7 @@ export default function ConcertHallListPage() {
 
       <ViewToggle view={view} onChangeView={v => update({ view: v })} count={filtered.length} />
 
-      {unknownExcluded > 0 && (
-        <div className="notice notice--warn" role="status">
-          <span aria-hidden>⚠</span>
-          <span>
-            設備が<strong>未調査</strong>の {unknownExcluded} 件を絞り込みから除外しています。
-            設備が「ない」と確認できたわけではないため、実際には条件に合う施設が含まれている可能性があります。
-          </span>
-        </div>
-      )}
+      <UnknownNotice count={unknownExcluded} fields={unknownFields} />
 
       {view === 'list' && (
         <div className="facility-list">

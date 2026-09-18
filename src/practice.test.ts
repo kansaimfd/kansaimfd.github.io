@@ -174,12 +174,58 @@ describe('filterPractices', () => {
         practice({ ID: 30, 部屋: [{}] }),
         practice({ ID: 40 }),
       ]
-      const { filtered, unknownExcluded } = filterPractices(
+      const { filtered, unknownExcluded, unknownFields } = filterPractices(
         list,
         criteria({ equip: new Set(['wind']) }),
       )
       expect(filtered.map(p => p.ID)).toEqual([10])
       expect(unknownExcluded).toBe(2)
+      expect(unknownFields).toEqual(['管楽器の可否'])
+    })
+
+    /**
+     * **未調査で外れるのは設備だけではない。** 定員は283室中193室、
+     * 徒歩分数も駅の記録が無い施設がある。以前はどちらも黙って消えていた
+     */
+    it('定員・最寄駅・徒歩の未調査も数える', () => {
+      const list = [
+        practice({ ID: 10, 部屋: [{ 定員: 50 }] }),
+        practice({ ID: 20, 部屋: [{ 定員: 10 }] }), // 足りないので「合わない」
+        practice({ ID: 30, 部屋: [{}] }), // 定員が未調査
+        practice({ ID: 40 }), // 部屋そのものが未登録
+      ]
+      const { filtered, unknownExcluded, unknownFields } = filterPractices(
+        list,
+        criteria({ capacity: '30' }),
+      )
+      expect(filtered.map(p => p.ID)).toEqual([10])
+      expect(unknownExcluded).toBe(2)
+      expect(unknownFields).toEqual(['定員'])
+    })
+
+    it('最寄駅の記録が無い施設は、駅や徒歩で絞ると未調査として数える', () => {
+      const list = [
+        practice({ ID: 10, 最寄駅: [{ 駅: '梅田駅', 駅徒歩: 5 }] }),
+        practice({ ID: 20 }), // 最寄駅の記録なし
+      ]
+
+      const byStation = filterPractices(list, criteria({ station: '梅田駅' }))
+      expect(byStation.filtered.map(p => p.ID)).toEqual([10])
+      expect(byStation.unknownExcluded).toBe(1)
+      expect(byStation.unknownFields).toEqual(['最寄駅'])
+
+      const byWalk = filterPractices(list, criteria({ walk: '10' }))
+      expect(byWalk.filtered.map(p => p.ID)).toEqual([10])
+      expect(byWalk.unknownExcluded).toBe(1)
+      expect(byWalk.unknownFields).toEqual(['駅徒歩'])
+    })
+
+    /** 定員0の部屋と、定員が未調査の部屋を同じに扱わない */
+    it('定員が未調査の施設は「定員0」として扱わない', () => {
+      const list = [practice({ ID: 10, 部屋: [{ 面積: 30 }] })]
+      const { unknownExcluded, unknownFields } = filterPractices(list, criteria({ capacity: '1' }))
+      expect(unknownExcluded).toBe(1)
+      expect(unknownFields).toEqual(['定員'])
     })
   })
 })

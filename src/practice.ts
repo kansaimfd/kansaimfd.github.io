@@ -2,8 +2,18 @@ import type { PracticeListItem, Availability } from './types'
 import type { ViewMode } from './components/ViewToggle'
 import { fullAddress } from './address'
 import { compareByName } from './name'
-import { minWalk, stationNames } from './station'
-import type { FilterResult } from './concerthall'
+import { NO_WALK, minWalk, stationNames } from './station'
+import {
+  applyConditions,
+  matchAny,
+  matchAtLeast,
+  matchAtMost,
+  matchAvailability,
+  matchOneOf,
+  matchText,
+  type Condition,
+  type FilterResult,
+} from './filter'
 import { ALL_PREFS } from './pref'
 import {
   readList,
@@ -48,6 +58,22 @@ export function maxCapacity(p: PracticeListItem): number {
 /** 施設内で最も広い部屋の面積（㎡）。分からなければ 0 */
 export function maxArea(p: PracticeListItem): number {
   return Math.max(0, ...(p.部屋?.map(r => r.面積 ?? 0) ?? []))
+}
+
+/**
+ * 絞り込み用の定員。**分からない場合は 0 ではなく undefined を返す。**
+ * 0 に均すと「定員が未調査の施設」と「定員0の施設」が同じ扱いになり、
+ * 未調査のまま静かに除外されてしまう（表示用の maxCapacity とはここが違う）。
+ */
+export function knownCapacity(p: PracticeListItem): number | undefined {
+  const known = p.部屋?.map(r => r.定員).filter(v => v != null) ?? []
+  return known.length > 0 ? Math.max(...known) : undefined
+}
+
+/** 同じく絞り込み用の徒歩分数。1駅も分数が分からなければ undefined */
+export function knownWalk(p: PracticeListItem): number | undefined {
+  const walk = minWalk(p)
+  return walk === NO_WALK ? undefined : walk
 }
 
 export const PRACTICE_EQUIP_FIELDS = [
@@ -95,35 +121,36 @@ export interface PracticeCriteria {
   equip: Set<string>
 }
 
+/**
+ * 条件を「合う / 合わない / 判断できない」で並べる（→ filter.ts）。
+ * 定員・最寄駅・徒歩分数も未調査がありうるので、設備と同じ扱いにする。
+ */
+function practiceConditions(c: PracticeCriteria): Condition<PracticeListItem>[] {
+  return [
+    // 都道府県・市区町村・施設名・住所は必ずあるので、未調査にはならない
+    { label: '都道府県', match: p => matchOneOf(p.都道府県, c.prefs) },
+    { label: '市区町村', match: p => matchOneOf(p.市区町村, c.city ? [c.city] : []) },
+    { label: 'フリーワード', match: p => matchText(searchText(p), c.query) },
+    { label: '定員', match: p => matchAtLeast(knownCapacity(p), c.capacity) },
+    { label: '最寄駅', match: p => matchAny(stationNames(p), c.station ? [c.station] : []) },
+    { label: '駅徒歩', match: p => matchAtMost(knownWalk(p), c.walk) },
+    ...PRACTICE_EQUIP_FIELDS.filter(e => c.equip.has(e.key)).map(e => ({
+      label: e.unknownLabel,
+      match: (p: PracticeListItem) => matchAvailability(e.state(p)),
+    })),
+  ]
+}
+
+/** フリーワードが見る文字列 */
+function searchText(p: PracticeListItem): string {
+  return `${p.施設名}${fullAddress(p)}`
+}
+
 export function filterPractices(
   practices: PracticeListItem[],
   c: PracticeCriteria,
 ): FilterResult<PracticeListItem> {
-  // 設備以外の条件で先に絞る。設備は未調査による除外数を数えるため別段にする
-  const base = practices.filter(p => {
-    if (c.prefs.length > 0 && !c.prefs.includes(p.都道府県)) return false
-    if (c.city && p.市区町村 !== c.city) return false
-    if (c.capacity && maxCapacity(p) < Number(c.capacity)) return false
-    if (c.station && !stationNames(p).includes(c.station)) return false
-    if (c.walk && minWalk(p) > Number(c.walk)) return false
-    if (c.query) {
-      const q = c.query.toLowerCase()
-      const text = `${p.施設名}${fullAddress(p)}`.toLowerCase()
-      if (!text.includes(q)) return false
-    }
-    return true
-  })
-
-  const active = PRACTICE_EQUIP_FIELDS.filter(e => c.equip.has(e.key))
-  const filtered = base.filter(p => active.every(e => e.state(p) === true))
-
-  const shown = new Set(filtered)
-  const unknownExcluded =
-    active.length === 0
-      ? 0
-      : base.filter(p => !shown.has(p) && active.some(e => e.state(p) === undefined)).length
-
-  return { filtered, unknownExcluded }
+  return applyConditions(practices, practiceConditions(c))
 }
 
 export function sortPractices(

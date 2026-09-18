@@ -30,6 +30,7 @@ import SortableTh from '../components/SortableTh'
 import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
+import UnknownNotice from '../components/UnknownNotice'
 
 // 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
@@ -98,7 +99,7 @@ export default function PracticeListPage() {
   // 「出戸バスターミナル」のように名前からは鉄道駅と区別がつかないものがある
   const stationDisplay = useMemo(() => stationLabels(practices), [])
 
-  const { filtered, unknownExcluded } = useMemo(() => {
+  const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
     const result = filterPractices(practices, {
       query,
       prefs,
@@ -220,18 +221,7 @@ export default function PracticeListPage() {
 
       <ViewToggle view={view} onChangeView={v => update({ view: v })} count={filtered.length} />
 
-      {unknownExcluded > 0 && (
-        <div className="notice notice--warn" role="status">
-          <span aria-hidden>⚠</span>
-          <span>
-            {PRACTICE_EQUIP_FIELDS.filter(e => equip.has(e.key))
-              .map(e => e.unknownLabel)
-              .join('・')}
-            が<strong>未調査</strong>の {unknownExcluded} 件を絞り込みから除外しています。
-            「ない」と確認できたわけではないため、実際には条件に合う施設が含まれている可能性があります。
-          </span>
-        </div>
-      )}
+      <UnknownNotice count={unknownExcluded} fields={unknownFields} />
 
       {view === 'list' && (
         <div className="facility-list">

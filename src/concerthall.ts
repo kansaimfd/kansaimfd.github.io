@@ -1,6 +1,14 @@
 import type { ConcertHall, HallType, Availability } from './types'
 import type { ViewMode } from './components/ViewToggle'
-import { hasEquipment } from './availability'
+import {
+  applyConditions,
+  matchAvailability,
+  matchOneOf,
+  matchRange,
+  matchText,
+  type Condition,
+  type FilterResult,
+} from './filter'
 import { fullAddress } from './address'
 import { compareByName } from './name'
 import { minWalk } from './station'
@@ -44,13 +52,34 @@ export const ALL_HALL_TYPES: HallType[] = ['音楽専用', '多目的', '小ホ�
  * 台数が未調査の施設が「未調査のため除外しました」に数えられないまま消えていた。
  */
 export const HALL_EQUIP_FIELDS = [
-  { key: 'piano', label: 'ピアノあり', state: (h: ConcertHall) => h.ピアノ有無 },
-  { key: 'organ', label: 'パイプオルガンあり', state: (h: ConcertHall) => h.パイプオルガン },
-  { key: 'stand', label: '譜面台貸出あり', state: (h: ConcertHall) => h.譜面台貸出 },
-  { key: 'family', label: '親子室あり', state: (h: ConcertHall) => h.親子室 },
+  {
+    key: 'piano',
+    label: 'ピアノあり',
+    unknownLabel: 'ピアノの有無',
+    state: (h: ConcertHall) => h.ピアノ有無,
+  },
+  {
+    key: 'organ',
+    label: 'パイプオルガンあり',
+    unknownLabel: 'パイプオルガンの有無',
+    state: (h: ConcertHall) => h.パイプオルガン,
+  },
+  {
+    key: 'stand',
+    label: '譜面台貸出あり',
+    unknownLabel: '譜面台貸出の有無',
+    state: (h: ConcertHall) => h.譜面台貸出,
+  },
+  {
+    key: 'family',
+    label: '親子室あり',
+    unknownLabel: '親子室の有無',
+    state: (h: ConcertHall) => h.親子室,
+  },
   {
     key: 'parking',
     label: '駐車場あり',
+    unknownLabel: '駐車場の有無',
     state: (h: ConcertHall): Availability | undefined =>
       h.駐車場 == null ? undefined : h.駐車場 > 0,
   },
@@ -66,49 +95,38 @@ export interface HallCriteria {
   equip: Set<string>
 }
 
-/** 範囲に収まるか。値が未調査（null）なら、範囲を指定している時点で外れる */
-function inRange(value: number | undefined, [min, max]: Range): boolean {
-  if (min && (value == null || value < Number(min))) return false
-  if (max && (value == null || value > Number(max))) return false
-  return true
+export type { FilterResult }
+
+/**
+ * 条件を「合う / 合わない / 判断できない」で並べる（→ filter.ts）。
+ *
+ * **未調査で外れたものを数えるのは設備だけではない。** ホール種別・客席数・
+ * 舞台寸法も調査の埋まり具合はまちまちで（客席数は284ホール中126件）、
+ * 以前はこれらの未調査が黙って消えていた。
+ */
+function hallConditions(c: HallCriteria): Condition<ConcertHall>[] {
+  return [
+    // 都道府県・施設名・住所は必ずあるので、未調査にはならない
+    { label: '都道府県', match: h => matchOneOf(h.都道府県, c.prefs) },
+    { label: 'フリーワード', match: h => matchText(searchText(h), c.query) },
+    { label: 'ホール種別', match: h => matchOneOf(h.ホール種別, c.hallTypes) },
+    { label: '客席数', match: h => matchRange(h.客席数, c.seats) },
+    { label: '舞台幅', match: h => matchRange(h.舞台幅, c.stageW) },
+    { label: '舞台奥行', match: h => matchRange(h.舞台奥行, c.stageD) },
+    ...HALL_EQUIP_FIELDS.filter(e => c.equip.has(e.key)).map(e => ({
+      label: e.unknownLabel,
+      match: (h: ConcertHall) => matchAvailability(e.state(h)),
+    })),
+  ]
 }
 
-export interface FilterResult<T> {
-  filtered: T[]
-  /**
-   * 設備が「無い」のではなく「未調査」だったために外れた件数。
-   * 黙って消すと、実際には設備がある施設を見落とさせる
-   */
-  unknownExcluded: number
+/** フリーワードが見る文字列 */
+function searchText(h: ConcertHall): string {
+  return `${h.施設名}${h.部屋名 ?? ''}${fullAddress(h)}`
 }
 
 export function filterHalls(halls: ConcertHall[], c: HallCriteria): FilterResult<ConcertHall> {
-  // 設備以外の条件で先に絞る。設備は未調査による除外数を数えるため別段にする
-  const base = halls.filter(h => {
-    if (c.prefs.length > 0 && !c.prefs.includes(h.都道府県)) return false
-    if (c.hallTypes.length > 0 && (h.ホール種別 == null || !c.hallTypes.includes(h.ホール種別)))
-      return false
-    if (!inRange(h.客席数, c.seats)) return false
-    if (!inRange(h.舞台幅, c.stageW)) return false
-    if (!inRange(h.舞台奥行, c.stageD)) return false
-    if (c.query) {
-      const q = c.query.toLowerCase()
-      const text = `${h.施設名}${h.部屋名 ?? ''}${fullAddress(h)}`.toLowerCase()
-      if (!text.includes(q)) return false
-    }
-    return true
-  })
-
-  const active = HALL_EQUIP_FIELDS.filter(e => c.equip.has(e.key))
-  const filtered = base.filter(h => active.every(e => hasEquipment(e.state(h))))
-
-  const shown = new Set(filtered)
-  const unknownExcluded =
-    active.length === 0
-      ? 0
-      : base.filter(h => !shown.has(h) && active.some(e => e.state(h) === undefined)).length
-
-  return { filtered, unknownExcluded }
+  return applyConditions(halls, hallConditions(c))
 }
 
 export function sortHalls(halls: ConcertHall[], key: HallSortKey, asc: boolean): ConcertHall[] {

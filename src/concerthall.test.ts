@@ -158,12 +158,58 @@ describe('filterHalls', () => {
      * 実際にはピアノがある施設を利用者が見落とす
      */
     it('未調査で外れた件数を数える（「なし」は数えない）', () => {
-      const { unknownExcluded } = filterHalls(halls, criteria({ equip: new Set(['piano']) }))
+      const { unknownExcluded, unknownFields } = filterHalls(
+        halls,
+        criteria({ equip: new Set(['piano']) }),
+      )
       expect(unknownExcluded).toBe(1)
+      // 注意書きに出す名前。何が未調査だったのかを利用者に示す
+      expect(unknownFields).toEqual(['ピアノの有無'])
     })
 
     it('設備で絞っていなければ 0 件', () => {
       expect(filterHalls(halls, NO_CRITERIA).unknownExcluded).toBe(0)
+    })
+
+    /**
+     * **未調査で外れるのは設備だけではない。** 客席数は284ホール中126件しか
+     * 入っていないので、客席数で絞ると残り158件が外れる。これを数えずに
+     * 消していたため、利用者には結果が少ない理由が分からなかった
+     */
+    it('数値の条件でも未調査の件数を数える', () => {
+      const halls = [
+        hall({ ID: 10, 客席数: 1000 }),
+        hall({ ID: 20, 客席数: 100 }), // 少なすぎるので「合わない」
+        hall({ ID: 30 }), // 未調査
+        hall({ ID: 40 }), // 未調査
+      ]
+      const { filtered, unknownExcluded, unknownFields } = filterHalls(
+        halls,
+        criteria({ seats: ['500', ''] }),
+      )
+      expect(filtered.map(h => h.ID)).toEqual([10])
+      expect(unknownExcluded).toBe(2)
+      expect(unknownFields).toEqual(['客席数'])
+    })
+
+    it('ホール種別の未調査も数える', () => {
+      const halls = [hall({ ID: 10, ホール種別: '音楽専用' }), hall({ ID: 20 })]
+      const { unknownExcluded, unknownFields } = filterHalls(
+        halls,
+        criteria({ hallTypes: ['音楽専用'] }),
+      )
+      expect(unknownExcluded).toBe(1)
+      expect(unknownFields).toEqual(['ホール種別'])
+    })
+
+    /** 府県が違うだけの施設まで数えると、除外件数が実態より膨らむ */
+    it('他の条件で外れた施設は未調査に数えない', () => {
+      const halls = [hall({ ID: 10, 都道府県: '京都府' })] // 客席数は未調査
+      const { unknownExcluded } = filterHalls(
+        halls,
+        criteria({ prefs: ['大阪府'], seats: ['500', ''] }),
+      )
+      expect(unknownExcluded).toBe(0)
     })
 
     /**
