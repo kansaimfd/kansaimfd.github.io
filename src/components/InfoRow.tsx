@@ -3,14 +3,13 @@ interface Props {
   value?: string | number | null
 }
 
+/** 詳細ページの基本情報の1行。値が無い項目は行ごと出さない */
 export default function InfoRow({ label, value }: Props) {
   if (value == null || value === '') return null
   return (
-    <tr className="border-b">
-      <th className="px-3 py-2 text-left text-sm text-gray-500 font-medium whitespace-nowrap w-36 bg-gray-50">
-        {label}
-      </th>
-      <td className="px-3 py-2 text-sm">{String(value)}</td>
+    <tr>
+      <th scope="row">{label}</th>
+      <td>{String(value)}</td>
     </tr>
   )
 }

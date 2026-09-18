@@ -25,7 +25,7 @@ interface Props {
 
 export default function FacilityMap({ facilities, detailBasePath }: Props) {
   return (
-    <MapContainer center={[34.7, 135.5]} zoom={9} className="w-full h-[500px] rounded-lg">
+    <MapContainer center={[34.7, 135.5]} zoom={9} className="map map--list">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -33,21 +33,18 @@ export default function FacilityMap({ facilities, detailBasePath }: Props) {
       {facilities.map(f => (
         <Marker key={f.ID} position={[f.緯度, f.経度]}>
           <Popup>
-            <div className="text-sm space-y-1 min-w-[160px]">
-              <p className="font-bold">
+            <div className="map-popup">
+              <p className="map-popup__name">
                 {f.施設名}
                 {f.部屋名 ? `（${f.部屋名}）` : ''}
               </p>
-              <p className="text-gray-600">{fullAddress(f)}</p>
+              <p className="map-popup__meta">{fullAddress(f)}</p>
               {f.最寄駅?.map((s, i) => (
-                <p key={i} className="text-gray-600">
+                <p key={i} className="map-popup__meta">
                   {stationLabel(s)}
                 </p>
               ))}
-              <Link
-                to={`${detailBasePath}/${f.ID}`}
-                className="block mt-1 text-blue-600 hover:underline"
-              >
+              <Link to={`${detailBasePath}/${f.ID}`} className="map-popup__link">
                 詳細を見る →
               </Link>
             </div>

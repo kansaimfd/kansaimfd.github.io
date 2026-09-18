@@ -8,7 +8,7 @@ interface Props {
 
 export default function DetailMap({ lat, lng }: Props) {
   return (
-    <MapContainer center={[lat, lng]} zoom={15} className="w-full h-64 rounded-lg">
+    <MapContainer center={[lat, lng]} zoom={15} className="map map--detail">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

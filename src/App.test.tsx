@@ -8,7 +8,7 @@
  * lint も通るので、描画して辿る以外に気づく方法が無い。
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import App from './App'
 import { concerthalls } from './datasets/concerthalls'
@@ -78,5 +78,27 @@ describe('導線', () => {
     const hrefs = new Set(linkHrefs())
     const 抜け = practices.filter(p => !hrefs.has(`/practice/${p.ID}`)).map(p => p.施設名)
     expect(抜け).toEqual([])
+  })
+
+  /**
+   * コンサートホール一覧は、表・地図の中身はあるのに切り替えボタンだけが無い状態で
+   * しばらく放置されていた（表示は 'list' 固定だった）。型チェックも lint も通るので、
+   * 描画してボタンを探す以外に気づく方法が無い。
+   */
+  it.each([
+    ['/concert', 'コンサートホール一覧', concerthalls.length],
+    ['/practice', '練習場一覧', practices.length],
+  ])('%s で件数と表示切替が出ている', async (path, heading, count) => {
+    renderAt(path)
+    await screen.findByRole('heading', { name: heading as string, level: 1 })
+
+    for (const label of ['リスト', '表', '地図']) {
+      expect(screen.getByRole('button', { name: label })).toBeDefined()
+    }
+    expect(screen.getByText(String(count))).toBeDefined()
+
+    // 表に切り替えたら表が出る（ボタンはあるが中身が繋がっていない、を捕まえる）
+    fireEvent.click(screen.getByRole('button', { name: '表' }))
+    expect(await screen.findByRole('table')).toBeDefined()
   })
 })

@@ -9,10 +9,12 @@ import type { UsageCondition } from '../types'
 export default function UsageConditionNote({ 利用条件 }: { 利用条件?: UsageCondition }) {
   if (!利用条件) return null
   return (
-    <p className="mt-2 mb-4 px-3 py-2 rounded-lg border border-violet-300 bg-violet-50 text-violet-900 text-sm">
-      <span className="font-medium">{利用条件.種別}</span>
-      <span className="mx-1.5 text-violet-400">|</span>
-      {利用条件.説明}
+    <p className="notice notice--usage">
+      <span>
+        <strong>{利用条件.種別}</strong>
+        <span className="notice__sep">|</span>
+        {利用条件.説明}
+      </span>
     </p>
   )
 }

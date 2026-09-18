@@ -4,26 +4,36 @@ interface Props {
   view: ViewMode
   onChangeView: (v: ViewMode) => void
   count: number
-  fullWidth?: boolean
 }
 
-export default function ViewToggle({ view, onChangeView, count, fullWidth }: Props) {
+const LABEL: Record<ViewMode, string> = {
+  list: 'リスト',
+  table: '表',
+  map: '地図',
+}
+
+/**
+ * 件数と表示の切り替え。
+ *
+ * 件数を切り替えと同じ行に置いているのは、絞り込んだ結果が何件になったのかが
+ * 分からないまま延々スクロールする状態を作らないため。
+ */
+export default function ViewToggle({ view, onChangeView, count }: Props) {
   return (
-    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-      <span className="text-sm text-gray-500">{count} 件</span>
-      <div className={`flex gap-2 ${fullWidth ? 'flex-1' : ''}`}>
-        {(['list', 'table', 'map'] as ViewMode[]).map(v => (
+    <div className="result-bar">
+      <p className="result-bar__count">
+        <strong>{count}</strong> 件
+      </p>
+      <div className="view-toggle">
+        {(Object.keys(LABEL) as ViewMode[]).map(v => (
           <button
             key={v}
+            type="button"
+            aria-pressed={view === v}
             onClick={() => onChangeView(v)}
-            style={fullWidth ? { flex: 1, padding: '8px 0' } : undefined}
-            className={`${fullWidth ? '' : 'px-3 py-1.5'} rounded-lg text-sm border transition-colors ${
-              view === v
-                ? 'bg-navy-700 text-white border-navy-700'
-                : 'bg-white text-gray-600 border-gray-300 hover:border-navy-700 hover:text-navy-700'
-            }`}
+            className={view === v ? 'view-toggle__btn view-toggle__btn--on' : 'view-toggle__btn'}
           >
-            {v === 'list' ? 'リスト' : v === 'table' ? '表' : '地図'}
+            {LABEL[v]}
           </button>
         ))}
       </div>

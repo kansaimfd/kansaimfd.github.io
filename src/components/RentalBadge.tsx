@@ -14,12 +14,7 @@ export default function RentalBadge({ 貸館 }: { 貸館?: Rental }) {
   return (
     <span
       title={rentalNotice(貸館)}
-      className={
-        'ml-1.5 align-middle whitespace-nowrap rounded px-1.5 py-0.5 text-[11px] font-medium border ' +
-        (予告
-          ? 'bg-sky-50 text-sky-800 border-sky-300'
-          : 'bg-amber-100 text-amber-900 border-amber-300')
-      }
+      className={`badge ${予告 ? 'badge--planned' : 'badge--rental'}`}
     >
       {rentalBadgeLabel(貸館)}
     </span>

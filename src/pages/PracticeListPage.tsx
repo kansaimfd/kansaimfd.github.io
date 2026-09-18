@@ -2,14 +2,21 @@ import { useState, useMemo, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { practices } from '../datasets/practices'
 import type { Practice } from '../types'
-import { NO_WALK, minWalk, stationNames, walkLabel } from '../station'
+import { NO_WALK, minWalk, stationNames } from '../station'
 import { availabilityMark } from '../availability'
 import { fullAddress } from '../address'
 import { compareByName } from '../name'
+import { ALL_PREFS } from '../pref'
 import ViewToggle, { type ViewMode } from '../components/ViewToggle'
-import SortBar from '../components/SortBar'
-import SortableTh from '../components/SortableTh'
+import SortSelect, { type SortOption } from '../components/SortSelect'
 import FilterPanel from '../components/FilterPanel'
+import FilterRow from '../components/FilterRow'
+import FilterSelect from '../components/FilterSelect'
+import BoundInput from '../components/BoundInput'
+import FacilityCard from '../components/FacilityCard'
+import Stat from '../components/Stat'
+import EquipBadge from '../components/EquipBadge'
+import SortableTh from '../components/SortableTh'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 
@@ -17,6 +24,16 @@ import UsageConditionBadge from '../components/UsageConditionBadge'
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
 
 type SortKey = '施設名' | '都道府県' | '最寄駅徒歩'
+
+// 表の見出しからも並び替えられるので、どのキーも昇順・降順の両方を載せる
+const SORT_OPTIONS: SortOption<SortKey>[] = [
+  { key: '施設名', asc: true, label: '施設名（昇順）' },
+  { key: '施設名', asc: false, label: '施設名（降順）' },
+  { key: '都道府県', asc: true, label: '都道府県（昇順）' },
+  { key: '都道府県', asc: false, label: '都道府県（降順）' },
+  { key: '最寄駅徒歩', asc: true, label: '最寄駅徒歩（近い順）' },
+  { key: '最寄駅徒歩', asc: false, label: '最寄駅徒歩（遠い順）' },
+]
 
 function unique<T>(arr: T[]): T[] {
   return Array.from(new Set(arr)).sort() as T[]
@@ -41,6 +58,11 @@ function maxCapacity(p: Practice): number {
   return Math.max(0, ...(p.部屋?.map(r => r.定員 ?? 0) ?? []))
 }
 
+/** 施設内で最も広い部屋の面積（㎡）。分からなければ 0 */
+function maxArea(p: Practice): number {
+  return Math.max(0, ...(p.部屋?.map(r => r.面積 ?? 0) ?? []))
+}
+
 /** 定員が1件も入っていないうちは、必ず0件になる絞り込みを見せない */
 const hasCapacityData = practices.some(p => maxCapacity(p) > 0)
 
@@ -48,6 +70,7 @@ const EQUIP_FILTERS = [
   {
     key: 'piano',
     label: 'ピアノあり',
+    badge: 'ピアノ',
     unknownLabel: 'ピアノの有無',
     state: (p: Practice) =>
       facilityState([p.ピアノ有無, ...(p.部屋?.map(r => r.ピアノ有無) ?? [])]),
@@ -55,18 +78,21 @@ const EQUIP_FILTERS = [
   {
     key: 'wind',
     label: '管楽器可',
+    badge: '管楽器',
     unknownLabel: '管楽器の可否',
     state: (p: Practice) => facilityState(p.部屋?.map(r => r.管楽器) ?? []),
   },
   {
     key: 'perc',
     label: '打楽器可',
+    badge: '打楽器',
     unknownLabel: '打楽器の可否',
     state: (p: Practice) => facilityState(p.部屋?.map(r => r.打楽器) ?? []),
   },
   {
     key: 'cembalo',
     label: 'チェンバロあり',
+    badge: 'チェンバロ',
     unknownLabel: 'チェンバロの有無',
     state: (p: Practice) => facilityState(p.部屋?.map(r => r.チェンバロ) ?? []),
   },
@@ -75,7 +101,7 @@ const EQUIP_FILTERS = [
 export default function PracticeListPage() {
   const [view, setView] = useState<ViewMode>('list')
   const [query, setQuery] = useState('')
-  const [filterPref, setFilterPref] = useState('')
+  const [filterPrefs, setFilterPrefs] = useState<string[]>([])
   const [filterCity, setFilterCity] = useState('')
   const [filterCapacity, setFilterCapacity] = useState('')
   const [filterStation, setFilterStation] = useState('')
@@ -90,18 +116,22 @@ export default function PracticeListPage() {
     [],
   )
 
-  const prefs = useMemo(() => unique(practices.map(p => p.都道府県)), [])
+  const prefs = useMemo(() => ALL_PREFS.filter(p => practices.some(x => x.都道府県 === p)), [])
   const cities = useMemo(
     () =>
-      unique(practices.filter(p => !filterPref || p.都道府県 === filterPref).map(p => p.市区町村)),
-    [filterPref],
+      unique(
+        practices
+          .filter(p => filterPrefs.length === 0 || filterPrefs.includes(p.都道府県))
+          .map(p => p.市区町村),
+      ),
+    [filterPrefs],
   )
   const stations = useMemo(() => unique(practices.flatMap(stationNames)), [])
 
   const { filtered, unknownExcluded } = useMemo(() => {
-    // ピアノ以外の条件で先に絞る。ピアノは未調査による除外数を数えるため別段にする
+    // 設備以外の条件で先に絞る。設備は未調査による除外数を数えるため別段にする
     const base = practices.filter(p => {
-      if (filterPref && p.都道府県 !== filterPref) return false
+      if (filterPrefs.length > 0 && !filterPrefs.includes(p.都道府県)) return false
       if (filterCity && p.市区町村 !== filterCity) return false
       if (filterCapacity && maxCapacity(p) < Number(filterCapacity)) return false
       if (filterStation && !stationNames(p).includes(filterStation)) return false
@@ -116,11 +146,13 @@ export default function PracticeListPage() {
 
     const active = EQUIP_FILTERS.filter(e => filterEquip.has(e.key))
     const list = base.filter(p => active.every(e => e.state(p) === true))
+
     // 「設備がない」のではなく「未調査」のせいで消えた件数。黙って消さず利用者に開示する
+    const shown = new Set(list)
     const excluded =
       active.length === 0
         ? 0
-        : base.filter(p => !list.includes(p) && active.some(e => e.state(p) === undefined)).length
+        : base.filter(p => !shown.has(p) && active.some(e => e.state(p) === undefined)).length
 
     const sorted = [...list].sort((a, b) => {
       // 施設名は五十音順（コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる）
@@ -141,7 +173,7 @@ export default function PracticeListPage() {
     return { filtered: sorted, unknownExcluded: excluded }
   }, [
     query,
-    filterPref,
+    filterPrefs,
     filterCity,
     filterCapacity,
     filterStation,
@@ -159,108 +191,151 @@ export default function PracticeListPage() {
     }
   }
 
+  function togglePref(pref: string) {
+    // 府県を変えると選べる市区町村が変わるので、選択済みの市区町村は落とす
+    setFilterCity('')
+    setFilterPrefs(prev => (prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref]))
+  }
+
+  function toggleEquip(key: string) {
+    setFilterEquip(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   const sortTh = (k: SortKey, label: string) => (
     <SortableTh k={k} label={label} sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
   )
 
   return (
     <div>
-      <h1 className="text-2xl font-serif font-bold text-navy-700 mb-6 pb-2 border-b-2 border-gold-500">
-        練習場一覧
-      </h1>
+      <header className="page-head">
+        <p className="page-head__eyebrow">REHEARSAL ROOMS</p>
+        <h1 className="page-head__title">練習場一覧</h1>
+        <p className="page-head__lead">関西の練習場を定員・設備・アクセスで比較</p>
+      </header>
 
-      <FilterPanel>
-        <input
-          type="text"
-          placeholder="フリーワード検索"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          className="border rounded px-3 py-1.5 text-sm col-span-full"
-        />
-        <select
-          value={filterPref}
-          onChange={e => {
-            setFilterPref(e.target.value)
-            setFilterCity('')
-          }}
-          className="border rounded px-2 py-1.5 text-sm"
-        >
-          <option value="">都道府県（すべて）</option>
-          {prefs.map(p => (
-            <option key={p}>{p}</option>
-          ))}
-        </select>
-        <select
-          value={filterCity}
-          onChange={e => setFilterCity(e.target.value)}
-          className="border rounded px-2 py-1.5 text-sm"
-        >
-          <option value="">市区町村（すべて）</option>
-          {cities.map(c => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-        {hasCapacityData && (
-          <div className="flex items-center gap-2 text-sm">
-            <label>定員</label>
-            <input
-              type="number"
-              min={0}
-              value={filterCapacity}
-              onChange={e => setFilterCapacity(e.target.value)}
-              className="border rounded w-16 px-2 py-1.5"
-              placeholder="〜"
-            />
-            <span>名以上</span>
-          </div>
-        )}
-        <select
-          value={filterStation}
-          onChange={e => setFilterStation(e.target.value)}
-          className="border rounded px-2 py-1.5 text-sm"
-        >
-          <option value="">最寄駅（すべて）</option>
-          {stations.map(s => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-        <div className="flex items-center gap-2 text-sm">
-          <label>徒歩</label>
-          <input
-            type="number"
-            min={0}
-            value={filterWalk}
-            onChange={e => setFilterWalk(e.target.value)}
-            className="border rounded w-16 px-2 py-1.5"
-            placeholder="〜"
-          />
-          <span>分以内</span>
-        </div>
-        <div className="flex items-center gap-4 flex-wrap col-span-full">
-          {equipOptions.map(e => (
-            <label key={e.key} className="flex items-center gap-1 cursor-pointer text-sm">
+      <FilterPanel
+        head={
+          <>
+            <div className="search">
+              <svg
+                className="search__icon"
+                width="13"
+                height="13"
+                viewBox="0 0 13 13"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden
+              >
+                <circle cx="5.5" cy="5.5" r="3.5" />
+                <path d="M8 8l3 3" strokeLinecap="round" />
+              </svg>
               <input
-                type="checkbox"
-                checked={filterEquip.has(e.key)}
-                onChange={() =>
-                  setFilterEquip(prev => {
-                    const next = new Set(prev)
-                    if (next.has(e.key)) next.delete(e.key)
-                    else next.add(e.key)
-                    return next
-                  })
-                }
+                type="search"
+                className="search__input"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="フリーワード検索"
+                aria-label="フリーワード検索"
               />
-              {e.label}
-            </label>
-          ))}
+            </div>
+            <SortSelect
+              options={SORT_OPTIONS}
+              sortKey={sortKey}
+              sortAsc={sortAsc}
+              onChange={(k, asc) => {
+                setSortKey(k)
+                setSortAsc(asc)
+              }}
+            />
+          </>
+        }
+      >
+        <FilterRow label="PREFECTURE" title="都道府県">
+          {prefs.map(pref => {
+            const on = filterPrefs.includes(pref)
+            return (
+              <button
+                key={pref}
+                type="button"
+                data-pref={pref}
+                aria-pressed={on}
+                onClick={() => togglePref(pref)}
+                className={on ? 'pill pill--on' : 'pill'}
+              >
+                {on && <span className="pill__check">✓</span>}
+                {pref}
+              </button>
+            )
+          })}
+        </FilterRow>
+
+        <FilterRow label="AREA" title="市区町村・駅">
+          <FilterSelect
+            label="市区町村"
+            placeholder="市区町村（すべて）"
+            value={filterCity}
+            options={cities}
+            onChange={setFilterCity}
+          />
+          <FilterSelect
+            label="最寄駅"
+            placeholder="最寄駅（すべて）"
+            value={filterStation}
+            options={stations}
+            onChange={setFilterStation}
+          />
+        </FilterRow>
+
+        {equipOptions.length > 0 && (
+          <FilterRow label="EQUIPMENT" title="設備">
+            {equipOptions.map(e => {
+              const on = filterEquip.has(e.key)
+              return (
+                <button
+                  key={e.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => toggleEquip(e.key)}
+                  className={on ? 'pill pill--equip pill--on' : 'pill pill--equip'}
+                >
+                  {on && <span className="pill__check">✓</span>}
+                  {e.label}
+                </button>
+              )
+            })}
+          </FilterRow>
+        )}
+
+        <div className="ranges">
+          {hasCapacityData && (
+            <BoundInput
+              label="CAPACITY"
+              title="定員"
+              suffix="名以上"
+              value={filterCapacity}
+              onChange={setFilterCapacity}
+            />
+          )}
+          <BoundInput
+            label="WALK"
+            title="最寄駅から"
+            suffix="分以内"
+            value={filterWalk}
+            onChange={setFilterWalk}
+          />
         </div>
       </FilterPanel>
 
       <ViewToggle view={view} onChangeView={setView} count={filtered.length} />
 
       {unknownExcluded > 0 && (
-        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3.5 py-2.5 mb-4 text-xs text-amber-800 leading-relaxed">
+        <div className="notice notice--warn">
           <span aria-hidden>⚠</span>
           <span>
             {EQUIP_FILTERS.filter(e => filterEquip.has(e.key))
@@ -273,67 +348,71 @@ export default function PracticeListPage() {
       )}
 
       {view === 'list' && (
-        <SortBar
-          keys={['施設名', '都道府県', '最寄駅徒歩'] as SortKey[]}
-          sortKey={sortKey}
-          sortAsc={sortAsc}
-          onToggle={toggleSort}
-        />
-      )}
-
-      {view === 'list' && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="facility-list">
           {filtered.map(p => (
-            <PracticeCard key={p.ID} practice={p} />
+            <FacilityCard
+              key={p.ID}
+              facility={p}
+              detailBasePath="/practice"
+              stats={
+                <>
+                  <Stat values={[maxCapacity(p) || null]} unit="名" caption="CAPACITY" />
+                  <Stat values={[maxArea(p) || null]} unit="㎡" caption="AREA" align="right" />
+                </>
+              }
+              equip={
+                <>
+                  {EQUIP_FILTERS.map(e => (
+                    <EquipBadge key={e.key} label={e.badge} on={e.state(p) === true} />
+                  ))}
+                  <EquipBadge label="駐車場" on={p.駐車場 != null && p.駐車場 > 0} />
+                </>
+              }
+            />
           ))}
-          {filtered.length === 0 && (
-            <p className="text-gray-400 col-span-full">該当する施設がありません</p>
-          )}
+          {filtered.length === 0 && <p className="empty">該当する施設がありません</p>}
         </div>
       )}
 
       {view === 'table' && (
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
               <tr>
                 {sortTh('施設名', '施設名')}
                 {sortTh('都道府県', '都道府県')}
-                <th className="px-3 py-2 text-left whitespace-nowrap">市区町村</th>
-                <th className="px-3 py-2 text-right whitespace-nowrap">最大定員</th>
+                <th>市区町村</th>
+                <th>最大定員</th>
+                <th>最大面積(㎡)</th>
                 {sortTh('最寄駅徒歩', '徒歩(分)')}
-                <th className="px-3 py-2 text-left">ピアノ</th>
+                <th className="is-center">ピアノ</th>
+                <th className="is-center">管楽器</th>
+                <th className="is-center">打楽器</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.ID} className="border-b hover:bg-gray-50">
-                  <td className="px-3 py-2">
-                    <Link
-                      to={`/practice/${p.ID}`}
-                      className="text-navy-700 hover:text-gold-500 hover:underline"
-                    >
+                <tr key={p.ID}>
+                  <td>
+                    <Link to={`/practice/${p.ID}`} className="data-table__link">
                       {p.施設名}
                     </Link>
                     <RentalBadge 貸館={p.貸館} />
                     <UsageConditionBadge 利用条件={p.利用条件} />
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">{p.都道府県}</td>
-                  <td className="px-3 py-2 whitespace-nowrap">{p.市区町村}</td>
-                  <td className="px-3 py-2 text-right">
-                    {maxCapacity(p) > 0 ? maxCapacity(p) : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {minWalk(p) < NO_WALK ? minWalk(p) : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    {availabilityMark(EQUIP_FILTERS[0].state(p))}
-                  </td>
+                  <td className="is-nowrap">{p.都道府県}</td>
+                  <td className="is-nowrap">{p.市区町村}</td>
+                  <td className="is-num">{maxCapacity(p) || '—'}</td>
+                  <td className="is-num">{maxArea(p) || '—'}</td>
+                  <td className="is-num">{minWalk(p) < NO_WALK ? minWalk(p) : '—'}</td>
+                  <td className="is-center">{availabilityMark(EQUIP_FILTERS[0].state(p))}</td>
+                  <td className="is-center">{availabilityMark(EQUIP_FILTERS[1].state(p))}</td>
+                  <td className="is-center">{availabilityMark(EQUIP_FILTERS[2].state(p))}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-gray-400 text-center">
+                  <td colSpan={9} className="empty">
                     該当する施設がありません
                   </td>
                 </tr>
@@ -344,42 +423,10 @@ export default function PracticeListPage() {
       )}
 
       {view === 'map' && (
-        <Suspense
-          fallback={<p className="text-gray-400 py-8 text-center">地図を読み込んでいます…</p>}
-        >
+        <Suspense fallback={<p className="loading">地図を読み込んでいます…</p>}>
           <FacilityMap facilities={filtered} detailBasePath="/practice" />
         </Suspense>
       )}
     </div>
-  )
-}
-
-function PracticeCard({ practice: p }: { practice: Practice }) {
-  return (
-    <Link
-      to={`/practice/${p.ID}`}
-      className="block border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-gold-500 transition-all bg-white group"
-    >
-      <p className="font-serif font-semibold text-navy-700 group-hover:text-gold-600 transition-colors">
-        {p.施設名}
-        <RentalBadge 貸館={p.貸館} />
-        <UsageConditionBadge 利用条件={p.利用条件} />
-      </p>
-      <p className="text-sm text-gray-500 mt-1">
-        {p.都道府県} {p.市区町村}
-      </p>
-      <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-        {p.最寄駅?.slice(0, 1).map((s, i) => (
-          <span key={i} className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
-            {[s.駅, walkLabel(s)].filter(Boolean).join(' ')}
-          </span>
-        ))}
-        {EQUIP_FILTERS.filter(e => e.state(p) === true).map(e => (
-          <span key={e.key} className="bg-amber-50 text-amber-700 rounded-full px-2 py-0.5">
-            {e.label.replace(/(あり|可)$/, '')}
-          </span>
-        ))}
-      </div>
-    </Link>
   )
 }

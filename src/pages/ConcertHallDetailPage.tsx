@@ -28,12 +28,9 @@ export default function ConcertHallDetailPage() {
 
   if (!facility) {
     return (
-      <div>
-        <p className="text-gray-500">施設が見つかりません。</p>
-        <Link
-          to="/concert"
-          className="text-gold-500 hover:text-gold-600 hover:underline mt-2 inline-block"
-        >
+      <div className="detail">
+        <p>施設が見つかりません。</p>
+        <Link to="/concert" className="detail__back">
           ← 一覧に戻る
         </Link>
       </div>
@@ -57,113 +54,97 @@ export default function ConcertHallDetailPage() {
   ]
 
   return (
-    <div className="max-w-2xl">
-      <Link to="/concert" className="text-sm text-navy-700 hover:text-gold-500 transition-colors">
+    <div className="detail" data-pref={f.都道府県}>
+      <Link to="/concert" className="detail__back">
         ← コンサートホール一覧
       </Link>
-      <h1 className="text-2xl font-serif font-bold text-navy-700 mt-2 mb-1">{f.施設名}</h1>
-      <p className="text-gray-500 mb-4">{fullAddress(f)}</p>
+      <header className="detail__head">
+        <h1 className="detail__title">{f.施設名}</h1>
+        <p className="detail__address">{fullAddress(f)}</p>
+      </header>
+
       <RentalNotice 貸館={f.貸館} />
       <UsageConditionNote 利用条件={f.利用条件} />
 
       <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} />
 
-      <div className="flex flex-wrap gap-2 mt-4">
+      <div className="detail__actions">
         {f.URL && (
-          <a
-            href={f.URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 bg-navy-700 text-white rounded-lg text-sm hover:bg-navy-800 transition-colors"
-          >
+          <a href={f.URL} target="_blank" rel="noopener noreferrer" className="btn btn--primary">
             公式サイト
           </a>
         )}
         {f.申込URL && (
-          <a
-            href={f.申込URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 border border-navy-700 text-navy-700 rounded-lg text-sm hover:bg-navy-50 transition-colors"
-          >
+          <a href={f.申込URL} target="_blank" rel="noopener noreferrer" className="btn btn--ghost">
             申込
           </a>
         )}
         {f.料金URL && (
-          <a
-            href={f.料金URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 border border-navy-700 text-navy-700 rounded-lg text-sm hover:bg-navy-50 transition-colors"
-          >
+          <a href={f.料金URL} target="_blank" rel="noopener noreferrer" className="btn btn--ghost">
             料金
           </a>
         )}
       </div>
 
-      <table className="w-full mt-4 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <tbody>
-          {rows.map(([label, value]) => (
-            <InfoRow
-              key={label}
-              label={label as string}
-              value={value as string | number | undefined}
-            />
-          ))}
-        </tbody>
-      </table>
+      <div className="detail__section">
+        <table className="info-table">
+          <tbody>
+            {rows.map(([label, value]) => (
+              <InfoRow
+                key={label}
+                label={label as string}
+                value={value as string | number | undefined}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {rooms.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-base font-semibold text-navy-700 mb-2">
+        <div className="detail__section">
+          <h2 className="section-title">
             ホール一覧
-            {rooms.length > 1 && (
-              <span className="font-normal text-gray-500 ml-1">（{rooms.length}）</span>
-            )}
+            {rooms.length > 1 && <span className="section-title__note">（{rooms.length}）</span>}
           </h2>
-          <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="px-3 py-2 text-left">ホール名</th>
-                  <th className="px-3 py-2 text-left whitespace-nowrap">種別</th>
-                  <th className="px-3 py-2 text-right whitespace-nowrap">客席数</th>
-                  <th className="px-3 py-2 text-left whitespace-nowrap">舞台</th>
-                  <th className="px-3 py-2 text-right whitespace-nowrap">楽屋(名)</th>
-                  <th className="px-3 py-2 text-left whitespace-nowrap">ピアノ</th>
-                  <th className="px-3 py-2 text-center whitespace-nowrap">オルガン</th>
-                  {showChembalo && (
-                    <th className="px-3 py-2 text-center whitespace-nowrap">チェンバロ</th>
-                  )}
-                  <th className="px-3 py-2 text-left whitespace-nowrap">譜面台</th>
-                  <th className="px-3 py-2 text-center whitespace-nowrap">親子室</th>
+                  <th>ホール名</th>
+                  <th>種別</th>
+                  <th className="is-num">客席数</th>
+                  <th>舞台</th>
+                  <th className="is-num">楽屋(名)</th>
+                  <th>ピアノ</th>
+                  <th className="is-center">オルガン</th>
+                  {showChembalo && <th className="is-center">チェンバロ</th>}
+                  <th>譜面台</th>
+                  <th className="is-center">親子室</th>
                 </tr>
               </thead>
               <tbody>
                 {rooms.map((r, i) => (
-                  <tr key={i} className="border-b last:border-0">
-                    <td className="px-3 py-2">
+                  <tr key={i}>
+                    <td>
                       {r.部屋名 ?? '—'}
                       <RentalBadge 貸館={r.貸館} />
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap">{r.ホール種別 ?? '—'}</td>
-                    <td className="px-3 py-2 text-right">
-                      {r.客席数 != null ? `${r.客席数}席` : '—'}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">{stageLabel(r) ?? '—'}</td>
-                    <td className="px-3 py-2 text-right">{r.楽屋収容人数 ?? '—'}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">{pianoLabel(r)}</td>
-                    <td className="px-3 py-2 whitespace-nowrap">
+                    <td className="is-nowrap">{r.ホール種別 ?? '—'}</td>
+                    <td className="is-num">{r.客席数 != null ? `${r.客席数}席` : '—'}</td>
+                    <td className="is-nowrap">{stageLabel(r) ?? '—'}</td>
+                    <td className="is-num">{r.楽屋収容人数 ?? '—'}</td>
+                    <td className="is-nowrap">{pianoLabel(r)}</td>
+                    <td className="is-nowrap">
                       {availabilityMark(r.パイプオルガン)}
                       {r.オルガン製作者 && (
-                        <span className="ml-1 text-gray-600">{r.オルガン製作者}</span>
+                        <span className="data-table__note">{r.オルガン製作者}</span>
                       )}
                     </td>
                     {showChembalo && (
-                      <td className="px-3 py-2 text-center">{availabilityMark(r.チェンバロ)}</td>
+                      <td className="is-center">{availabilityMark(r.チェンバロ)}</td>
                     )}
-                    <td className="px-3 py-2 whitespace-nowrap">{standLabel(r)}</td>
-                    <td className="px-3 py-2 text-center">{availabilityMark(r.親子室)}</td>
+                    <td className="is-nowrap">{standLabel(r)}</td>
+                    <td className="is-center">{availabilityMark(r.親子室)}</td>
                   </tr>
                 ))}
               </tbody>

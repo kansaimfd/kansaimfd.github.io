@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Vite** — ビルドツール
 - **React + TypeScript** — UIフレームワーク
-- **Tailwind CSS v4** — スタイリング（`@tailwindcss/vite` プラグイン経由）
+- **素のCSS** — スタイリング（`src/styles/` のグローバルCSS。CSSフレームワークは使わない）
 - **React Router v7** — クライアントサイドルーティング（`basename="/"`）
 - **Leaflet + react-leaflet + OpenStreetMap** — 地図表示
 - **js-yaml** — YAML→JSON変換（ビルドスクリプト内で使用）
@@ -110,6 +110,8 @@ React コンポーネント
 - `src/address.ts` — 住所の連結（`geocodableAddress()` は建物名を含めない）
 - `src/availability.ts` — 設備の3値（あり／なし／未調査）の表示と絞り込み
 - `src/name.ts` — 施設名の五十音順ソート
+- `src/pref.ts` — 府県の並びと英字表記（**色は持たない**。→ Design）
+- `src/styles/` — スタイルシート。読み込み順に tokens → base → layout → components → pages
 - `src/components/` — 共通UIコンポーネント
 - `src/pages/` — ページ単位のコンポーネント
 
@@ -298,8 +300,30 @@ React コンポーネント
 ## Design
 
 - **カラー**: ネイビー（`#1B2E4B`）＋ゴールド（`#B8962E`）＋クリーム背景（`#F8F6F0`）
+- **府県アクセント**: 一覧のカードと絞り込みのピルは府県ごとに色を変える
+  （大阪=ネイビー／京都=茶／兵庫=緑／奈良=ゴールド／滋賀=青／和歌山=臙脂）。
+  **色の定義は `styles/tokens.css` の `[data-pref='京都府']` だけに置く。**
+  要素に `data-pref={都道府県}` を付ければ `--pref-accent` / `--pref-tint` / `--pref-chip` が切り替わる。
+  JS 側に色表を持たせない（カードとピルで別々に持つと必ず食い違う）
 - **フォント**: 見出しに Noto Serif JP（クラシカル感）、本文に Noto Sans JP
 - **テーマ**: クラシック音楽・オーケストラ・親しみやすい・モダン
+
+### スタイルの書き方
+
+**スタイルは `src/styles/` の CSS ファイルにしか書かない。**
+Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わない。
+以前はコンサートホール一覧だけが 62 個のインライン `style` で書かれていて、
+色・文字サイズ・角丸が他のページと揃わず、そのページだけ浮いて見えていた。
+
+- **色・文字サイズ・角丸・字送りは `tokens.css` の変数から取る。** 生の16進数をコンポーネントに書かない
+- ファイルは読み込み順に意味がある（`index.css` を参照）。
+  `tokens`（値）→ `base`（要素の既定値）→ `layout`（骨格）→ `components`（部品）→ `pages`（ページ固有）。
+  後ろほど具体的なので、詳細度を上げずに上書きできる
+- クラス名は BEM 風（`block__element--modifier`）
+- **折り返しは CSS のメディアクエリで行う。** 画面幅を JS で測って表示を切り替えない
+  （`resize` のたびに数百件のカードが再描画される）。区切りは 640px と 1024px の2か所
+- **一覧のカードは `FacilityCard` ひとつ。** コンサートホールと練習場で共通で、
+  違うのは数値の欄（`stats`）と設備バッジ（`equip`）だけ。一覧ごとにカードを書き分けない
 
 ## Deployment
 

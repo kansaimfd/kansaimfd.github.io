@@ -6,6 +6,7 @@ interface Props<T extends string> {
   onToggle: (key: T) => void
 }
 
+/** 押すと並び替えが切り替わる表の見出し */
 export default function SortableTh<T extends string>({
   k,
   label,
@@ -13,13 +14,15 @@ export default function SortableTh<T extends string>({
   sortAsc,
   onToggle,
 }: Props<T>) {
+  const on = sortKey === k
   return (
     <th
-      className="px-3 py-2 text-left cursor-pointer hover:bg-gray-100 whitespace-nowrap"
+      className="data-table__sortable"
+      aria-sort={on ? (sortAsc ? 'ascending' : 'descending') : 'none'}
       onClick={() => onToggle(k)}
     >
       {label}
-      {sortKey === k ? (sortAsc ? ' ▲' : ' ▼') : ''}
+      {on ? (sortAsc ? ' ▲' : ' ▼') : ''}
     </th>
   )
 }

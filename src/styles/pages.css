@@ -1,0 +1,159 @@
+/* ページ単位でしか出てこない型。詳細ページと「このサイトについて」 */
+
+/* ── 詳細ページ ─────────────────────────────── */
+
+.detail {
+  max-width: 42rem;
+}
+
+.detail__back {
+  color: var(--color-navy-700);
+  font-size: var(--fs-base);
+}
+
+.detail__back:hover {
+  color: var(--color-gold-600);
+}
+
+.detail__head {
+  margin: 0.5rem 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--color-gold-500);
+}
+
+.detail__title {
+  color: var(--color-navy-700);
+  font-size: 1.5rem;
+}
+
+.detail__address {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.detail__section {
+  margin-top: 1.5rem;
+}
+
+/* 施設の基本情報。左が項目名、右が値の2列 */
+.info-table {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.info-table th {
+  width: 9rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-line-soft);
+  background: var(--color-cream);
+  color: var(--color-text-muted);
+  font-size: var(--fs-base);
+  white-space: nowrap;
+}
+
+.info-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-line-soft);
+  font-size: var(--fs-base);
+}
+
+.info-table tr:last-child th,
+.info-table tr:last-child td {
+  border-bottom: 0;
+}
+
+/*
+ * 部屋名は短いので折り返さない。詳細ページの表は列が多く、
+ * 折り返すと「大ホー／ル」のように1列が数文字まで潰れる（横スクロールで読ませる）。
+ */
+.detail .data-table td:first-child {
+  white-space: nowrap;
+}
+
+/* ── 出典 ───────────────────────────────────── */
+
+.source-note {
+  margin-top: 1.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  line-height: 1.7;
+}
+
+.source-note__missing {
+  color: var(--color-alert-text-soft);
+}
+
+.source-note__list {
+  margin-top: 0.375rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.source-note__link {
+  color: var(--color-navy-700);
+  word-break: break-all;
+}
+
+.source-note__link:hover {
+  color: var(--color-gold-600);
+  text-decoration: underline;
+}
+
+.source-note__meta {
+  margin-left: 0.25rem;
+  color: var(--color-text-faint);
+}
+
+.source-note__remark {
+  display: block;
+  color: var(--color-text-faint);
+}
+
+/* ── このサイトについて ─────────────────────── */
+
+.about {
+  max-width: 42rem;
+}
+
+.about__section {
+  margin-top: 2rem;
+}
+
+.about__section h2 {
+  margin-bottom: 0.5rem;
+  color: var(--color-navy-700);
+  font-size: var(--fs-lg);
+}
+
+.about p {
+  color: var(--color-text);
+  font-size: var(--fs-base);
+  line-height: 1.8;
+}
+
+.about p + p {
+  margin-top: 0.5rem;
+}
+
+.about__link {
+  color: var(--color-gold-600);
+  text-decoration: underline;
+}
+
+.about__link--block {
+  display: inline-block;
+  margin-top: 0.5rem;
+}

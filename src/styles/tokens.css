@@ -1,0 +1,125 @@
+/*
+ * デザイントークン。**色・字送り・角丸はここでしか定義しない。**
+ * 各ページが自前の色を持ち始めた結果、コンサートホール一覧だけ見た目が分かれていたので、
+ * 値の出どころを1か所に畳んである。新しい色を足すときも、まずここに名前を付けること。
+ */
+
+:root {
+  /* ブランド3色。CLAUDE.md の Design に対応する */
+  --color-navy-50: #eef2f7;
+  --color-navy-100: #d5e0ed;
+  --color-navy-700: #1b2e4b;
+  --color-navy-800: #152440;
+  --color-navy-900: #0f1b30;
+  --color-gold-400: #d4aa45;
+  --color-gold-500: #b8962e;
+  --color-gold-600: #9a7d25;
+  /* クリーム地の上で本文として読める濃さのゴールド。バッジの文字色に使う */
+  --color-gold-700: #8b6e1e;
+  --color-gold-tint: #faf4df;
+  --color-gold-chip: #ecd896;
+  --color-cream: #f8f6f0;
+
+  /* 面と罫。クリーム地になじむよう、灰色ではなく黄みのある線を使う */
+  --color-surface: #fff;
+  --color-line: #e7e2d8;
+  --color-line-soft: #f0ebde;
+  --color-line-faint: #f5f0e4;
+
+  /* 文字 */
+  --color-text: #1a1a1a;
+  --color-text-muted: #6b7280;
+  --color-text-faint: #9ca3af;
+
+  /* 貸館の休止・終了（借りられない） */
+  --color-alert-tint: #fef3c7;
+  --color-alert-line: #fcd34d;
+  --color-alert-text: #78350f;
+  --color-alert-tint-soft: #fffbeb;
+  --color-alert-line-soft: #fde68a;
+  --color-alert-text-soft: #92400e;
+
+  /* 休館予定（告知はあるが今は借りられる）。借りられないものと必ず色を分ける */
+  --color-info-tint: #f0f9ff;
+  --color-info-line: #7dd3fc;
+  --color-info-text: #075985;
+
+  /* 利用条件（今も貸しているが、借りられる人が限られる） */
+  --color-usage-tint: #f5f3ff;
+  --color-usage-line: #c4b5fd;
+  --color-usage-text: #5b21b6;
+
+  /* 書体 */
+  --font-sans: 'Noto Sans JP', sans-serif;
+  --font-serif: 'Noto Serif JP', serif;
+
+  /* 文字サイズ。px の実数指定（11.5px など）を畳んだ段階目盛り */
+  --fs-2xs: 0.625rem; /* 10px ラベル・キャプション */
+  --fs-xs: 0.6875rem; /* 11px 補助情報 */
+  --fs-sm: 0.75rem; /* 12px 住所・アクセス */
+  --fs-md: 0.8125rem; /* 13px 小見出し */
+  --fs-base: 0.875rem; /* 14px 本文・表 */
+  --fs-lg: 1rem; /* 16px */
+  --fs-xl: 1.0625rem; /* 17px 施設名 */
+  --fs-stat: 1.1875rem; /* 19px 客席数・舞台寸法 */
+  --fs-title: 1.875rem; /* 30px ページ見出し */
+
+  /* 角丸 */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+
+  /* 字送り。英字の小ラベルは広めに空ける */
+  --tracking-label: 0.2em;
+  --tracking-caption: 0.1em;
+
+  /* 版面 */
+  --layout-max: 64rem;
+  --layout-gutter: 1rem;
+
+  /*
+   * 府県アクセント。既定はネイビーで、data-pref が付いた要素の中だけ差し替わる。
+   * カードも絞り込みのピルも同じ変数を読むので、府県ごとの色はこの表だけで決まる。
+   */
+  --pref-accent: var(--color-navy-700);
+  --pref-tint: var(--color-navy-50);
+  --pref-chip: var(--color-navy-100);
+}
+
+[data-pref='大阪府'] {
+  --pref-accent: #1b2e4b;
+  --pref-tint: #eef2f7;
+  --pref-chip: #d5e0ed;
+}
+
+[data-pref='京都府'] {
+  --pref-accent: #6b4a3a;
+  --pref-tint: #f3ece5;
+  --pref-chip: #d9c7b6;
+}
+
+[data-pref='兵庫県'] {
+  --pref-accent: #2d5a4a;
+  --pref-tint: #e8f0ec;
+  --pref-chip: #c4d8cc;
+}
+
+[data-pref='奈良県'] {
+  --pref-accent: #b8962e;
+  --pref-tint: #faf4df;
+  --pref-chip: #ecd896;
+}
+
+[data-pref='滋賀県'] {
+  --pref-accent: #3a5a7a;
+  --pref-tint: #eaf0f5;
+  --pref-chip: #c8d6e0;
+}
+
+[data-pref='和歌山県'] {
+  --pref-accent: #8a3e3e;
+  --pref-tint: #f5e9e9;
+  --pref-chip: #d9b8b8;
+}
