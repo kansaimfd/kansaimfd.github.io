@@ -1,5 +1,6 @@
 import type { Availability } from './types'
 import type { Range } from './query'
+import { toHiragana } from './name'
 
 /**
  * 絞り込みの条件を、**「合う / 合わない / 判断できない」の3つ**で扱うための共通部品。
@@ -71,11 +72,15 @@ export function applyConditions<T>(items: T[], conditions: Condition<T>[]): Filt
 /**
  * 検索語と検索対象を突き合わせる前に均す。
  *
- * 全角・半角（ＲＨＹ / RHY）と大文字・小文字を揃える。打ち方の違いだけで
- * 0件になるのを避けるため。外部サイトとの照合（audit-urls.mjs）では以前から
- * NFKC で均していたが、利用者が打つ側は均していなかった。
+ * **打ち方の違いだけで0件になるのを避ける。** 全角・半角（ＲＨＹ / RHY）と
+ * 大文字・小文字を NFKC で、カタカナとひらがなを `toHiragana` で揃える。
+ * 施設名かなはひらがなで書く決まりなので、「ホール」と打った人が
+ * 「ほーる」に当たらないと、かなを検索対象に入れた意味が無い。
+ *
+ * 外部サイトとの照合（audit-urls.mjs）では以前から NFKC で均していたが、
+ * 利用者が打つ側は均していなかった。
  */
-const normalize = (s: string): string => s.normalize('NFKC').toLowerCase()
+const normalize = (s: string): string => toHiragana(s.normalize('NFKC').toLowerCase())
 
 /** 自由入力の文字列一致。空なら指定なし。値は必ずあるので未調査にならない */
 export function matchText(text: string, query: string): Match {

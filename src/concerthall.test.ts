@@ -139,6 +139,47 @@ describe('filterHalls', () => {
         30,
       ])
     })
+
+    /** 漢字を含む施設名は、読みで打っても当たらないと探せない */
+    it('施設名かなでも当たる', () => {
+      const halls = [
+        hall({
+          ID: 10,
+          施設名: '兵庫県立芸術文化センター',
+          施設名かな: 'ひょうごけんりつげいじゅつぶんかせんたー',
+        }),
+        hall({ ID: 20, 施設名: 'いずみホール', 施設名かな: 'いずみほーる' }),
+      ]
+      expect(filterHalls(halls, criteria({ query: 'げいじゅつ' })).filtered.map(h => h.ID)).toEqual(
+        [10],
+      )
+    })
+
+    /** 施設名かなはひらがなで書く決まりなので、カタカナで打った人を落とさない */
+    it('ひらがなとカタカナの違いを吸収する', () => {
+      const halls = [hall({ ID: 10, 施設名: 'いずみホール', 施設名かな: 'いずみほーる' })]
+      expect(filterHalls(halls, criteria({ query: 'イズミ' })).filtered.map(h => h.ID)).toEqual([
+        10,
+      ])
+    })
+
+    /**
+     * 駅名で探す人は多いが、住所の地名と駅名は一致するとは限らない
+     * （フェスティバルホールの住所は中之島で、最寄駅は大阪梅田駅）
+     */
+    it('最寄駅の名前でも当たる', () => {
+      const halls = [
+        hall({ ID: 10, 市区町村: '大阪市北区', 最寄駅: [{ 駅: '大阪梅田駅' }] }),
+        hall({ ID: 20, 市区町村: '大阪市中央区', 最寄駅: [{ 駅: '心斎橋駅' }] }),
+      ]
+      expect(filterHalls(halls, criteria({ query: '梅田' })).filtered.map(h => h.ID)).toEqual([10])
+    })
+
+    /** 「JR」で何百件も当たると絞り込みとして働かない */
+    it('路線名では当てない', () => {
+      const halls = [hall({ ID: 10, 最寄駅: [{ 路線: ['JR神戸線'], 駅: '三ノ宮駅' }] })]
+      expect(filterHalls(halls, criteria({ query: 'JR神戸線' })).filtered).toEqual([])
+    })
   })
 
   describe('設備と未調査の開示', () => {

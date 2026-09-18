@@ -1,7 +1,7 @@
 type HasName = { 施設名: string; 施設名かな?: string }
 
-/** カタカナをひらがなに寄せる（長音符・中黒はそのまま） */
-function toHiragana(s: string): string {
+/** カタカナをひらがなに寄せる（長音符・中黒はそのまま）。検索の正規化でも使う */
+export function toHiragana(s: string): string {
   return s.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
 }
 

@@ -141,9 +141,9 @@ function practiceConditions(c: PracticeCriteria): Condition<PracticeListItem>[] 
   ]
 }
 
-/** フリーワードが見る文字列 */
+/** フリーワードが見る文字列（考え方はコンサートホール側と同じ） */
 function searchText(p: PracticeListItem): string {
-  return `${p.施設名}${fullAddress(p)}`
+  return [p.施設名, p.施設名かな, fullAddress(p), ...stationNames(p)].filter(Boolean).join(' ')
 }
 
 export function filterPractices(

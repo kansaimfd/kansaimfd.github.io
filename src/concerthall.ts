@@ -11,7 +11,7 @@ import {
 } from './filter'
 import { fullAddress } from './address'
 import { compareByName } from './name'
-import { minWalk } from './station'
+import { minWalk, stationNames } from './station'
 import { ALL_PREFS } from './pref'
 import {
   readList,
@@ -120,9 +120,18 @@ function hallConditions(c: HallCriteria): Condition<ConcertHall>[] {
   ]
 }
 
-/** フリーワードが見る文字列 */
+/**
+ * フリーワードが見る文字列。
+ *
+ * **施設名かなと最寄駅も含める。** 一覧用のJSONには載っているのに見ていなかったため、
+ * 「いずみほーる」のように読みで打った人も、「梅田」のように駅名で探した人も
+ * 0件になっていた（住所の地名と駅名は一致するとは限らない）。
+ * 路線名は入れない。「JR」で何百件も当たると、絞り込みとして働かなくなる。
+ */
 function searchText(h: ConcertHall): string {
-  return `${h.施設名}${h.部屋名 ?? ''}${fullAddress(h)}`
+  return [h.施設名, h.施設名かな, h.部屋名, fullAddress(h), ...stationNames(h)]
+    .filter(Boolean)
+    .join(' ')
 }
 
 export function filterHalls(halls: ConcertHall[], c: HallCriteria): FilterResult<ConcertHall> {

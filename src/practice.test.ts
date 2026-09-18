@@ -90,6 +90,24 @@ describe('filterPractices', () => {
     ])
   })
 
+  it('フリーワードは施設名・かな・住所・最寄駅を見る', () => {
+    const list = [
+      practice({
+        ID: 10,
+        施設名: '千里山コミュニティセンター',
+        施設名かな: 'せんりやまこみゅにてぃせんたー',
+      }),
+      practice({ ID: 20, 施設名: 'RHY梅田', 最寄駅: [{ 駅: '中崎町駅' }] }),
+    ]
+    const ids = (query: string) =>
+      filterPractices(list, criteria({ query })).filtered.map(p => p.ID)
+
+    expect(ids('せんりやま')).toEqual([10])
+    expect(ids('中崎町')).toEqual([20])
+    // 全角で打っても落とさない
+    expect(ids('ＲＨＹ')).toEqual([20])
+  })
+
   it('最寄駅は名前で当てる', () => {
     const list = [
       practice({ ID: 10, 最寄駅: [{ 駅: '梅田駅' }, { 駅: '中崎町駅' }] }),
