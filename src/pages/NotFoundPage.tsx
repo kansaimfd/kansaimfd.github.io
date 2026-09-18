@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import useDocumentTitle from '../useDocumentTitle'
 
 /**
  * どのルートにも当たらなかったURL。
@@ -9,6 +10,8 @@ import { Link } from 'react-router-dom'
  * 「無い」のか「壊れている」のかが利用者に分からない。
  */
 export default function NotFoundPage() {
+  useDocumentTitle('ページが見つかりません')
+
   return (
     <div className="notfound">
       <p className="notfound__code">404</p>

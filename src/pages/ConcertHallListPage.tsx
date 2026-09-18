@@ -7,6 +7,7 @@ import { availabilityMark, hasEquipment } from '../availability'
 import { fullAddress } from '../address'
 import { compareByName } from '../name'
 import { ALL_PREFS } from '../pref'
+import useDocumentTitle from '../useDocumentTitle'
 import ViewToggle, { type ViewMode } from '../components/ViewToggle'
 import SortSelect, { type SortOption } from '../components/SortSelect'
 import FilterPanel from '../components/FilterPanel'
@@ -59,6 +60,8 @@ function dedupeByFacility(halls: ConcertHall[]): ConcertHall[] {
 }
 
 export default function ConcertHallListPage() {
+  useDocumentTitle('コンサートホール一覧')
+
   const [view, setView] = useState<ViewMode>('list')
   const [query, setQuery] = useState('')
   const [filterPrefs, setFilterPrefs] = useState<string[]>([])

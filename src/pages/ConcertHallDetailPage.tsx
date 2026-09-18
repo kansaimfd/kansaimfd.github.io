@@ -7,6 +7,7 @@ import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
+import useDocumentTitle from '../useDocumentTitle'
 import RentalBadge from '../components/RentalBadge'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
@@ -25,6 +26,9 @@ function stageLabel(h: Hall): string | undefined {
 export default function ConcertHallDetailPage() {
   const { id } = useParams()
   const facility = concerthallFacilities.find(f => f.ID === Number(id))
+
+  // 施設が見つからない場合も題名は要るので、早期 return より前で呼ぶ
+  useDocumentTitle(facility?.施設名 ?? '施設が見つかりません')
 
   if (!facility) {
     return (

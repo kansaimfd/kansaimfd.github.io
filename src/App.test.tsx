@@ -71,6 +71,26 @@ describe('ルーティング', () => {
   })
 })
 
+describe('ページの題名', () => {
+  /**
+   * 題名を出し分けないと、全ページが index.html の題名のままになる。タブを並べても
+   * 履歴を辿ってもページを区別できず、ブックマークも全部同じ名前になる。
+   * useDocumentTitle の呼び忘れは型チェックにも lint にも引っかからない
+   */
+  it.each([
+    ['/concert', 'コンサートホール一覧'],
+    ['/practice', '練習場一覧'],
+    ['/about', 'このサイトについて'],
+    [`/concert/${firstHall.ID}`, firstHall.施設名],
+    [`/practice/${firstPractice.ID}`, firstPractice.施設名],
+    ['/no-such-page', 'ページが見つかりません'],
+  ])('%s の題名にページ名が入る', async (path, name) => {
+    renderAt(path)
+    await screen.findByRole('heading', { level: 1 })
+    expect(document.title).toContain(name as string)
+  })
+})
+
 describe('導線', () => {
   it('ヘッダーから各セクションへ行ける', () => {
     renderAt('/')

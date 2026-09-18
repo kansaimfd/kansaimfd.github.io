@@ -6,6 +6,7 @@ import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityMark, pianoLabel, standLabel } from '../availability'
 import { fullAddress } from '../address'
+import useDocumentTitle from '../useDocumentTitle'
 import RentalBadge from '../components/RentalBadge'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
@@ -13,6 +14,9 @@ import UsageConditionNote from '../components/UsageConditionNote'
 export default function PracticeDetailPage() {
   const { id } = useParams()
   const practice = practices.find(p => p.ID === Number(id))
+
+  // 施設が見つからない場合も題名は要るので、早期 return より前で呼ぶ
+  useDocumentTitle(practice?.施設名 ?? '施設が見つかりません')
 
   if (!practice) {
     return (

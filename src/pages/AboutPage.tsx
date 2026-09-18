@@ -1,4 +1,8 @@
+import useDocumentTitle from '../useDocumentTitle'
+
 export default function AboutPage() {
+  useDocumentTitle('このサイトについて')
+
   return (
     <div className="about">
       <header className="page-head">
