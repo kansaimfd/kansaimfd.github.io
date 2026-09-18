@@ -195,3 +195,31 @@
   gap: 0.5rem;
   margin-top: 1.5rem;
 }
+
+/* ── 読み込みに失敗したとき ─────────────────── */
+
+.loaderror {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.loaderror__title {
+  color: var(--color-navy-700);
+  font-size: 1.5rem;
+}
+
+.loaderror__lead {
+  margin-top: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: var(--fs-base);
+}
+
+.loaderror__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}

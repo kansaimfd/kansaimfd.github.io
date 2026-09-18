@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Routes, Route, Link, NavLink } from 'react-router-dom'
 import ScrollToTop from './components/ScrollToTop'
+import RouteErrorBoundary from './components/ErrorBoundary'
 
 /**
  * **ルートは全部分割する。一覧も静的に読まない。**
@@ -57,21 +58,28 @@ export default function App() {
       </header>
 
       <main className="site-main" id="main">
-        <Suspense fallback={<p className="loading">読み込み中…</p>}>
-          <Routes>
-            <Route path="/" element={<ConcertHallListPage />} />
-            <Route path="/concert" element={<ConcertHallListPage />} />
-            <Route path="/concert/:id" element={<ConcertHallDetailPage />} />
-            <Route path="/practice" element={<PracticeListPage />} />
-            <Route path="/practice/:id" element={<PracticeDetailPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            {/*
+        {/*
+          読み込みの失敗を受け止める。**Suspense の外側に置く。**
+          ページもデータも遅延読み込みなので、取得に失敗すると例外は描画の
+          途中で投げられ、受け皿が無ければ画面が白紙になる
+        */}
+        <RouteErrorBoundary>
+          <Suspense fallback={<p className="loading">読み込み中…</p>}>
+            <Routes>
+              <Route path="/" element={<ConcertHallListPage />} />
+              <Route path="/concert" element={<ConcertHallListPage />} />
+              <Route path="/concert/:id" element={<ConcertHallDetailPage />} />
+              <Route path="/practice" element={<PracticeListPage />} />
+              <Route path="/practice/:id" element={<PracticeDetailPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              {/*
               GitHub Pages は 404.html として index.html を返すので、存在しないパスも
               ここまで届く。受け皿が無いと本文が空のまま何も出ない
             */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Suspense>
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
+        </RouteErrorBoundary>
       </main>
 
       {/*
