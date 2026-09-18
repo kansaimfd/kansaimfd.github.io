@@ -1,0 +1,302 @@
+import { describe, expect, it } from 'vitest'
+import type { ConcertHall } from './types'
+import {
+  HALL_EQUIP_FIELDS,
+  dedupeByFacility,
+  filterHalls,
+  sortHalls,
+  type HallCriteria,
+} from './concerthall'
+
+/** 絞り込みに関係しない必須項目を埋めた土台 */
+function hall(overrides: Partial<ConcertHall> & { ID: number }): ConcertHall {
+  return {
+    施設名: `ホール${overrides.ID}`,
+    都道府県: '大阪府',
+    市区町村: '大阪市北区',
+    番地以下: '1-1',
+    経度: 135,
+    緯度: 34.7,
+    キー: `${overrides.ID}-0`,
+    ...overrides,
+  }
+}
+
+const NO_CRITERIA: HallCriteria = {
+  query: '',
+  prefs: [],
+  hallTypes: [],
+  seats: ['', ''],
+  stageW: ['', ''],
+  stageD: ['', ''],
+  equip: new Set(),
+}
+
+const criteria = (over: Partial<HallCriteria>): HallCriteria => ({ ...NO_CRITERIA, ...over })
+
+describe('filterHalls', () => {
+  it('条件が空なら全件そのまま', () => {
+    const halls = [hall({ ID: 10 }), hall({ ID: 20 })]
+    expect(filterHalls(halls, NO_CRITERIA).filtered).toEqual(halls)
+  })
+
+  it('府県は選んだもののどれかに当たれば残す', () => {
+    const halls = [
+      hall({ ID: 10, 都道府県: '大阪府' }),
+      hall({ ID: 20, 都道府県: '京都府' }),
+      hall({ ID: 30, 都道府県: '兵庫県' }),
+    ]
+    const { filtered } = filterHalls(halls, criteria({ prefs: ['大阪府', '兵庫県'] }))
+    expect(filtered.map(h => h.ID)).toEqual([10, 30])
+  })
+
+  // ホール種別が未調査の施設は、種別で絞った時点で外れる
+  it('ホール種別が未調査なら種別の絞り込みから外れる', () => {
+    const halls = [hall({ ID: 10, ホール種別: '音楽専用' }), hall({ ID: 20 })]
+    const { filtered } = filterHalls(halls, criteria({ hallTypes: ['音楽専用'] }))
+    expect(filtered.map(h => h.ID)).toEqual([10])
+  })
+
+  describe('数値の範囲', () => {
+    const halls = [
+      hall({ ID: 10, 客席数: 300 }),
+      hall({ ID: 20, 客席数: 1000 }),
+      hall({ ID: 30, 客席数: 2000 }),
+      hall({ ID: 40 }), // 未調査
+    ]
+
+    it('下限だけを指定できる', () => {
+      expect(filterHalls(halls, criteria({ seats: ['1000', ''] })).filtered.map(h => h.ID)).toEqual(
+        [20, 30],
+      )
+    })
+
+    it('上限だけを指定できる', () => {
+      expect(filterHalls(halls, criteria({ seats: ['', '1000'] })).filtered.map(h => h.ID)).toEqual(
+        [10, 20],
+      )
+    })
+
+    it('境界の値は含む', () => {
+      expect(
+        filterHalls(halls, criteria({ seats: ['1000', '1000'] })).filtered.map(h => h.ID),
+      ).toEqual([20])
+    })
+
+    // 客席数と同じ扱いを舞台寸法にもする（別々に書いたときに片方だけ抜けやすい）
+    it('舞台幅・舞台奥行にも同じ範囲指定が効く', () => {
+      const staged = [
+        hall({ ID: 10, 舞台幅: 20, 舞台奥行: 14 }),
+        hall({ ID: 20, 舞台幅: 10, 舞台奥行: 8 }),
+        hall({ ID: 30 }),
+      ]
+      expect(filterHalls(staged, criteria({ stageW: ['15', ''] })).filtered.map(h => h.ID)).toEqual(
+        [10],
+      )
+      expect(filterHalls(staged, criteria({ stageD: ['', '10'] })).filtered.map(h => h.ID)).toEqual(
+        [20],
+      )
+    })
+
+    // 「300席以上」で客席数を調べていない施設が混ざると、条件の意味が無くなる
+    it('客席数が未調査の施設は範囲の絞り込みから外れる', () => {
+      expect(filterHalls(halls, criteria({ seats: ['1', ''] })).filtered.map(h => h.ID)).toEqual([
+        10, 20, 30,
+      ])
+    })
+  })
+
+  describe('フリーワード', () => {
+    const halls = [
+      hall({ ID: 10, 施設名: 'いずみホール', 市区町村: '大阪市中央区' }),
+      hall({ ID: 20, 施設名: 'ザ・シンフォニーホール', 部屋名: '大ホール' }),
+      hall({ ID: 30, 施設名: 'Hall ABC' }),
+    ]
+
+    it('施設名で当たる', () => {
+      expect(filterHalls(halls, criteria({ query: 'いずみ' })).filtered.map(h => h.ID)).toEqual([
+        10,
+      ])
+    })
+
+    it('部屋名でも当たる', () => {
+      expect(filterHalls(halls, criteria({ query: '大ホール' })).filtered.map(h => h.ID)).toEqual([
+        20,
+      ])
+    })
+
+    it('住所でも当たる', () => {
+      expect(filterHalls(halls, criteria({ query: '中央区' })).filtered.map(h => h.ID)).toEqual([
+        10,
+      ])
+    })
+
+    // 施設名に英字のものがある（KOKO PLAZA・7th Note）ので大文字小文字は問わない
+    it('英字の大文字小文字は問わない', () => {
+      expect(filterHalls(halls, criteria({ query: 'hall abc' })).filtered.map(h => h.ID)).toEqual([
+        30,
+      ])
+    })
+  })
+
+  describe('設備と未調査の開示', () => {
+    const halls = [
+      hall({ ID: 10, ピアノ有無: true }),
+      hall({ ID: 20, ピアノ有無: false }),
+      hall({ ID: 30 }), // 未調査
+    ]
+
+    it('残すのは true だけ', () => {
+      const { filtered } = filterHalls(halls, criteria({ equip: new Set(['piano']) }))
+      expect(filtered.map(h => h.ID)).toEqual([10])
+    })
+
+    /**
+     * 未調査のせいで外れた件数は必ず数える。黙って消すと、
+     * 実際にはピアノがある施設を利用者が見落とす
+     */
+    it('未調査で外れた件数を数える（「なし」は数えない）', () => {
+      const { unknownExcluded } = filterHalls(halls, criteria({ equip: new Set(['piano']) }))
+      expect(unknownExcluded).toBe(1)
+    })
+
+    it('設備で絞っていなければ 0 件', () => {
+      expect(filterHalls(halls, NO_CRITERIA).unknownExcluded).toBe(0)
+    })
+
+    /**
+     * 選択肢とデータの結び付けはキーの文字列だけで決まっていて、
+     * 取り違えても型チェックに引っかからない（どれも同じ3値を返す）
+     */
+    it.each([
+      ['piano', { ピアノ有無: true }],
+      ['organ', { パイプオルガン: true }],
+      ['stand', { 譜面台貸出: true }],
+      ['family', { 親子室: true }],
+      ['parking', { 駐車場: 10 }],
+    ])('%s は対応するフィールドを見ている', (key, fields) => {
+      const equipped = hall({ ID: 10, ...fields })
+      const bare = hall({ ID: 20 })
+      const { filtered } = filterHalls([equipped, bare], criteria({ equip: new Set([key]) }))
+      expect(filtered.map(h => h.ID)).toEqual([10])
+    })
+
+    it('絞り込める設備をすべて選択肢に出している', () => {
+      expect(HALL_EQUIP_FIELDS.map(e => e.key)).toEqual([
+        'piano',
+        'organ',
+        'stand',
+        'family',
+        'parking',
+      ])
+    })
+
+    it('複数の設備はすべて満たすものだけ残す', () => {
+      const halls = [
+        hall({ ID: 10, ピアノ有無: true, 親子室: true }),
+        hall({ ID: 20, ピアノ有無: true, 親子室: false }),
+      ]
+      const { filtered } = filterHalls(halls, criteria({ equip: new Set(['piano', 'family']) }))
+      expect(filtered.map(h => h.ID)).toEqual([10])
+    })
+
+    /**
+     * 駐車場は台数で持っているが、記録が無いのは「無い」ではなく「調べていない」。
+     * 以前は駐車場だけ別扱いで、台数が未調査の施設が数に入らないまま消えていた
+     */
+    it('駐車場の未調査も除外件数に数える', () => {
+      const halls = [
+        hall({ ID: 10, 駐車場: 50 }),
+        hall({ ID: 20, 駐車場: 0 }),
+        hall({ ID: 30 }), // 未調査
+      ]
+      const { filtered, unknownExcluded } = filterHalls(
+        halls,
+        criteria({ equip: new Set(['parking']) }),
+      )
+      expect(filtered.map(h => h.ID)).toEqual([10])
+      expect(unknownExcluded).toBe(1)
+    })
+  })
+})
+
+describe('sortHalls', () => {
+  // コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる。
+  // 読みが決まるものを五十音順で先に並べ、ラテン文字の施設名はそのあと（name.ts）
+  it('施設名は五十音順で、読みが決まらない名前は後ろにまとめる', () => {
+    const halls = [
+      hall({ ID: 10, 施設名: 'いずみホール', 施設名かな: 'いずみほーる' }),
+      hall({ ID: 20, 施設名: 'KOKO PLAZA' }),
+      hall({ ID: 30, 施設名: 'アイホール', 施設名かな: 'あいほーる' }),
+    ]
+    expect(sortHalls(halls, '施設名', true).map(h => h.施設名)).toEqual([
+      'アイホール',
+      'いずみホール',
+      'KOKO PLAZA',
+    ])
+  })
+
+  it('都道府県で並べ替えられる', () => {
+    const halls = [
+      hall({ ID: 10, 都道府県: '兵庫県' }),
+      hall({ ID: 20, 都道府県: '京都府' }),
+      hall({ ID: 30, 都道府県: '大阪府' }),
+    ]
+    expect(sortHalls(halls, '都道府県', true).map(h => h.都道府県)).toEqual([
+      '京都府',
+      '兵庫県',
+      '大阪府',
+    ])
+  })
+
+  // 同値のときに順序を入れ替えると、絞り込みを変えるたびに一覧が跳ねる
+  it('同じ値どうしは元の順序のまま', () => {
+    const halls = [
+      hall({ ID: 10, 都道府県: '大阪府' }),
+      hall({ ID: 20, 都道府県: '大阪府' }),
+      hall({ ID: 30, 都道府県: '大阪府' }),
+    ]
+    expect(sortHalls(halls, '都道府県', true).map(h => h.ID)).toEqual([10, 20, 30])
+  })
+
+  it('降順は昇順の逆順', () => {
+    const halls = [hall({ ID: 10, 客席数: 300 }), hall({ ID: 20, 客席数: 2000 })]
+    expect(sortHalls(halls, '客席数', false).map(h => h.ID)).toEqual([20, 10])
+  })
+
+  // 客席数の多い順で、調べていない施設が先頭に来ると一覧の意味が壊れる
+  it('客席数が未調査なら多い順で最後に来る', () => {
+    const halls = [hall({ ID: 10 }), hall({ ID: 20, 客席数: 300 })]
+    expect(sortHalls(halls, '客席数', false).map(h => h.ID)).toEqual([20, 10])
+  })
+
+  // 未調査どうしを比べたときに並びが跳ねないこと
+  it('客席数が両方とも未調査なら元の順序のまま', () => {
+    const halls = [hall({ ID: 10 }), hall({ ID: 20 })]
+    expect(sortHalls(halls, '客席数', false).map(h => h.ID)).toEqual([10, 20])
+  })
+
+  it('最寄駅が無い施設は徒歩の近い順で最後に来る', () => {
+    const halls = [hall({ ID: 10 }), hall({ ID: 20, 最寄駅: [{ 駅: 'テスト駅', 駅徒歩: 5 }] })]
+    expect(sortHalls(halls, '最寄駅徒歩', true).map(h => h.ID)).toEqual([20, 10])
+  })
+
+  // Reactの状態として持つ配列を並べ替えてしまうと、再描画の判定が壊れる
+  it('元の配列は並べ替えない', () => {
+    const halls = [hall({ ID: 20, 客席数: 2000 }), hall({ ID: 10, 客席数: 300 })]
+    sortHalls(halls, '客席数', true)
+    expect(halls.map(h => h.ID)).toEqual([20, 10])
+  })
+})
+
+describe('dedupeByFacility', () => {
+  // 一覧は施設×ホールに平坦化してあるので、地図ではピンが同じ座標に重なる
+  it('同じ施設のホールは最初の1件にまとめる', () => {
+    const halls = [
+      hall({ ID: 10, 部屋名: '大ホール', キー: '10-大ホール' }),
+      hall({ ID: 10, 部屋名: '小ホール', キー: '10-小ホール' }),
+      hall({ ID: 20, キー: '20-0' }),
+    ]
+    expect(dedupeByFacility(halls).map(h => h.キー)).toEqual(['10-大ホール', '20-0'])
+  })
+})

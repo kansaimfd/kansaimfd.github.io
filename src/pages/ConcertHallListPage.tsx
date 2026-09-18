@@ -1,15 +1,24 @@
 import { useState, useMemo, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { concerthalls } from '../datasets/concerthalls'
-import type { ConcertHall, HallType } from '../types'
+import type { HallType } from '../types'
 import { NO_WALK, minWalk } from '../station'
-import { hasEquipment } from '../availability'
-import { fullAddress } from '../address'
-import { compareByName } from '../name'
 import { ALL_PREFS } from '../pref'
+import { toggleIn, toggleKey } from '../toggle'
+import useSort from '../useSort'
 import useDocumentTitle from '../useDocumentTitle'
+import {
+  ALL_HALL_TYPES,
+  HALL_EQUIP_FIELDS,
+  dedupeByFacility,
+  filterHalls,
+  sortHalls,
+  type HallSortKey,
+  type Range,
+} from '../concerthall'
 import ViewToggle, { type ViewMode } from '../components/ViewToggle'
 import SortSelect, { type SortOption } from '../components/SortSelect'
+import SearchBox from '../components/SearchBox'
 import FilterPanel from '../components/FilterPanel'
 import FilterRow from '../components/FilterRow'
 import RangeInput from '../components/RangeInput'
@@ -24,10 +33,8 @@ import UsageConditionBadge from '../components/UsageConditionBadge'
 // 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
 
-type SortKey = '施設名' | '都道府県' | '客席数' | '最寄駅徒歩'
-
 // 表の見出しからも並び替えられるので、どのキーも昇順・降順の両方を載せる
-const SORT_OPTIONS: SortOption<SortKey>[] = [
+const SORT_OPTIONS: SortOption<HallSortKey>[] = [
   { key: '施設名', asc: true, label: '施設名（昇順）' },
   { key: '施設名', asc: false, label: '施設名（降順）' },
   { key: '都道府県', asc: true, label: '都道府県（昇順）' },
@@ -38,41 +45,18 @@ const SORT_OPTIONS: SortOption<SortKey>[] = [
   { key: '最寄駅徒歩', asc: false, label: '最寄駅徒歩（遠い順）' },
 ]
 
-const ALL_HALL_TYPES: HallType[] = ['音楽専用', '多目的', '小ホール・サロン']
-
-/** 3値（あり/なし/未調査）を持つ設備。駐車場は台数なのでここには含めない */
-const EQUIP_FIELDS = [
-  { key: 'piano', label: 'ピアノあり', pick: (h: ConcertHall) => h.ピアノ有無 },
-  { key: 'organ', label: 'パイプオルガンあり', pick: (h: ConcertHall) => h.パイプオルガン },
-  { key: 'stand', label: '譜面台貸出あり', pick: (h: ConcertHall) => h.譜面台貸出 },
-  { key: 'family', label: '親子室あり', pick: (h: ConcertHall) => h.親子室 },
-] as const
-
-const EQUIP_OPTIONS = [
-  ...EQUIP_FIELDS.map(({ key, label }) => ({ key, label })),
-  { key: 'parking', label: '駐車場あり' },
-]
-
-/** 平坦化された一覧は同一施設の複数ホールを含むため、地図では施設ごと1マーカーにまとめる */
-function dedupeByFacility(halls: ConcertHall[]): ConcertHall[] {
-  const seen = new Map<number, ConcertHall>()
-  for (const h of halls) if (!seen.has(h.ID)) seen.set(h.ID, h)
-  return [...seen.values()]
-}
-
 export default function ConcertHallListPage() {
   useDocumentTitle('コンサートホール一覧')
 
   const [view, setView] = useState<ViewMode>('list')
   const [query, setQuery] = useState('')
-  const [filterPrefs, setFilterPrefs] = useState<string[]>([])
-  const [filterEquip, setFilterEquip] = useState<Set<string>>(new Set())
-  const [filterHallTypes, setFilterHallTypes] = useState<HallType[]>([])
-  const [filterSeats, setFilterSeats] = useState<[string, string]>(['', ''])
-  const [filterStageW, setFilterStageW] = useState<[string, string]>(['', ''])
-  const [filterStageD, setFilterStageD] = useState<[string, string]>(['', ''])
-  const [sortKey, setSortKey] = useState<SortKey>('施設名')
-  const [sortAsc, setSortAsc] = useState(true)
+  const [prefs, setPrefs] = useState<string[]>([])
+  const [equip, setEquip] = useState<Set<string>>(new Set())
+  const [hallTypes, setHallTypes] = useState<HallType[]>([])
+  const [seats, setSeats] = useState<Range>(['', ''])
+  const [stageW, setStageW] = useState<Range>(['', ''])
+  const [stageD, setStageD] = useState<Range>(['', ''])
+  const { sortKey, sortAsc, toggleSort, setSort } = useSort<HallSortKey>('施設名')
 
   // データが1件も無い種別は選択肢に出さない。必ず0件になる絞り込みを見せないため
   const hallTypeOptions = useMemo(
@@ -81,97 +65,19 @@ export default function ConcertHallListPage() {
   )
 
   const { filtered, unknownExcluded } = useMemo(() => {
-    // 設備以外の条件で先に絞る。設備は未調査による除外数を数えるため別段にする
-    const base = concerthalls.filter(h => {
-      if (filterPrefs.length > 0 && !filterPrefs.includes(h.都道府県)) return false
-      if (
-        filterHallTypes.length > 0 &&
-        (h.ホール種別 == null || !filterHallTypes.includes(h.ホール種別))
-      )
-        return false
-      if (filterSeats[0] && (h.客席数 == null || h.客席数 < Number(filterSeats[0]))) return false
-      if (filterSeats[1] && (h.客席数 == null || h.客席数 > Number(filterSeats[1]))) return false
-      if (filterStageW[0] && (h.舞台幅 == null || h.舞台幅 < Number(filterStageW[0]))) return false
-      if (filterStageW[1] && (h.舞台幅 == null || h.舞台幅 > Number(filterStageW[1]))) return false
-      if (filterStageD[0] && (h.舞台奥行 == null || h.舞台奥行 < Number(filterStageD[0])))
-        return false
-      if (filterStageD[1] && (h.舞台奥行 == null || h.舞台奥行 > Number(filterStageD[1])))
-        return false
-      if (query) {
-        const q = query.toLowerCase()
-        const text = `${h.施設名}${h.部屋名 ?? ''}${fullAddress(h)}`.toLowerCase()
-        if (!text.includes(q)) return false
-      }
-      return true
+    const result = filterHalls(concerthalls, {
+      query,
+      prefs,
+      hallTypes,
+      seats,
+      stageW,
+      stageD,
+      equip,
     })
+    return { ...result, filtered: sortHalls(result.filtered, sortKey, sortAsc) }
+  }, [query, prefs, hallTypes, seats, stageW, stageD, equip, sortKey, sortAsc])
 
-    const activeEquip = EQUIP_FIELDS.filter(e => filterEquip.has(e.key))
-    const list = base.filter(h => {
-      if (filterEquip.has('parking') && !(h.駐車場 != null && h.駐車場 > 0)) return false
-      return activeEquip.every(e => hasEquipment(e.pick(h)))
-    })
-
-    // 「設備なし」ではなく「未調査」のせいで消えた件数。黙って消さず利用者に開示する
-    const shown = new Set(list)
-    const excluded =
-      activeEquip.length === 0
-        ? 0
-        : base.filter(h => !shown.has(h) && activeEquip.some(e => e.pick(h) === undefined)).length
-
-    const sorted = [...list].sort((a, b) => {
-      // 施設名は五十音順（コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる）
-      if (sortKey === '施設名') return (sortAsc ? 1 : -1) * compareByName(a, b)
-      let av: string | number, bv: string | number
-      if (sortKey === '都道府県') {
-        av = a.都道府県
-        bv = b.都道府県
-      } else if (sortKey === '客席数') {
-        av = a.客席数 ?? -1
-        bv = b.客席数 ?? -1
-      } else {
-        av = minWalk(a)
-        bv = minWalk(b)
-      }
-      if (av < bv) return sortAsc ? -1 : 1
-      if (av > bv) return sortAsc ? 1 : -1
-      return 0
-    })
-
-    return { filtered: sorted, unknownExcluded: excluded }
-  }, [
-    query,
-    filterPrefs,
-    filterHallTypes,
-    filterSeats,
-    filterStageW,
-    filterStageD,
-    filterEquip,
-    sortKey,
-    sortAsc,
-  ])
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) setSortAsc(a => !a)
-    else {
-      setSortKey(key)
-      setSortAsc(true)
-    }
-  }
-
-  function togglePref(pref: string) {
-    setFilterPrefs(prev => (prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref]))
-  }
-
-  function toggleEquip(key: string) {
-    setFilterEquip(prev => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
-
-  const sortTh = (k: SortKey, label: string) => (
+  const sortTh = (k: HallSortKey, label: string) => (
     <SortableTh k={k} label={label} sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
   )
 
@@ -186,51 +92,26 @@ export default function ConcertHallListPage() {
       <FilterPanel
         head={
           <>
-            <div className="search">
-              <svg
-                className="search__icon"
-                width="13"
-                height="13"
-                viewBox="0 0 13 13"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden
-              >
-                <circle cx="5.5" cy="5.5" r="3.5" />
-                <path d="M8 8l3 3" strokeLinecap="round" />
-              </svg>
-              <input
-                type="search"
-                className="search__input"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="フリーワード検索"
-                aria-label="フリーワード検索"
-              />
-            </div>
+            <SearchBox value={query} onChange={setQuery} />
             <SortSelect
               options={SORT_OPTIONS}
               sortKey={sortKey}
               sortAsc={sortAsc}
-              onChange={(k, asc) => {
-                setSortKey(k)
-                setSortAsc(asc)
-              }}
+              onChange={setSort}
             />
           </>
         }
       >
         <FilterRow label="PREFECTURE" title="都道府県">
           {ALL_PREFS.map(pref => {
-            const on = filterPrefs.includes(pref)
+            const on = prefs.includes(pref)
             return (
               <button
                 key={pref}
                 type="button"
                 data-pref={pref}
                 aria-pressed={on}
-                onClick={() => togglePref(pref)}
+                onClick={() => setPrefs(toggleIn(prefs, pref))}
                 className={on ? 'pill pill--on' : 'pill'}
               >
                 {on && <span className="pill__check">✓</span>}
@@ -243,17 +124,13 @@ export default function ConcertHallListPage() {
         {hallTypeOptions.length > 0 && (
           <FilterRow label="HALL TYPE" title="ホール種別">
             {hallTypeOptions.map(t => {
-              const on = filterHallTypes.includes(t)
+              const on = hallTypes.includes(t)
               return (
                 <button
                   key={t}
                   type="button"
                   aria-pressed={on}
-                  onClick={() =>
-                    setFilterHallTypes(prev =>
-                      prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t],
-                    )
-                  }
+                  onClick={() => setHallTypes(toggleIn(hallTypes, t))}
                   className={on ? 'pill pill--on' : 'pill'}
                 >
                   {on && <span className="pill__check">✓</span>}
@@ -265,14 +142,14 @@ export default function ConcertHallListPage() {
         )}
 
         <FilterRow label="EQUIPMENT" title="設備">
-          {EQUIP_OPTIONS.map(({ key, label }) => {
-            const on = filterEquip.has(key)
+          {HALL_EQUIP_FIELDS.map(({ key, label }) => {
+            const on = equip.has(key)
             return (
               <button
                 key={key}
                 type="button"
                 aria-pressed={on}
-                onClick={() => toggleEquip(key)}
+                onClick={() => setEquip(toggleKey(equip, key))}
                 className={on ? 'pill pill--equip pill--on' : 'pill pill--equip'}
               >
                 {on && <span className="pill__check">✓</span>}
@@ -283,26 +160,20 @@ export default function ConcertHallListPage() {
         </FilterRow>
 
         <div className="ranges">
-          <RangeInput
-            label="CAPACITY"
-            title="客席数"
-            unit="席"
-            value={filterSeats}
-            onChange={setFilterSeats}
-          />
+          <RangeInput label="CAPACITY" title="客席数" unit="席" value={seats} onChange={setSeats} />
           <RangeInput
             label="STAGE WIDTH"
             title="舞台幅"
             unit="m"
-            value={filterStageW}
-            onChange={setFilterStageW}
+            value={stageW}
+            onChange={setStageW}
           />
           <RangeInput
             label="STAGE DEPTH"
             title="舞台奥行き"
             unit="m"
-            value={filterStageD}
-            onChange={setFilterStageD}
+            value={stageD}
+            onChange={setStageD}
           />
         </div>
       </FilterPanel>

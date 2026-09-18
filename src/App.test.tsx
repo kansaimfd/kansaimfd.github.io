@@ -129,6 +129,26 @@ describe('導線', () => {
   })
 
   /**
+   * 見出しを押しても並びが変わらない、は表示だけ見ていると気づけない。
+   * 押せること（上のテスト）と、押した結果が一覧に反映されることは別
+   */
+  it('表の見出しを押すと並びが変わる', async () => {
+    renderAt('/concert')
+    fireEvent.click(screen.getByRole('button', { name: '表' }))
+    const rows = () =>
+      Array.from(document.querySelectorAll('tbody tr td:first-child')).map(td => td.textContent)
+
+    await screen.findByRole('table')
+    const 昇順 = rows()
+    fireEvent.click(screen.getByRole('button', { name: '施設名' }))
+
+    // 同名の施設（複数ホール）は同着で元の順序を保つので、単純な逆順にはならない。
+    // 見るのは「押したら並びが変わり、先頭と末尾が入れ替わる」ところまで
+    expect(rows()).not.toEqual(昇順)
+    expect(rows()[0]).toBe(昇順[昇順.length - 1])
+  })
+
+  /**
    * 設備の3値は記号（〇 × —）で出している。記号だけだと読み上げで
    * 「なし」と「未調査」の区別が消えるので、言葉が併記されていることを見る
    */
