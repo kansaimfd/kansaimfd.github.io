@@ -31,7 +31,7 @@
 
 .filters__toggle::before {
   content: '▶';
-  color: var(--color-gold-500);
+  color: var(--color-gold-600);
   font-size: var(--fs-2xs);
   transition: transform 0.15s;
 }
@@ -139,7 +139,7 @@
 }
 
 .filter-row__label {
-  color: var(--color-gold-500);
+  color: var(--color-gold-700);
   font-size: var(--fs-2xs);
   font-weight: 500;
   letter-spacing: var(--tracking-label);
@@ -461,13 +461,13 @@
   align-items: center;
   gap: 0.25rem;
   margin-top: 0.375rem;
-  color: var(--color-gold-500);
+  color: var(--color-gold-700);
   font-size: var(--fs-xs);
   font-weight: 500;
 }
 
 .facility-card__official:hover {
-  color: var(--color-gold-600);
+  color: var(--color-gold-700);
 }
 
 /*
@@ -716,7 +716,7 @@
 }
 
 .data-table__sortable:hover {
-  color: var(--color-gold-600);
+  color: var(--color-gold-700);
 }
 
 .data-table__link {
@@ -724,7 +724,7 @@
 }
 
 .data-table__link:hover {
-  color: var(--color-gold-600);
+  color: var(--color-gold-700);
   text-decoration: underline;
 }
 
@@ -782,7 +782,7 @@
 .map-popup__link {
   display: block;
   margin-top: 0.25rem;
-  color: var(--color-gold-600);
+  color: var(--color-gold-700);
 }
 
 .map-popup__link:hover {

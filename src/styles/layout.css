@@ -138,6 +138,7 @@
   letter-spacing: var(--tracking-label);
 }
 
+/* 飾りなので aria-hidden にしてある（App.tsx）。文字色の下限は当てはまらない */
 .site-foot__mark {
   color: var(--color-gold-500);
   font-family: var(--font-serif);
@@ -155,7 +156,7 @@
 
 .page-head__eyebrow {
   margin-bottom: 0.375rem;
-  color: var(--color-gold-500);
+  color: var(--color-gold-700);
   font-size: var(--fs-2xs);
   font-weight: 500;
   letter-spacing: var(--tracking-label);

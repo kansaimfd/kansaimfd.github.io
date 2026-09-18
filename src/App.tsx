@@ -71,7 +71,10 @@ export default function App() {
       */}
       <footer className="site-foot">
         <span>KANSAI MFD · 2026</span>
-        <span className="site-foot__mark">♪ ♫ ♪</span>
+        {/* 純粋な飾り。読み上げると「おんぷ おんぷ おんぷ」になるだけなので隠す */}
+        <span className="site-foot__mark" aria-hidden>
+          ♪ ♫ ♪
+        </span>
       </footer>
     </div>
   )

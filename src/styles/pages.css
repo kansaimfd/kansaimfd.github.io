@@ -12,7 +12,7 @@
 }
 
 .detail__back:hover {
-  color: var(--color-gold-600);
+  color: var(--color-gold-700);
 }
 
 .detail__head {
@@ -108,7 +108,7 @@
 }
 
 .source-note__link:hover {
-  color: var(--color-gold-600);
+  color: var(--color-gold-700);
   text-decoration: underline;
 }
 
@@ -149,7 +149,7 @@
 }
 
 .about__link {
-  color: var(--color-gold-600);
+  color: var(--color-gold-700);
   text-decoration: underline;
 }
 
@@ -168,7 +168,7 @@
 }
 
 .notfound__code {
-  color: var(--color-gold-500);
+  color: var(--color-gold-600);
   font-family: var(--font-serif);
   font-size: 3rem;
   font-weight: 700;
