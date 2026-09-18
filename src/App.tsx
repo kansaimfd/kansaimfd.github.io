@@ -1,11 +1,20 @@
 import { Suspense, lazy } from 'react'
 import { Routes, Route, Link, NavLink } from 'react-router-dom'
-import ConcertHallListPage from './pages/ConcertHallListPage'
 import ScrollToTop from './components/ScrollToTop'
 
-// 入口のコンサートホール一覧だけ静的に読む。残りはルート単位で分割する。
-// 施設データはページごとに別のJSONなので、練習場79件（239KB）を
-// コンサートホールしか見ない利用者に読ませずに済む
+/**
+ * **ルートは全部分割する。一覧も静的に読まない。**
+ *
+ * 以前はコンサートホール一覧だけ静的に読んでいた（入口なので1往復を惜しんだ）。
+ * ただしその一覧は284ホールぶんのJSONを抱えていて、**入口以外から来た人にも
+ * まるごと配られていた**。`/concert/10` を直接開く人も、練習場だけを見る人も、
+ * このサイトについてを読む人も、見ないホール一覧のデータを落としてから
+ * 目的のページを読むことになる（外部リンク・検索結果からの流入がこれに当たる）。
+ *
+ * 分割すると入口の表示に1往復増えるが、入口以外の全ページが gzip 約90KB軽くなる。
+ * 一覧そのものは分割後も1ファイルで届くので、増えるのは往復であって転送量ではない。
+ */
+const ConcertHallListPage = lazy(() => import('./pages/ConcertHallListPage'))
 const ConcertHallDetailPage = lazy(() => import('./pages/ConcertHallDetailPage'))
 const PracticeListPage = lazy(() => import('./pages/PracticeListPage'))
 const PracticeDetailPage = lazy(() => import('./pages/PracticeDetailPage'))
