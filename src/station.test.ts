@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import type { Station } from './types'
-import { NO_WALK, lineLabel, minWalk, stationLabel, stationNames, walkLabel } from './station'
+import {
+  NO_WALK,
+  lineLabel,
+  minWalk,
+  stationKind,
+  stationLabel,
+  stationLabels,
+  stationName,
+  stationNames,
+  walkLabel,
+} from './station'
 
 const station = (s: Partial<Station>): Station => ({ 駅: '新大阪駅', ...s })
 
@@ -67,5 +77,49 @@ describe('stationNames', () => {
     expect(
       stationNames({ 最寄駅: [station({ 駅: '梅田駅' }), station({ 駅: '大阪駅' })] }),
     ).toEqual(['梅田駅', '大阪駅'])
+  })
+})
+
+describe('stationKind', () => {
+  it('種別が書かれていればそれに従う', () => {
+    expect(stationKind(station({ 駅: 'しづかホール前', 種別: 'バス停' }))).toBe('バス停')
+    expect(stationKind(station({ 駅: '新大阪駅', 種別: '駅' }))).toBe('駅')
+  })
+
+  // 名前で分かるものにまで 種別 を書かせると、YAML側の書き漏れが増えるだけ
+  it('種別が無ければ名前から判別する', () => {
+    expect(stationKind(station({ 駅: '小林バス停' }))).toBe('バス停')
+    expect(stationKind(station({ 駅: '天満橋停留所' }))).toBe('バス停')
+    expect(stationKind(station({ 駅: '新大阪駅' }))).toBe('駅')
+  })
+})
+
+describe('stationName', () => {
+  it('駅はそのまま', () => {
+    expect(stationName(station({ 駅: '新大阪駅' }))).toBe('新大阪駅')
+  })
+
+  // 「出戸バスターミナル」は名前だけでは鉄道駅と区別がつかず、電車で行けると誤解される
+  it('バス停と分からない名前には（バス停）を添える', () => {
+    expect(stationName(station({ 駅: '出戸バスターミナル', 種別: 'バス停' }))).toBe(
+      '出戸バスターミナル（バス停）',
+    )
+  })
+
+  it('名前が既にバス停と言っていれば重ねない', () => {
+    expect(stationName(station({ 駅: '小林バス停' }))).toBe('小林バス停')
+  })
+})
+
+describe('stationLabels', () => {
+  it('駅名から表示名を引けるようにする', () => {
+    const labels = stationLabels([
+      { 最寄駅: [station({ 駅: '新大阪駅' })] },
+      { 最寄駅: [station({ 駅: '出戸バスターミナル', 種別: 'バス停' })] },
+      {},
+    ])
+    expect(labels.get('新大阪駅')).toBe('新大阪駅')
+    expect(labels.get('出戸バスターミナル')).toBe('出戸バスターミナル（バス停）')
+    expect(labels.size).toBe(2)
   })
 })

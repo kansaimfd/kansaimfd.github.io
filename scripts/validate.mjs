@@ -37,6 +37,8 @@ const RENTAL_STATES = ['休止', '終了', '予定', '廃止']
 /** 再開しないことが定義の状態。再開 が書かれていたら状態の取り違え */
 const RENTAL_FINAL_STATES = ['終了', '廃止']
 const USAGE_CONDITION_TYPES = ['公募選考', '資格限定', '要紹介']
+/** 最寄駅の 種別。省略＝駅 */
+const STATION_KINDS = ['駅', 'バス停']
 
 /** "YYYY-MM"。貸館.状態 が 予定 のまま開始月を過ぎていないかを見るのに使う */
 function currentYearMonth() {
@@ -106,6 +108,13 @@ function distance(lat1, lon1, lat2, lon2) {
 
 /** 「新大阪駅」「阿倍野停留場」→「新大阪」「阿倍野」。マスタは接尾辞なしで持っている */
 const bareStationName = name => name.replace(/(駅|停留場|電停)$/, '')
+
+/**
+ * バス停かどうか。`種別` が書かれていればそれに従い、無ければ名前から判別する。
+ * **バス停は鉄道の駅ではないので、駅名の語尾も駅座標マスタも当てはまらない。**
+ * 「しづかホール前」「守山市民ホール前」は名前からは判別できないため 種別 が要る。
+ */
+const isBusStop = s => (s.種別 ? s.種別 === 'バス停' : /(バス停|停留所)$/.test(s.駅))
 
 /**
  * 路線名の表記ゆれを見つけるための正規化。
@@ -310,7 +319,13 @@ export function validate(datasets, { stationMaster } = {}) {
           err(`${where} に 駅 がありません`)
           continue
         }
-        if (!/(駅|停留場|バス停|港|IC)$/.test(s.駅)) {
+        if (s.種別 != null && !STATION_KINDS.includes(s.種別)) {
+          err(
+            `${where} の 種別 は ${STATION_KINDS.join(' / ')} のいずれかです: ${JSON.stringify(s.種別)}`,
+          )
+        }
+        // バス停の名前は「◯◯前」「◯◯バスターミナル」など自由なので、語尾は見ない
+        if (!isBusStop(s) && !/(駅|停留場|港|IC)$/.test(s.駅)) {
           warn('駅名の語尾が不自然', `${where} ${s.駅}`)
         }
         if (s.路線 != null && !Array.isArray(s.路線)) {
@@ -327,11 +342,16 @@ export function validate(datasets, { stationMaster } = {}) {
           }
         }
         if (s.駅徒歩 != null && s.駅距離 != null) {
-          // 公正競争規約は道路距離80m=徒歩1分・切り上げ。1分ぶんの余裕を見て矛盾を判定する
+          // 公正競争規約は道路距離80m=徒歩1分・切り上げ。1分ぶんの余裕を見て矛盾を判定する。
+          //
+          // **公式が換算より長く書いているぶんには警告しない。** 80m/分は健脚の基準で、
+          // 公式は坂道・信号・地下通路を織り込んで長めに書く（いずみホールは600mに徒歩10分）。
+          // 両方向を疑うと20件中10件が常時ノイズになり、本当に見たい
+          // 「実際より近く書かれている」が埋もれる。
           const expected = Math.ceil(s.駅距離 / 80)
-          if (Math.abs(s.駅徒歩 - expected) > 1) {
+          if (expected - s.駅徒歩 > 1) {
             warn(
-              '駅徒歩と駅距離が食い違う',
+              '駅徒歩が駅距離に対して短すぎる',
               `${where} 駅徒歩${s.駅徒歩}分 / 駅距離${s.駅距離}m→約${expected}分`,
             )
           }
@@ -342,7 +362,7 @@ export function validate(datasets, { stationMaster } = {}) {
 
         // 駅座標マスタと突き合わせて、徒歩分数・距離が物理的にありえるかを見る。
         // バス停などは鉄道の駅ではないのでマスタにない＝照合対象外。
-        if (stationsByName.size > 0 && !/(バス停|停留所)$/.test(s.駅)) {
+        if (stationsByName.size > 0 && !isBusStop(s)) {
           const candidates = stationsByName.get(bareStationName(s.駅))
           if (!candidates) {
             warn('駅がマスタに見つからない（表記ゆれの疑い）', `${where} ${s.駅}`)

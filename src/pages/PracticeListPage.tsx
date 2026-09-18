@@ -1,7 +1,7 @@
 import { useState, useMemo, Suspense, lazy } from 'react'
 import { Link } from 'react-router-dom'
 import { practices } from '../datasets/practices'
-import { NO_WALK, minWalk, stationNames } from '../station'
+import { NO_WALK, minWalk, stationLabels, stationNames } from '../station'
 import { ALL_PREFS } from '../pref'
 import { toggleIn, toggleKey } from '../toggle'
 import useSort from '../useSort'
@@ -82,6 +82,8 @@ export default function PracticeListPage() {
     [prefs],
   )
   const stations = useMemo(() => unique(practices.flatMap(stationNames)), [])
+  // 「出戸バスターミナル」のように名前からは鉄道駅と区別がつかないものがある
+  const stationDisplay = useMemo(() => stationLabels(practices), [])
 
   const { filtered, unknownExcluded } = useMemo(() => {
     const result = filterPractices(practices, {
@@ -159,6 +161,7 @@ export default function PracticeListPage() {
             placeholder="最寄駅（すべて）"
             value={station}
             options={stations}
+            formatOption={v => stationDisplay.get(v) ?? v}
             onChange={setStation}
           />
         </FilterRow>
