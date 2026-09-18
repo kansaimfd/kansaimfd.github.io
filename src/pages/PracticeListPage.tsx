@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { practices } from '../datasets/practices'
 import type { Practice } from '../types'
 import { NO_WALK, minWalk, stationNames } from '../station'
-import { availabilityMark } from '../availability'
 import { fullAddress } from '../address'
 import { compareByName } from '../name'
 import { ALL_PREFS } from '../pref'
@@ -18,6 +17,7 @@ import FacilityCard from '../components/FacilityCard'
 import Stat from '../components/Stat'
 import EquipBadge from '../components/EquipBadge'
 import SortableTh from '../components/SortableTh'
+import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 
@@ -338,7 +338,7 @@ export default function PracticeListPage() {
       <ViewToggle view={view} onChangeView={setView} count={filtered.length} />
 
       {unknownExcluded > 0 && (
-        <div className="notice notice--warn">
+        <div className="notice notice--warn" role="status">
           <span aria-hidden>⚠</span>
           <span>
             {EQUIP_FILTERS.filter(e => filterEquip.has(e.key))
@@ -380,17 +380,25 @@ export default function PracticeListPage() {
       {view === 'table' && (
         <div className="table-wrap">
           <table className="data-table">
+            {/* 表が何の一覧なのかは見出しを辿らないと分からないので、読み上げ用に添える */}
+            <caption className="visually-hidden">練習場の一覧（{filtered.length}件）</caption>
             <thead>
               <tr>
                 {sortTh('施設名', '施設名')}
                 {sortTh('都道府県', '都道府県')}
-                <th>市区町村</th>
-                <th>最大定員</th>
-                <th>最大面積(㎡)</th>
+                <th scope="col">市区町村</th>
+                <th scope="col">最大定員</th>
+                <th scope="col">最大面積(㎡)</th>
                 {sortTh('最寄駅徒歩', '徒歩(分)')}
-                <th className="is-center">ピアノ</th>
-                <th className="is-center">管楽器</th>
-                <th className="is-center">打楽器</th>
+                <th scope="col" className="is-center">
+                  ピアノ
+                </th>
+                <th scope="col" className="is-center">
+                  管楽器
+                </th>
+                <th scope="col" className="is-center">
+                  打楽器
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -408,9 +416,15 @@ export default function PracticeListPage() {
                   <td className="is-num">{maxCapacity(p) || '—'}</td>
                   <td className="is-num">{maxArea(p) || '—'}</td>
                   <td className="is-num">{minWalk(p) < NO_WALK ? minWalk(p) : '—'}</td>
-                  <td className="is-center">{availabilityMark(EQUIP_FILTERS[0].state(p))}</td>
-                  <td className="is-center">{availabilityMark(EQUIP_FILTERS[1].state(p))}</td>
-                  <td className="is-center">{availabilityMark(EQUIP_FILTERS[2].state(p))}</td>
+                  <td className="is-center">
+                    <AvailabilityMark value={EQUIP_FILTERS[0].state(p)} />
+                  </td>
+                  <td className="is-center">
+                    <AvailabilityMark value={EQUIP_FILTERS[1].state(p)} />
+                  </td>
+                  <td className="is-center">
+                    <AvailabilityMark value={EQUIP_FILTERS[2].state(p)} />
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (

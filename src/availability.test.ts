@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { availabilityMark, hasEquipment, pianoLabel, standLabel } from './availability'
+import {
+  availabilityMark,
+  availabilityText,
+  hasEquipment,
+  pianoDetail,
+  standDetail,
+} from './availability'
 
 describe('availabilityMark', () => {
   it('あり / なし を記号にする', () => {
@@ -14,6 +20,26 @@ describe('availabilityMark', () => {
   })
 })
 
+describe('availabilityText', () => {
+  it('あり / なし を言葉にする', () => {
+    expect(availabilityText(true)).toBe('あり')
+    expect(availabilityText(false)).toBe('なし')
+  })
+
+  // 記号と同じく、読み上げでも「なし」と「未調査」を混同させない
+  it('未調査を「なし」と区別する', () => {
+    expect(availabilityText(undefined)).toBe('未調査')
+    expect(availabilityText(undefined)).not.toBe(availabilityText(false))
+  })
+
+  it('3値すべてに対応する記号がある', () => {
+    for (const v of [true, false, undefined]) {
+      expect(availabilityText(v)).not.toBe('')
+      expect(availabilityMark(v)).not.toBe('')
+    }
+  })
+})
+
 describe('hasEquipment', () => {
   it('絞り込みに残るのは true だけ', () => {
     expect(hasEquipment(true)).toBe(true)
@@ -22,33 +48,31 @@ describe('hasEquipment', () => {
   })
 })
 
-describe('pianoLabel', () => {
-  it('分かっている詳細を記号に添える', () => {
+describe('pianoDetail', () => {
+  it('種別とメーカーを繋ぐ', () => {
     expect(
-      pianoLabel({ ピアノ有無: true, ピアノ種別: 'グランド', ピアノメーカー: 'スタインウェイ' }),
-    ).toBe('〇 グランド・スタインウェイ')
-  })
-
-  it('詳細が分からなければ記号のみ', () => {
-    expect(pianoLabel({ ピアノ有無: true })).toBe('〇')
+      pianoDetail({ ピアノ有無: true, ピアノ種別: 'グランド', ピアノメーカー: 'スタインウェイ' }),
+    ).toBe('グランド・スタインウェイ')
   })
 
   it('片方だけ分かっている場合は分かっているほうを出す', () => {
-    expect(pianoLabel({ ピアノ有無: true, ピアノ種別: 'アップライト' })).toBe('〇 アップライト')
+    expect(pianoDetail({ ピアノ有無: true, ピアノ種別: 'アップライト' })).toBe('アップライト')
   })
 
-  it('未調査なら未調査の記号', () => {
-    expect(pianoLabel({})).toBe('—')
+  // 有無と詳細を別々に返すので、詳細が無いことは空文字ではなく undefined で表す
+  it('詳細が分からなければ undefined', () => {
+    expect(pianoDetail({ ピアノ有無: true })).toBeUndefined()
+    expect(pianoDetail({})).toBeUndefined()
   })
 })
 
-describe('standLabel', () => {
-  it('本数が分かれば添える', () => {
-    expect(standLabel({ 譜面台貸出: true, 譜面台数: 5 })).toBe('〇 5本')
+describe('standDetail', () => {
+  it('本数が分かれば本数を返す', () => {
+    expect(standDetail({ 譜面台貸出: true, 譜面台数: 5 })).toBe('5本')
   })
 
   // 「あるが本数は不明」を表せることがこの形にしている理由
-  it('本数が分からなければ記号のみ', () => {
-    expect(standLabel({ 譜面台貸出: true })).toBe('〇')
+  it('本数が分からなければ undefined', () => {
+    expect(standDetail({ 譜面台貸出: true })).toBeUndefined()
   })
 })

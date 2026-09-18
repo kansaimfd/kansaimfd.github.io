@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { concerthalls } from '../datasets/concerthalls'
 import type { ConcertHall, HallType } from '../types'
 import { NO_WALK, minWalk } from '../station'
-import { availabilityMark, hasEquipment } from '../availability'
+import { hasEquipment } from '../availability'
 import { fullAddress } from '../address'
 import { compareByName } from '../name'
 import { ALL_PREFS } from '../pref'
@@ -17,6 +17,7 @@ import FacilityCard from '../components/FacilityCard'
 import Stat from '../components/Stat'
 import EquipBadge from '../components/EquipBadge'
 import SortableTh from '../components/SortableTh'
+import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 
@@ -309,7 +310,7 @@ export default function ConcertHallListPage() {
       <ViewToggle view={view} onChangeView={setView} count={filtered.length} />
 
       {unknownExcluded > 0 && (
-        <div className="notice notice--warn">
+        <div className="notice notice--warn" role="status">
           <span aria-hidden>⚠</span>
           <span>
             設備が<strong>未調査</strong>の {unknownExcluded} 件を絞り込みから除外しています。
@@ -354,16 +355,24 @@ export default function ConcertHallListPage() {
       {view === 'table' && (
         <div className="table-wrap">
           <table className="data-table">
+            {/* 表が何の一覧なのかは見出しを辿らないと分からないので、読み上げ用に添える */}
+            <caption className="visually-hidden">
+              コンサートホールの一覧（{filtered.length}件）
+            </caption>
             <thead>
               <tr>
                 {sortTh('施設名', '施設名')}
                 {sortTh('都道府県', '都道府県')}
-                <th>市区町村</th>
+                <th scope="col">市区町村</th>
                 {sortTh('客席数', '客席数')}
-                <th>舞台(W×D)</th>
+                <th scope="col">舞台(W×D)</th>
                 {sortTh('最寄駅徒歩', '徒歩(分)')}
-                <th className="is-center">ピアノ</th>
-                <th className="is-center">オルガン</th>
+                <th scope="col" className="is-center">
+                  ピアノ
+                </th>
+                <th scope="col" className="is-center">
+                  オルガン
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -384,8 +393,12 @@ export default function ConcertHallListPage() {
                     {h.舞台幅 != null && h.舞台奥行 != null ? `${h.舞台幅}×${h.舞台奥行}` : '—'}
                   </td>
                   <td className="is-num">{minWalk(h) < NO_WALK ? minWalk(h) : '—'}</td>
-                  <td className="is-center">{availabilityMark(h.ピアノ有無)}</td>
-                  <td className="is-center">{availabilityMark(h.パイプオルガン)}</td>
+                  <td className="is-center">
+                    <AvailabilityMark value={h.ピアノ有無} />
+                  </td>
+                  <td className="is-center">
+                    <AvailabilityMark value={h.パイプオルガン} />
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (

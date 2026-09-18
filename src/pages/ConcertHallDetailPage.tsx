@@ -5,9 +5,10 @@ import type { Hall } from '../types'
 import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
-import { availabilityMark, pianoLabel, standLabel } from '../availability'
+import { pianoDetail, standDetail } from '../availability'
 import { fullAddress } from '../address'
 import useDocumentTitle from '../useDocumentTitle'
+import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
@@ -112,18 +113,31 @@ export default function ConcertHallDetailPage() {
           </h2>
           <div className="table-wrap">
             <table className="data-table">
+              <caption className="visually-hidden">{f.施設名}のホール一覧</caption>
               <thead>
                 <tr>
-                  <th>ホール名</th>
-                  <th>種別</th>
-                  <th className="is-num">客席数</th>
-                  <th>舞台</th>
-                  <th className="is-num">楽屋(名)</th>
-                  <th>ピアノ</th>
-                  <th className="is-center">オルガン</th>
-                  {showChembalo && <th className="is-center">チェンバロ</th>}
-                  <th>譜面台</th>
-                  <th className="is-center">親子室</th>
+                  <th scope="col">ホール名</th>
+                  <th scope="col">種別</th>
+                  <th scope="col" className="is-num">
+                    客席数
+                  </th>
+                  <th scope="col">舞台</th>
+                  <th scope="col" className="is-num">
+                    楽屋(名)
+                  </th>
+                  <th scope="col">ピアノ</th>
+                  <th scope="col" className="is-center">
+                    オルガン
+                  </th>
+                  {showChembalo && (
+                    <th scope="col" className="is-center">
+                      チェンバロ
+                    </th>
+                  )}
+                  <th scope="col">譜面台</th>
+                  <th scope="col" className="is-center">
+                    親子室
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -137,18 +151,26 @@ export default function ConcertHallDetailPage() {
                     <td className="is-num">{r.客席数 != null ? `${r.客席数}席` : '—'}</td>
                     <td className="is-nowrap">{stageLabel(r) ?? '—'}</td>
                     <td className="is-num">{r.楽屋収容人数 ?? '—'}</td>
-                    <td className="is-nowrap">{pianoLabel(r)}</td>
                     <td className="is-nowrap">
-                      {availabilityMark(r.パイプオルガン)}
+                      <AvailabilityMark value={r.ピアノ有無} detail={pianoDetail(r)} />
+                    </td>
+                    <td className="is-nowrap">
+                      <AvailabilityMark value={r.パイプオルガン} />
                       {r.オルガン製作者 && (
                         <span className="data-table__note">{r.オルガン製作者}</span>
                       )}
                     </td>
                     {showChembalo && (
-                      <td className="is-center">{availabilityMark(r.チェンバロ)}</td>
+                      <td className="is-center">
+                        <AvailabilityMark value={r.チェンバロ} />
+                      </td>
                     )}
-                    <td className="is-nowrap">{standLabel(r)}</td>
-                    <td className="is-center">{availabilityMark(r.親子室)}</td>
+                    <td className="is-nowrap">
+                      <AvailabilityMark value={r.譜面台貸出} detail={standDetail(r)} />
+                    </td>
+                    <td className="is-center">
+                      <AvailabilityMark value={r.親子室} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

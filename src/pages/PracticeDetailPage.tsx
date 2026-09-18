@@ -4,9 +4,10 @@ import { stationLabel } from '../station'
 import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
-import { availabilityMark, pianoLabel, standLabel } from '../availability'
+import { availabilityText, pianoDetail, standDetail } from '../availability'
 import { fullAddress } from '../address'
 import useDocumentTitle from '../useDocumentTitle'
+import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
@@ -45,9 +46,15 @@ export default function PracticeDetailPage() {
     ['開館時間', p.開館時間 && p.閉館時間 ? `${p.開館時間} 〜 ${p.閉館時間}` : p.開館時間],
     ['休館日', p.休館日],
     ['最寄駅', stationText],
-    ['ピアノ有無', p.ピアノ有無 != null ? availabilityMark(p.ピアノ有無) : undefined],
+    // 情報表は項目名と値が並ぶ形なので、記号ではなく言葉で書く（読み上げでも同じ）
+    ['ピアノ有無', p.ピアノ有無 != null ? availabilityText(p.ピアノ有無) : undefined],
     // 施設レベルの備品は、受付で申し込む貸出備品で設置部屋が決まっていない施設のためのもの
-    ['譜面台', p.譜面台貸出 != null ? standLabel(p) : undefined],
+    [
+      '譜面台',
+      p.譜面台貸出 != null
+        ? [availabilityText(p.譜面台貸出), standDetail(p)].filter(Boolean).join(' ')
+        : undefined,
+    ],
   ]
 
   return (
@@ -102,16 +109,29 @@ export default function PracticeDetailPage() {
           <h2 className="section-title">部屋一覧</h2>
           <div className="table-wrap">
             <table className="data-table">
+              <caption className="visually-hidden">{p.施設名}の部屋一覧</caption>
               <thead>
                 <tr>
-                  <th>部屋名</th>
-                  <th className="is-num">面積(㎡)</th>
-                  <th className="is-num">定員</th>
-                  <th className="is-center">管楽器</th>
-                  <th className="is-center">打楽器</th>
-                  <th>ピアノ</th>
-                  {showChembalo && <th className="is-center">チェンバロ</th>}
-                  <th>譜面台</th>
+                  <th scope="col">部屋名</th>
+                  <th scope="col" className="is-num">
+                    面積(㎡)
+                  </th>
+                  <th scope="col" className="is-num">
+                    定員
+                  </th>
+                  <th scope="col" className="is-center">
+                    管楽器
+                  </th>
+                  <th scope="col" className="is-center">
+                    打楽器
+                  </th>
+                  <th scope="col">ピアノ</th>
+                  {showChembalo && (
+                    <th scope="col" className="is-center">
+                      チェンバロ
+                    </th>
+                  )}
+                  <th scope="col">譜面台</th>
                 </tr>
               </thead>
               <tbody>
@@ -124,13 +144,23 @@ export default function PracticeDetailPage() {
                     </td>
                     <td className="is-num">{r.面積 ?? '—'}</td>
                     <td className="is-num">{r.定員 ?? '—'}</td>
-                    <td className="is-center">{availabilityMark(r.管楽器)}</td>
-                    <td className="is-center">{availabilityMark(r.打楽器)}</td>
-                    <td className="is-nowrap">{pianoLabel(r)}</td>
+                    <td className="is-center">
+                      <AvailabilityMark value={r.管楽器} />
+                    </td>
+                    <td className="is-center">
+                      <AvailabilityMark value={r.打楽器} />
+                    </td>
+                    <td className="is-nowrap">
+                      <AvailabilityMark value={r.ピアノ有無} detail={pianoDetail(r)} />
+                    </td>
                     {showChembalo && (
-                      <td className="is-center">{availabilityMark(r.チェンバロ)}</td>
+                      <td className="is-center">
+                        <AvailabilityMark value={r.チェンバロ} />
+                      </td>
                     )}
-                    <td className="is-nowrap">{standLabel(r)}</td>
+                    <td className="is-nowrap">
+                      <AvailabilityMark value={r.譜面台貸出} detail={standDetail(r)} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

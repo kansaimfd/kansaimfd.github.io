@@ -4,6 +4,25 @@
  * 段組みは 640px / 1024px の2か所で折る（JS で幅を測らない）。
  */
 
+/* ── 読み上げ専用 ───────────────────────────── */
+
+/*
+ * 目には見えないが読み上げには渡す文字。表の見出しの補足や、記号に添える言葉に使う。
+ * display:none や visibility:hidden では読み上げからも消えるので、
+ * 1pxに畳んで切り抜く昔ながらの手を使う。
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ── 絞り込みパネル ─────────────────────────── */
 
 .filters {
@@ -711,7 +730,10 @@
   background: var(--color-cream);
 }
 
+/* 見出しの中身は button（th はキーボードで辿れない）。セル全体を押せるように広げる */
 .data-table__sortable {
+  width: 100%;
+  text-align: inherit;
   cursor: pointer;
 }
 

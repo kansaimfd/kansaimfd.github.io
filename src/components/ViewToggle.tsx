@@ -21,7 +21,12 @@ const LABEL: Record<ViewMode, string> = {
 export default function ViewToggle({ view, onChangeView, count }: Props) {
   return (
     <div className="result-bar">
-      <p className="result-bar__count">
+      {/*
+        絞り込みの結果は画面の別の場所が書き換わるだけなので、読み上げでは
+        何件になったのかが分からない。role="status" で控えめに伝える
+      */}
+      <p className="result-bar__count" role="status">
+        <span className="visually-hidden">該当</span>
         <strong>{count}</strong> 件
       </p>
       <div className="view-toggle">

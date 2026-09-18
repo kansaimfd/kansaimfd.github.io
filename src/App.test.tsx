@@ -118,6 +118,29 @@ describe('導線', () => {
   })
 
   /**
+   * 表の見出しからの並び替えは th の onClick で書かれていて、マウスでしか押せなかった。
+   * 見た目は同じなので、button になっているかは描いて役割で探すしかない
+   */
+  it('表の見出しをキーボードで辿れる形にしている', async () => {
+    renderAt('/concert')
+    fireEvent.click(screen.getByRole('button', { name: '表' }))
+    await screen.findByRole('table')
+    expect(screen.getByRole('button', { name: '客席数' })).toBeDefined()
+  })
+
+  /**
+   * 設備の3値は記号（〇 × —）で出している。記号だけだと読み上げで
+   * 「なし」と「未調査」の区別が消えるので、言葉が併記されていることを見る
+   */
+  it('設備の記号に読み上げ用の言葉を添えている', async () => {
+    renderAt('/concert')
+    fireEvent.click(screen.getByRole('button', { name: '表' }))
+    await screen.findByRole('table')
+    const 言葉 = ['あり', 'なし', '未調査'].filter(t => screen.queryAllByText(t).length > 0)
+    expect(言葉.length).toBeGreaterThan(0)
+  })
+
+  /**
    * コンサートホール一覧は、表・地図の中身はあるのに切り替えボタンだけが無い状態で
    * しばらく放置されていた（表示は 'list' 固定だった）。型チェックも lint も通るので、
    * 描画してボタンを探す以外に気づく方法が無い。
