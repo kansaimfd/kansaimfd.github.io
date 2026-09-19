@@ -146,6 +146,8 @@ export function validate(datasets, { stationMaster } = {}) {
   const errors = []
   /** 警告は種類ごとに集計する。同種が何十件も並ぶと対処すべきものが埋もれるため */
   const warnings = []
+  /** 検査除外 で抑止した警告。件数だけ出す（抑止していることを忘れないように） */
+  const exempted = []
   /** 路線名: 正規化後 → 実際に使われている表記の集合 */
   const lineVariants = new Map()
 
@@ -155,7 +157,9 @@ export function validate(datasets, { stationMaster } = {}) {
     for (const f of records) {
       const at = `[${file} ID:${f.ID}] ${f.施設名 ?? '(施設名なし)'}`
       const err = msg => errors.push(`${at} ${msg}`)
-      const warn = (kind, detail) => warnings.push({ kind, detail: `${at} ${detail ?? ''}`.trim() })
+      /** この施設の警告。施設の検査を終えてから 検査除外 と突き合わせて warnings へ移す */
+      const local = []
+      const warn = (kind, detail) => local.push({ kind, detail: detail ?? '' })
 
       // ── ID ──
       if (typeof f.ID !== 'number' || !Number.isInteger(f.ID)) {
@@ -397,6 +401,13 @@ export function validate(datasets, { stationMaster } = {}) {
             err(`出典[${i}] の 項目 は配列で書いてください`)
         }
       }
+
+      // ── 検査除外 ──
+      for (const w of applyExemptions(local, f.検査除外, err)) {
+        const entry = { kind: w.kind, detail: `${at} ${w.detail}`.trim() }
+        if (w.exempted) exempted.push(entry)
+        else warnings.push(entry)
+      }
     }
   }
 
@@ -407,7 +418,52 @@ export function validate(datasets, { stationMaster } = {}) {
     }
   }
 
-  return { errors, warnings }
+  return { errors, warnings, exempted }
+}
+
+/**
+ * 施設ごとの 検査除外 で、確かめたうえで受け入れた警告を抑止する。
+ *
+ * **データが公式の記載どおりで、公式の側が食い違っている**ときに使う
+ * （トレピエは公式が「1.8km（約20分）」と書き、80m/分の換算では約23分になる）。
+ * 検査に合わせて値を書き換えると出典と値が食い違い、
+ * かといって警告が出続けると、新しく出た警告が見落とされる。
+ *
+ * - `警告` は警告の種類（出力の見出しと同じ文言）、`対象` は詳細の書き出し（`最寄駅[1]` など）。
+ *   `対象` を省くとその種類の警告をすべて抑止する
+ * - **`理由` は必須。** 何を確かめて抑止したのかが残らないと、後から外してよいか判断できない
+ * - どの警告にも当たらない除外は警告にする。データを直して警告が消えたのに除外だけ残ると、
+ *   次に同じ種類の本物の警告が出ても黙って消える
+ */
+export function applyExemptions(warnings, exemptions, err) {
+  if (exemptions == null) return warnings
+  if (!Array.isArray(exemptions)) {
+    err('検査除外 は配列で書いてください')
+    return warnings
+  }
+  const valid = exemptions.filter((x, i) => {
+    const ok = typeof x?.警告 === 'string' && typeof x?.理由 === 'string' && x.理由.trim() !== ''
+    if (!ok) err(`検査除外[${i}] には 警告 と 理由 が要ります`)
+    return ok
+  })
+  const used = new Set()
+  const result = warnings.map(w => {
+    const hit = valid.find(
+      x => x.警告 === w.kind && (x.対象 == null || w.detail.startsWith(x.対象)),
+    )
+    if (!hit) return w
+    used.add(hit)
+    return { ...w, exempted: true }
+  })
+  for (const x of valid) {
+    if (!used.has(x)) {
+      result.push({
+        kind: '使われていない検査除外',
+        detail: `${x.警告}${x.対象 ? ` ${x.対象}` : ''}`,
+      })
+    }
+  }
+  return result
 }
 
 /** 〇/× が残っていないか。false と「未調査」を混同しないための検査 */
@@ -433,7 +489,7 @@ const SUMMARY_THRESHOLD = 5
  * 警告は種類ごとにまとめる。「出典が未記録」のような同種の警告が百件並ぶと、
  * 対処すべき警告が埋もれてしまうため。
  */
-export function report({ errors, warnings }, { verbose = false } = {}) {
+export function report({ errors, warnings, exempted = [] }, { verbose = false } = {}) {
   if (warnings.length > 0) {
     const byKind = new Map()
     for (const w of warnings) {
@@ -449,6 +505,10 @@ export function report({ errors, warnings }, { verbose = false } = {}) {
         console.warn(`    …ほか ${details.length - shown.length}件（全件は --verbose）`)
       }
     }
+  }
+  if (exempted.length > 0) {
+    console.warn(`（検査除外で抑止した警告 ${exempted.length}件。一覧は --verbose）`)
+    if (verbose) for (const w of exempted) console.warn(`    [${w.kind}] ${w.detail}`)
   }
   if (errors.length > 0) {
     console.error(`\n✖ エラー ${errors.length}件`)

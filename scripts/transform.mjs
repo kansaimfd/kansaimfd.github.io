@@ -99,9 +99,10 @@ export function isHallRoom(room) {
 }
 
 export function normalize(facility) {
-  const withStations = facility.最寄駅
-    ? { ...facility, 最寄駅: fillWalkMinutes(facility.最寄駅) }
-    : facility
+  // 検査除外 はデータ検査のための記録で、画面では使わない
+  const rest = { ...facility }
+  delete rest.検査除外
+  const withStations = rest.最寄駅 ? { ...rest, 最寄駅: fillWalkMinutes(rest.最寄駅) } : rest
   const withRooms = withStations.部屋
     ? { ...withStations, 部屋: withStations.部屋.filter(isMusicRoom) }
     : withStations
@@ -112,7 +113,7 @@ export function normalize(facility) {
  * 平坦化した一覧に**載せる**フィールド。
  *
  * 平坦化は施設の属性をホールの数だけ複製するので、一覧が読まないフィールドが
- * そのまま件数倍になる（88施設が284ホールに増える）。`出典` は施設あたり最大5KBあり、
+ * そのまま件数倍になる（88施設が144ホールに増える）。`出典` は施設あたり最大5KBあり、
  * これだけで平坦化後のJSONの8割を占めていた。
  *
  * **落とすものではなく載せるものを挙げる。** 除外リストで書いていたころ、

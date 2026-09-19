@@ -459,6 +459,61 @@ describe('施設レベルの備品', () => {
   })
 })
 
+describe('検査除外', () => {
+  // 駅距離1800m は換算で約23分。公式が「約20分」と書いている、という想定
+  const 食い違う駅 = {
+    最寄駅: [
+      { 駅: '武庫之荘駅', 駅徒歩: 3 },
+      { 駅: '立花駅', 駅距離: 1800, 駅徒歩: 20 },
+    ],
+  }
+  const 除外 = x => 施設({ ...食い違う駅, 検査除外: [x] })
+  const 理由 = '公式が「1.8km（約20分）」と両方書いている'
+
+  it('種類と対象が合う警告を抑止し、抑止した分は別に返す', () => {
+    const result = validate([
+      {
+        file: 'concerthall',
+        records: [除外({ 警告: '駅徒歩が駅距離に対して短すぎる', 対象: '最寄駅[1]', 理由 })],
+      },
+    ])
+    expect(result.errors).toEqual([])
+    expect(result.warnings).toEqual([])
+    expect(result.exempted).toEqual([
+      {
+        kind: '駅徒歩が駅距離に対して短すぎる',
+        detail: expect.stringMatching(/^\[concerthall ID:10\] テストホール 最寄駅\[1\]/),
+      },
+    ])
+  })
+
+  it('対象を省くと、その種類の警告をすべて抑止する', () => {
+    expect(warningsOf(除外({ 警告: '駅徒歩が駅距離に対して短すぎる', 理由 }))).toEqual([])
+  })
+
+  it('対象が違えば抑止しない', () => {
+    expect(
+      kindsOf(除外({ 警告: '駅徒歩が駅距離に対して短すぎる', 対象: '最寄駅[0]', 理由 })),
+    ).toContain('駅徒歩が駅距離に対して短すぎる')
+  })
+
+  // データを直して警告が消えたのに除外だけ残ると、次の本物の警告まで黙って消える
+  it('どの警告にも当たらない除外は警告にする', () => {
+    const w = warningsOf(施設({ 検査除外: [{ 警告: '部屋が未登録', 理由 }] }))
+    expect(w.map(x => x.kind)).toEqual(['使われていない検査除外'])
+    expect(w[0].detail).toMatch(/部屋が未登録$/)
+    expect(
+      warningsOf(施設({ 検査除外: [{ 警告: '部屋が未登録', 対象: 'x', 理由 }] }))[0].detail,
+    ).toMatch(/部屋が未登録 x$/)
+  })
+
+  it('理由の無い除外・配列でない除外はエラーにする', () => {
+    expectOneError(除外({ 警告: '駅徒歩が駅距離に対して短すぎる', 理由: ' ' }), /検査除外\[0\]/)
+    expectOneError(除外(null), /検査除外\[0\]/)
+    expectOneError(施設({ 検査除外: '部屋が未登録' }), /配列で書いてください/)
+  })
+})
+
 describe('report', () => {
   const silence = () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -490,6 +545,19 @@ describe('report', () => {
     vi.clearAllMocks()
     report({ errors: [], warnings }, { verbose: true })
     expect(console.warn.mock.calls.map(c => c[0]).join('\n')).not.toMatch(/ほか/)
+  })
+
+  it('抑止した警告は件数だけ出し、中身は --verbose のときに出す', () => {
+    silence()
+    const exempted = [{ kind: '駅徒歩が駅距離に対して短すぎる', detail: '施設A' }]
+    report({ errors: [], warnings: [], exempted })
+    const text = () => console.warn.mock.calls.map(c => c[0]).join('\n')
+    expect(text()).toMatch(/検査除外で抑止した警告 1件/)
+    expect(text()).not.toMatch(/施設A/)
+
+    vi.clearAllMocks()
+    report({ errors: [], warnings: [], exempted }, { verbose: true })
+    expect(text()).toMatch(/\[駅徒歩が駅距離に対して短すぎる\] 施設A/)
   })
 
   // 百件並ぶ種類を先に出すと、対処すべき数件が画面の外へ流れてしまう

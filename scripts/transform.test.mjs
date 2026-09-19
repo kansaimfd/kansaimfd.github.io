@@ -334,6 +334,11 @@ describe('normalize', () => {
     expect(f.最終確認日).toBe('2025-06-02')
   })
 
+  it('検査除外（データ検査のための記録）は画面用のJSONに出さない', () => {
+    const f = normalize({ ID: 10, 施設名: 'テストホール', 検査除外: [{ 警告: 'x', 理由: 'y' }] })
+    expect(f).not.toHaveProperty('検査除外')
+  })
+
   it('最寄駅も部屋も未登録の施設をそのまま通す', () => {
     const f = { ID: 10, 施設名: 'テストホール' }
     expect(normalize(f)).toEqual(f)
