@@ -1,17 +1,18 @@
 import { use, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { concertHallFacility } from '../datasets/facility'
-import { stationLabel } from '../station'
 import type { Hall } from '../types'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { pianoDetail, standDetail } from '../availability'
-import { fullAddress } from '../address'
 import useDocumentTitle from '../useDocumentTitle'
-import AvailabilityMark from '../components/AvailabilityMark'
-import RentalBadge from '../components/RentalBadge'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
+import DetailHead from '../components/DetailHead'
+import SectionHead from '../components/SectionHead'
+import RoomCard, { type Spec } from '../components/RoomCard'
+import Stat from '../components/Stat'
+import EquipBadge from '../components/EquipBadge'
 
 // 地図は maplibre-gl（gzip で約420KB）を引き込むので、ページ本体と分けて後から読む。
 // 待つあいだは同じ大きさの枠を置き、読み込み後に下の内容がずれないようにする
@@ -19,13 +20,55 @@ const DetailMap = lazy(() => import('../components/DetailMap'))
 
 type Row = [string, string | number | undefined | null]
 
-/** 舞台寸法をまとめて1つの表記にする。分かっている値だけを繋ぐ */
-function stageLabel(h: Hall): string | undefined {
-  const parts = [
-    h.舞台幅 != null ? `幅${h.舞台幅}m` : null,
-    h.舞台奥行 != null ? `奥行${h.舞台奥行}m` : null,
-  ].filter(Boolean)
-  return parts.length > 0 ? parts.join(' × ') : undefined
+/** 部屋の数値のうち最大のもの。1室も分かっていなければ undefined */
+function maxOf(rooms: Hall[], pick: (r: Hall) => number | undefined): number | undefined {
+  const values = rooms.map(pick).filter((v): v is number => v != null)
+  return values.length > 0 ? Math.max(...values) : undefined
+}
+
+/**
+ * ホールの数値の欄。客席のある部屋は客席数と舞台寸法、
+ * 客席の無い部屋（併設のスタジオ・練習室）は定員と面積を出す。
+ * **分かっている数値だけを出す**（見出しの無い「—」が並んでも何の欄か分からない）。
+ * 舞台寸法は片方しか分からないホールもある（なら100年会館は奥行だけ）。Stat は片方が
+ * 欠けると全体を「—」にするので、そのときは幅と奥行を別々に出す
+ */
+function HallRoomStats({ r }: { r: Hall }) {
+  const bothStage = r.舞台幅 != null && r.舞台奥行 != null
+  return (
+    <>
+      {r.客席数 != null && <Stat values={[r.客席数]} unit="席" caption="CAPACITY" />}
+      {bothStage && <Stat values={[r.舞台幅, r.舞台奥行]} unit="m" caption="STAGE W×D" />}
+      {!bothStage && r.舞台幅 != null && (
+        <Stat values={[r.舞台幅]} unit="m" caption="STAGE WIDTH" />
+      )}
+      {!bothStage && r.舞台奥行 != null && (
+        <Stat values={[r.舞台奥行]} unit="m" caption="STAGE DEPTH" />
+      )}
+      {r.楽屋収容人数 != null && (
+        <Stat values={[r.楽屋収容人数]} unit="名" caption="DRESSING ROOMS" />
+      )}
+      {r.客席数 == null && r.定員 != null && (
+        <Stat values={[r.定員]} unit="名" caption="CAPACITY" />
+      )}
+      {r.面積 != null && <Stat values={[r.面積]} unit="㎡" caption="AREA" />}
+    </>
+  )
+}
+
+/** 部屋の設備の3値。持っている施設が少ない項目は、記録がある場合だけ並べる */
+function hallSpecs(r: Hall, showChembalo: boolean): Spec[] {
+  const specs: Spec[] = [
+    { label: 'ピアノ', value: r.ピアノ有無, detail: pianoDetail(r) },
+    { label: 'パイプオルガン', value: r.パイプオルガン, detail: r.オルガン製作者 },
+  ]
+  if (showChembalo) specs.push({ label: 'チェンバロ', value: r.チェンバロ })
+  specs.push({ label: '譜面台', value: r.譜面台貸出, detail: standDetail(r) })
+  specs.push({ label: '親子室', value: r.親子室 })
+  // 併設の練習室にだけ書かれる項目。ホールで「未調査」を並べても手がかりにならない
+  if (r.管楽器 != null) specs.push({ label: '管楽器', value: r.管楽器 })
+  if (r.打楽器 != null) specs.push({ label: '打楽器', value: r.打楽器 })
+  return specs
 }
 
 export default function ConcertHallDetailPage() {
@@ -52,143 +95,104 @@ export default function ConcertHallDetailPage() {
   const f = facility
   const rooms = f.部屋 ?? []
 
-  // チェンバロを持つ施設は少ないので、記録がある施設でだけ列を出す
+  // チェンバロを持つ施設は少ないので、記録がある施設でだけ項目を出す
   const showChembalo = rooms.some(r => r.チェンバロ != null)
 
-  const rows: Row[] = [
-    ['都道府県', f.都道府県],
-    ['市区町村', f.市区町村],
-    ['番地以下', f.番地以下],
-    ['建物', f.建物],
-    ['築年月', f.築年月],
-    ['最寄駅', f.最寄駅?.map(stationLabel).join(' / ')],
-    ['駐車場', f.駐車場 != null ? `${f.駐車場}台` : undefined],
-  ]
+  const maxSeats = maxOf(rooms, r => r.客席数)
+  const builtYear = f.築年月 ? Number(f.築年月.slice(0, 4)) : undefined
+
+  // 住所と最寄駅は見出しに出しているので、ここには重ねない
+  const rows = (
+    [
+      ['TEL', f.TEL],
+      ['開館時間', f.開館時間 && f.閉館時間 ? `${f.開館時間} 〜 ${f.閉館時間}` : f.開館時間],
+      ['休館日', f.休館日],
+      ['築年月', f.築年月],
+      ['駐車場', f.駐車場 != null ? `${f.駐車場}台` : undefined],
+    ] satisfies Row[]
+  ).filter(([, v]) => v != null && v !== '')
 
   return (
     <div className="detail" data-pref={f.都道府県}>
-      <Link to="/concert" className="detail__back">
-        ← コンサートホール一覧
-      </Link>
-      <header className="detail__head">
-        <h1 className="detail__title">{f.施設名}</h1>
-        <p className="detail__address">{fullAddress(f)}</p>
-      </header>
+      {/* 確認日は一覧へ戻るリンクと同じ行に置く。情報の鮮度は読み始める前に分かる方がよい */}
+      <div className="detail__topbar">
+        <Link to="/concert" className="detail__back">
+          ← コンサートホール一覧
+        </Link>
+        <SourceNote 出典={f.出典} 最終確認日={f.最終確認日} />
+      </div>
+
+      <DetailHead
+        facility={f}
+        label="CONCERT HALL"
+        stats={
+          <>
+            {rooms.length > 0 && <Stat values={[rooms.length]} unit="室" caption="ROOMS" />}
+            {maxSeats != null && <Stat values={[maxSeats]} unit="席" caption="MAX CAPACITY" />}
+            {builtYear != null && <Stat values={[builtYear]} unit="年" caption="OPENED" />}
+            {f.駐車場 != null && <Stat values={[f.駐車場]} unit="台" caption="PARKING" />}
+          </>
+        }
+        // 設備はどれかの部屋にあれば出す（どの部屋かは下の部屋ごとの欄で分かる）
+        equip={
+          <>
+            <EquipBadge label="ピアノ" on={rooms.some(r => r.ピアノ有無 === true)} />
+            <EquipBadge label="オルガン" on={rooms.some(r => r.パイプオルガン === true)} />
+            <EquipBadge label="チェンバロ" on={rooms.some(r => r.チェンバロ === true)} />
+            <EquipBadge label="譜面台" on={rooms.some(r => r.譜面台貸出 === true)} />
+            <EquipBadge label="親子室" on={rooms.some(r => r.親子室 === true)} />
+            <EquipBadge label="駐車場" on={f.駐車場 != null && f.駐車場 > 0} />
+          </>
+        }
+      />
 
       <RentalNotice 貸館={f.貸館} />
       <UsageConditionNote 利用条件={f.利用条件} />
 
-      <Suspense fallback={<div className="map map--detail" />}>
-        <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} 都道府県={f.都道府県} />
-      </Suspense>
-
-      <div className="detail__actions">
-        {f.URL && (
-          <a href={f.URL} target="_blank" rel="noopener noreferrer" className="btn btn--primary">
-            公式サイト
-          </a>
-        )}
-        {f.申込URL && (
-          <a href={f.申込URL} target="_blank" rel="noopener noreferrer" className="btn btn--ghost">
-            申込
-          </a>
-        )}
-        {f.料金URL && (
-          <a href={f.料金URL} target="_blank" rel="noopener noreferrer" className="btn btn--ghost">
-            料金
-          </a>
-        )}
-      </div>
-
-      <div className="detail__section">
-        <table className="info-table">
-          <tbody>
-            {rows.map(([label, value]) => (
-              <InfoRow
-                key={label}
-                label={label as string}
-                value={value as string | number | undefined}
+      {rooms.length > 0 && (
+        <section className="detail__section">
+          <SectionHead
+            label="HALLS & ROOMS"
+            title="ホール・部屋"
+            note={rooms.length > 1 ? `${rooms.length}室` : undefined}
+          />
+          <div className="room-list">
+            {rooms.map((r, i) => (
+              <RoomCard
+                key={i}
+                name={r.部屋名 ?? f.施設名}
+                貸館={r.貸館}
+                tag={r.ホール種別}
+                stats={<HallRoomStats r={r} />}
+                specs={hallSpecs(r, showChembalo)}
+                note={r.楽器制限}
               />
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </section>
+      )}
 
-      {rooms.length > 0 && (
-        <div className="detail__section">
-          <h2 className="section-title">
-            ホール一覧
-            {rooms.length > 1 && <span className="section-title__note">（{rooms.length}）</span>}
-          </h2>
-          <div className="table-wrap">
-            <table className="data-table">
-              <caption className="visually-hidden">{f.施設名}のホール一覧</caption>
-              <thead>
-                <tr>
-                  <th scope="col">ホール名</th>
-                  <th scope="col">種別</th>
-                  <th scope="col" className="is-num">
-                    客席数
-                  </th>
-                  <th scope="col">舞台</th>
-                  <th scope="col" className="is-num">
-                    楽屋(名)
-                  </th>
-                  <th scope="col">ピアノ</th>
-                  <th scope="col" className="is-center">
-                    オルガン
-                  </th>
-                  {showChembalo && (
-                    <th scope="col" className="is-center">
-                      チェンバロ
-                    </th>
-                  )}
-                  <th scope="col">譜面台</th>
-                  <th scope="col" className="is-center">
-                    親子室
-                  </th>
-                </tr>
-              </thead>
+      <div className="detail__grid">
+        {rows.length > 0 && (
+          <section className="detail__section">
+            <SectionHead label="INFORMATION" title="施設情報" />
+            <table className="info-table">
               <tbody>
-                {rooms.map((r, i) => (
-                  <tr key={i}>
-                    <td>
-                      {r.部屋名 ?? '—'}
-                      <RentalBadge 貸館={r.貸館} />
-                    </td>
-                    <td className="is-nowrap">{r.ホール種別 ?? '—'}</td>
-                    <td className="is-num">{r.客席数 != null ? `${r.客席数}席` : '—'}</td>
-                    <td className="is-nowrap">{stageLabel(r) ?? '—'}</td>
-                    <td className="is-num">{r.楽屋収容人数 ?? '—'}</td>
-                    <td className="is-nowrap">
-                      <AvailabilityMark value={r.ピアノ有無} detail={pianoDetail(r)} />
-                    </td>
-                    <td className="is-nowrap">
-                      <AvailabilityMark value={r.パイプオルガン} />
-                      {r.オルガン製作者 && (
-                        <span className="data-table__note">{r.オルガン製作者}</span>
-                      )}
-                    </td>
-                    {showChembalo && (
-                      <td className="is-center">
-                        <AvailabilityMark value={r.チェンバロ} />
-                      </td>
-                    )}
-                    <td className="is-nowrap">
-                      <AvailabilityMark value={r.譜面台貸出} detail={standDetail(r)} />
-                    </td>
-                    <td className="is-center">
-                      <AvailabilityMark value={r.親子室} />
-                    </td>
-                  </tr>
+                {rows.map(([label, value]) => (
+                  <InfoRow key={label} label={label} value={value} />
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
+          </section>
+        )}
 
-      <SourceNote 出典={f.出典} 最終確認日={f.最終確認日} />
+        <section className="detail__section">
+          <SectionHead label="LOCATION" title="地図" />
+          <Suspense fallback={<div className="map map--detail" />}>
+            <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} 都道府県={f.都道府県} />
+          </Suspense>
+        </section>
+      </div>
     </div>
   )
 }

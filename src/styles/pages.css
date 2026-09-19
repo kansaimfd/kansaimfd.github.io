@@ -2,45 +2,316 @@
 
 /* ── 詳細ページ ─────────────────────────────── */
 
+/*
+ * 一覧のカードと同じ組み立てにしてある（府県帯・明朝の施設名・英字の見出しを添えた数値・
+ * 設備バッジ）。一覧から来たときに同じ施設だと分かり、ページだけが素っ気なく見えないように。
+ */
 .detail {
-  max-width: 42rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 一覧へ戻るリンクと情報の確認日。狭い画面では2段に折れる */
+.detail__topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .detail__back {
   color: var(--color-navy-700);
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
 }
 
 .detail__back:hover {
   color: var(--color-gold-700);
 }
 
-.detail__head {
-  margin: 0.5rem 0 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--color-gold-500);
+.detail > .notice {
+  margin: 1rem 0 0;
 }
 
-.detail__title {
+.detail__section {
+  margin-top: 2rem;
+}
+
+/* 施設情報と地図。広い画面では左右に並べる */
+.detail__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 64rem) {
+  .detail__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* 施設情報が1行も無い施設では、地図を幅いっぱいにする */
+  .detail__grid > :only-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 見出しのカード。一覧の .facility-card と同じ枠と府県の左罫 */
+.detail-head {
+  border: 1px solid var(--color-line);
+  border-left: 3px solid var(--pref-accent);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.detail-head__body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem 1rem 1.125rem;
+}
+
+.detail-head__title {
   color: var(--color-navy-700);
-  font-size: 1.5rem;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
 }
 
-.detail__address {
-  margin-top: 0.25rem;
+.detail-head__address {
+  margin-top: 0.375rem;
   color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.02em;
+}
+
+.detail-head .station-list__item {
   font-size: var(--fs-sm);
 }
 
-.detail__actions {
+.detail-head__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 1rem;
 }
 
-.detail__section {
-  margin-top: 1.5rem;
+.detail-head__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.detail-head__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 0.75rem;
+}
+
+.detail-head__stats:empty {
+  display: none;
+}
+
+.detail-head__equip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.detail-head__equip:empty {
+  display: none;
+}
+
+@media (min-width: 40rem) {
+  .detail-head__body {
+    padding: 1.25rem 1.5rem 1.5rem;
+  }
+
+  .detail-head__title {
+    font-size: 1.625rem;
+  }
+
+  .detail-head__stats {
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    column-gap: 2rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .detail-head__body {
+    grid-template-columns: 1.4fr 1fr;
+    gap: 2rem;
+  }
+
+  .detail-head__title {
+    font-size: var(--fs-title);
+  }
+
+  /* 右の列は数値と設備。縦の罫で本文と分ける */
+  .detail-head__side {
+    justify-content: center;
+    padding: 0 0 0 2rem;
+    border-top: 0;
+    border-left: 1px solid var(--color-line-soft);
+  }
+
+  .detail-head__stats {
+    grid-template-columns: repeat(2, auto);
+    column-gap: 2.5rem;
+  }
+}
+
+/* 節の見出し。絞り込みパネルの行見出しと同じ「英字＋明朝」 */
+.section-head {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.section-head__label {
+  margin-bottom: 0.125rem;
+  color: var(--color-gold-700);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+}
+
+.section-head__title {
+  color: var(--color-navy-700);
+  font-size: var(--fs-lg);
+}
+
+.section-head__note {
+  margin-left: 0.375rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+}
+
+/*
+ * 部屋ごとのカード。一覧のカードと同じく1部屋1行で、広い画面では
+ * 左に部屋名と数値、右に設備を並べる（ピアノの機種名のような長い補足を折らずに済む）
+ */
+.room-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.room-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--color-line);
+  border-left: 3px solid var(--pref-accent);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+@media (min-width: 64rem) {
+  .room-card {
+    grid-template-columns: 2fr 3fr;
+    column-gap: 2rem;
+    padding: 1.125rem 1.5rem;
+  }
+
+  .room-card__head,
+  .room-card__stats {
+    grid-column: 1;
+  }
+
+  .room-card__specs {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    padding: 0 0 0 2rem;
+    border-top: 0;
+    border-left: 1px solid var(--color-line-soft);
+  }
+
+  .room-card__note {
+    grid-column: 1 / -1;
+  }
+}
+
+.room-card__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.room-card__head .badge {
+  margin-left: 0;
+}
+
+.room-card__name {
+  color: var(--color-navy-700);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+}
+
+/* 一覧カードの .facility-card__type と同じ小札 */
+.room-card__tag {
+  padding: 0.125rem 0.4375rem;
+  border: 1px solid var(--pref-chip);
+  border-radius: var(--radius-xs);
+  background: var(--pref-tint);
+  color: var(--pref-accent);
+  font-size: var(--fs-2xs);
+}
+
+.room-card__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+}
+
+.room-card__stats:empty {
+  display: none;
+}
+
+/* 設備の3値。「なし」「未調査」も並べる（バッジと違い、分かっていることを全部見せる） */
+.room-card__specs {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: 0.5rem 1.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line-soft);
+  font-size: var(--fs-sm);
+}
+
+.room-card__spec {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  color: var(--color-text-faint);
+}
+
+.room-card__spec dt {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.room-card__spec--on dd {
+  color: var(--color-gold-700);
+  font-weight: 500;
+}
+
+.room-card__note {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  background: var(--color-cream);
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
 }
 
 /* 施設の基本情報。左が項目名、右が値の2列 */
@@ -72,20 +343,9 @@
   border-bottom: 0;
 }
 
-/*
- * 部屋名は短いので折り返さない。詳細ページの表は列が多く、
- * 折り返すと「大ホー／ル」のように1列が数文字まで潰れる（横スクロールで読ませる）。
- */
-.detail .data-table td:first-child {
-  white-space: nowrap;
-}
-
 /* ── 出典 ───────────────────────────────────── */
 
 .source-note {
-  margin-top: 1.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--color-line);
   color: var(--color-text-muted);
   font-size: var(--fs-xs);
   line-height: 1.7;
@@ -95,30 +355,8 @@
   color: var(--color-alert-text-soft);
 }
 
-.source-note__list {
-  margin-top: 0.375rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.source-note__link {
-  color: var(--color-navy-700);
-  word-break: break-all;
-}
-
-.source-note__link:hover {
-  color: var(--color-gold-700);
-  text-decoration: underline;
-}
-
 .source-note__meta {
   margin-left: 0.25rem;
-  color: var(--color-text-faint);
-}
-
-.source-note__remark {
-  display: block;
   color: var(--color-text-faint);
 }
 

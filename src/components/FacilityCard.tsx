@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { FacilityBase } from '../types'
-import { lineLabel, stationName, walkLabel } from '../station'
 import { localAddress } from '../address'
 import PrefBand from './PrefBand'
+import StationList from './StationList'
 import RentalBadge from './RentalBadge'
 import UsageConditionBadge from './UsageConditionBadge'
 
@@ -64,18 +64,7 @@ export default function FacilityCard({ facility: f, detailPath, stats, equip }: 
 
           <p className="facility-card__address">{localAddress(f)}</p>
 
-          {f.最寄駅 && f.最寄駅.length > 0 && (
-            <div className="facility-card__access">
-              {f.最寄駅.map((s, i) => (
-                <p key={i} className="facility-card__station">
-                  {s.路線 && <span>{lineLabel(s)}</span>}
-                  <span className="facility-card__station-name">{stationName(s)}</span>
-                  {s.出口 && <span>{s.出口}</span>}
-                  {walkLabel(s) && <span>{walkLabel(s)}</span>}
-                </p>
-              ))}
-            </div>
-          )}
+          <StationList stations={f.最寄駅} />
 
           {f.URL && (
             <a

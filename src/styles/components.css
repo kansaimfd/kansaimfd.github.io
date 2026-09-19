@@ -377,8 +377,8 @@
   overflow: hidden;
 }
 
-/* 府県の帯。カードの所属を色と地名で示す */
-.facility-card__band {
+/* 府県の帯。カードの所属を色と地名で示す（一覧のカードと詳細ページの見出しで共通） */
+.pref-band {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -388,14 +388,14 @@
   background: linear-gradient(180deg, var(--pref-tint) 0%, #fff 100%);
 }
 
-.facility-card__dot {
+.pref-band__dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
   background: var(--pref-accent);
 }
 
-.facility-card__pref {
+.pref-band__pref {
   color: var(--pref-accent);
   font-family: var(--font-serif);
   font-size: var(--fs-md);
@@ -403,12 +403,21 @@
   letter-spacing: 0.04em;
 }
 
-.facility-card__romaji {
+.pref-band__romaji {
   margin-left: 0.125rem;
   color: var(--pref-accent);
   font-size: 0.5625rem;
   letter-spacing: var(--tracking-label);
   opacity: 0.5;
+}
+
+/* 帯の右端に置く種別の英字（詳細ページ） */
+.pref-band__label {
+  margin-left: auto;
+  color: var(--color-gold-700);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
 }
 
 .facility-card__body {
@@ -462,11 +471,12 @@
   letter-spacing: 0.02em;
 }
 
-.facility-card__access {
+/* 最寄駅の並び（一覧のカードと詳細ページの見出しで共通） */
+.station-list {
   margin-top: 0.1875rem;
 }
 
-.facility-card__station {
+.station-list__item {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -476,7 +486,7 @@
   line-height: 1.5;
 }
 
-.facility-card__station-name {
+.station-list__name {
   color: var(--color-navy-700);
 }
 
@@ -531,7 +541,7 @@
   }
 
   .facility-card__address,
-  .facility-card__station {
+  .station-list__item {
     font-size: var(--fs-sm);
   }
 }
