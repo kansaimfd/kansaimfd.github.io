@@ -28,14 +28,15 @@ coverage/
 
 # Generated data（build-data.mjs が毎回作り直す。src/data/ の中身は全部生成物）
 src/data/
-data/facilities/concerthall.csv
 data/facilities/draft/
 
 # 表計算の副本（変換スクリプトは廃止したが、手元で作ったものを誤って追跡しないよう残す。正はYAML）
 data/facilities/*.xlsx
+data/facilities/*.csv
 
-# 調査の作業ファイル
+# 調査の作業ファイル（進捗の記録は調査のたびに書き換わり、YAMLに反映した時点で役目を終える）
 data/research/
+data/facilities/.research-progress*.json
 
 # Claude Code（個人設定のみ除外。settings.json やコマンド類は共有する）
 .claude/settings.local.json
