@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import type { FacilityBase, HallType } from '../types'
+import type { FacilityBase } from '../types'
 import { lineLabel, stationName, walkLabel } from '../station'
 import { localAddress } from '../address'
 import PrefBand from './PrefBand'
@@ -25,7 +25,6 @@ type CardFacility = Pick<
   | '利用条件'
 > & {
   部屋名?: string
-  ホール種別?: HallType
   /** 練習場一覧に並べた、コンサートホール併設の練習室など */
   ホール併設?: true
 }
@@ -60,7 +59,6 @@ export default function FacilityCard({ facility: f, detailPath, stats, equip }: 
             {f.部屋名 && <span className="facility-card__room">（{f.部屋名}）</span>}
             <RentalBadge 貸館={f.貸館} />
             <UsageConditionBadge 利用条件={f.利用条件} />
-            {f.ホール種別 && <span className="facility-card__type">{f.ホール種別}</span>}
             {f.ホール併設 && <span className="facility-card__type">ホール併設</span>}
           </div>
 

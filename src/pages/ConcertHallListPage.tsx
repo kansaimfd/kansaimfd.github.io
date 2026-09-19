@@ -7,7 +7,6 @@ import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
 import { isClosed } from '../rental'
 import {
-  ALL_HALL_TYPES,
   HALL_EQUIP_FIELDS,
   dedupeByFacility,
   filterHalls,
@@ -58,7 +57,14 @@ export default function ConcertHallListPage() {
    * 絞り込んだ結果をそのまま人に送れて、詳細ページから戻っても条件が残る。
    */
   const [params, setParams] = useSearchParams()
-  const state = useMemo(() => hallStateFromParams(params), [params])
+  /**
+   * **ホール種別の絞り込みは画面から外してある**（区分の用途を整理し直すまで）。
+   * 「多目的」が多目的室を連想させ、オーケストラを想定した劇場型ホールと
+   * 区別できないため。データと `filterHalls` 側は残してある。
+   * URLに `type=` が残っていても効かせない。見えない条件で絞ると
+   * 「なぜか件数が少ない」画面になり、書き戻すときにも落ちる
+   */
+  const state = useMemo(() => ({ ...hallStateFromParams(params), hallTypes: [] }), [params])
   const {
     query,
     prefs,
@@ -85,12 +91,6 @@ export default function ConcertHallListPage() {
     const next = nextSort({ key: sortKey, asc: sortAsc }, key)
     update({ sortKey: next.key, sortAsc: next.asc })
   }
-
-  // データが1件も無い種別は選択肢に出さない。必ず0件になる絞り込みを見せないため
-  const hallTypeOptions = useMemo(
-    () => ALL_HALL_TYPES.filter(t => concerthalls.some(h => h.ホール種別 === t)),
-    [],
-  )
 
   const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
     const result = filterHalls(concerthalls, {
@@ -149,26 +149,6 @@ export default function ConcertHallListPage() {
             )
           })}
         </FilterRow>
-
-        {hallTypeOptions.length > 0 && (
-          <FilterRow label="HALL TYPE" title="ホール種別">
-            {hallTypeOptions.map(t => {
-              const on = hallTypes.includes(t)
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => update({ hallTypes: toggleIn(hallTypes, t) })}
-                  className={on ? 'pill pill--on' : 'pill'}
-                >
-                  {on && <span className="pill__check">✓</span>}
-                  {t}
-                </button>
-              )
-            })}
-          </FilterRow>
-        )}
 
         <FilterRow label="EQUIPMENT" title="設備">
           {HALL_EQUIP_FIELDS.map(({ key, label }) => {
