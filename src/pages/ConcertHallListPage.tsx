@@ -10,8 +10,10 @@ import {
   HALL_EQUIP_FIELDS,
   dedupeByFacility,
   filterHalls,
+  groupByFacility,
   hallStateFromParams,
   hallStateToParams,
+  rentalVariesByHall,
   sortHalls,
   type HallPageState,
   type HallSortKey,
@@ -23,6 +25,7 @@ import FilterPanel from '../components/FilterPanel'
 import FilterRow from '../components/FilterRow'
 import RangeInput from '../components/RangeInput'
 import FacilityCard from '../components/FacilityCard'
+import HallStats from '../components/HallStats'
 import Stat from '../components/Stat'
 import EquipBadge from '../components/EquipBadge'
 import SortableTh from '../components/SortableTh'
@@ -106,6 +109,8 @@ export default function ConcertHallListPage() {
     return { ...result, filtered: sortHalls(result.filtered, sortKey, sortAsc) }
   }, [query, prefs, hallTypes, seats, stageW, stageD, equip, showClosed, sortKey, sortAsc])
 
+  // リストは1施設1枚のカードにまとめる。並びは絞り込み・並び替えを終えたホールの順を保つ
+  const groups = useMemo(() => groupByFacility(filtered), [filtered])
   // 地図はこの配列が変わるたびにピンを置き直すので、描画ごとに作り直さない
   const mapFacilities = useMemo(() => dedupeByFacility(filtered), [filtered])
 
@@ -202,39 +207,61 @@ export default function ConcertHallListPage() {
         </div>
       </FilterPanel>
 
-      <ViewToggle view={view} onChangeView={v => update({ view: v })} count={filtered.length} />
+      <ViewToggle
+        view={view}
+        onChangeView={v => update({ view: v })}
+        count={filtered.length}
+        unit="ホール"
+        note={`${groups.length}施設`}
+      />
 
       <UnknownNotice count={unknownExcluded} fields={unknownFields} />
 
       {view === 'list' && (
         <div className="facility-list">
-          {filtered.map(h => (
-            <FacilityCard
-              key={h.キー}
-              facility={h}
-              detailPath={`/concert/${h.ID}`}
-              stats={
-                <>
-                  <Stat values={[h.客席数]} unit="席" caption="CAPACITY" />
-                  <Stat
-                    values={[h.舞台幅, h.舞台奥行]}
-                    unit="m"
-                    caption="STAGE W×D"
-                    align="right"
-                  />
-                </>
-              }
-              equip={
-                <>
-                  <EquipBadge label="ピアノ" on={h.ピアノ有無 === true} />
-                  <EquipBadge label="オルガン" on={h.パイプオルガン === true} />
-                  <EquipBadge label="譜面台" on={h.譜面台貸出 === true} />
-                  <EquipBadge label="親子室" on={h.親子室 === true} />
-                  <EquipBadge label="駐車場" on={h.駐車場 != null && h.駐車場 > 0} />
-                </>
-              }
-            />
-          ))}
+          {groups.map(g => {
+            const [h] = g
+            const multi = g.length > 1
+            const varies = rentalVariesByHall(g)
+            return (
+              <FacilityCard
+                key={h.ID}
+                // 複数ホールの施設では部屋名を施設名の横に出さない（数値の欄の上に出る）。
+                // 貸館の状態がホールごとに違えば、施設名の横でなくホールの行に出す
+                facility={{
+                  ...h,
+                  部屋名: multi ? undefined : h.部屋名,
+                  貸館: varies ? undefined : h.貸館,
+                }}
+                detailPath={`/concert/${h.ID}`}
+                stats={
+                  multi ? (
+                    <HallStats halls={g} showRental={varies} />
+                  ) : (
+                    <>
+                      <Stat values={[h.客席数]} unit="席" caption="CAPACITY" />
+                      <Stat
+                        values={[h.舞台幅, h.舞台奥行]}
+                        unit="m"
+                        caption="STAGE W×D"
+                        align="right"
+                      />
+                    </>
+                  )
+                }
+                // 設備は施設のどれかのホールにあれば出す（どのホールかは詳細ページの表で分かる）
+                equip={
+                  <>
+                    <EquipBadge label="ピアノ" on={g.some(x => x.ピアノ有無 === true)} />
+                    <EquipBadge label="オルガン" on={g.some(x => x.パイプオルガン === true)} />
+                    <EquipBadge label="譜面台" on={g.some(x => x.譜面台貸出 === true)} />
+                    <EquipBadge label="親子室" on={g.some(x => x.親子室 === true)} />
+                    <EquipBadge label="駐車場" on={h.駐車場 != null && h.駐車場 > 0} />
+                  </>
+                }
+              />
+            )
+          })}
           {filtered.length === 0 && <p className="empty">該当する施設がありません</p>}
         </div>
       )}

@@ -301,6 +301,11 @@
   font-size: var(--fs-sm);
 }
 
+.result-bar__note {
+  margin-left: 0.25rem;
+  color: var(--color-text-faint);
+}
+
 .result-bar__count strong {
   color: var(--color-navy-700);
   font-family: var(--font-serif);
@@ -589,6 +594,56 @@
 @media (min-width: 40rem) {
   .stat--right {
     text-align: left;
+  }
+}
+
+/*
+ * 複数ホールを持つ施設の数値の欄。1ホールのカードと同じ2つの数値を、
+ * ホール名を上に添えてホールの数だけ重ねる。
+ * 狭い画面では数値の欄の幅いっぱい、640px 以上では数値の2列ぶんを占める
+ */
+.hall-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.hall-stats__hall {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem 0.75rem;
+}
+
+.hall-stats__hall + .hall-stats__hall {
+  padding-top: 0.75rem;
+  border-top: 1px dotted var(--color-line-soft);
+}
+
+.hall-stats__name {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
+@media (min-width: 40rem) {
+  .hall-stats {
+    grid-column: span 2;
+  }
+
+  /* 列の間隔はカード本体の段組みと揃え、1ホールのカードと数値の位置を合わせる */
+  .hall-stats__hall {
+    gap: 0.375rem 1rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .hall-stats__hall {
+    column-gap: 1.5rem;
   }
 }
 

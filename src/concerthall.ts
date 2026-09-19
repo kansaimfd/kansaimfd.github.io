@@ -167,11 +167,36 @@ export function sortHalls(halls: ConcertHall[], key: HallSortKey, asc: boolean):
   })
 }
 
+/**
+ * 平坦化された一覧を施設ごとに束ねる。リストのカードは1施設1枚にする
+ * （大ホール・中ホールが別々のカードに並ぶと、同じ住所・駅が繰り返されて施設の数が読めない）。
+ *
+ * **絞り込みと並び替えはホール単位のまま、束ねるのは最後。** 施設の並び順は
+ * その施設で最初に現れたホールの位置で決まり（客席数の多い順なら、いちばん大きいホールの順）、
+ * 施設の中のホールも並び替えた順を保つ。条件に合わなかったホールは束に入らない。
+ */
+export function groupByFacility(halls: ConcertHall[]): ConcertHall[][] {
+  const groups = new Map<number, ConcertHall[]>()
+  for (const h of halls) {
+    const g = groups.get(h.ID)
+    if (g) g.push(h)
+    else groups.set(h.ID, [h])
+  }
+  return [...groups.values()]
+}
+
 /** 平坦化された一覧は同一施設の複数ホールを含むため、地図では施設ごと1マーカーにまとめる */
 export function dedupeByFacility(halls: ConcertHall[]): ConcertHall[] {
-  const seen = new Map<number, ConcertHall>()
-  for (const h of halls) if (!seen.has(h.ID)) seen.set(h.ID, h)
-  return [...seen.values()]
+  return groupByFacility(halls).map(g => g[0])
+}
+
+/**
+ * 束ねたホールで貸館の状態が分かれているか。分かれていれば状態は施設名の横ではなく
+ * ホールごとに出す（あましんアルカイックホールは大が休止・中が営業中・小が終了）
+ */
+export function rentalVariesByHall(halls: ConcertHall[]): boolean {
+  const first = JSON.stringify(halls[0]?.貸館 ?? null)
+  return halls.some(h => JSON.stringify(h.貸館 ?? null) !== first)
 }
 
 /** 一覧ページの状態。**絞り込みだけでなく表示と並び替えもURLに載せる** */

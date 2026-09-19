@@ -121,6 +121,14 @@ describe('導線', () => {
     expect(抜け).toEqual([])
   })
 
+  // 大ホール・中ホールが別々のカードに並ぶと、同じ住所と駅が繰り返されて施設の数が読めない
+  it('コンサートホール一覧のカードは1施設1枚', async () => {
+    renderAt('/concert?closed=1')
+    await screen.findByRole('heading', { name: 'コンサートホール一覧', level: 1 })
+    const cards = document.querySelectorAll('.facility-card')
+    expect(cards.length).toBe(new Set(concerthalls.map(h => h.ID)).size)
+  })
+
   // ホール併設の部屋はコンサートホール側の詳細ページへ行く
   it('練習場一覧から全施設の詳細ページへ行ける', async () => {
     renderAt('/practice?closed=1')

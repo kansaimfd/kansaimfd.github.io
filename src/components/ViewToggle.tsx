@@ -4,6 +4,10 @@ interface Props {
   view: ViewMode
   onChangeView: (v: ViewMode) => void
   count: number
+  /** 件数の単位。既定は「件」 */
+  unit?: string
+  /** 件数に添える補足 例: 88施設（コンサートホールはホール単位で数えるため） */
+  note?: string
 }
 
 const LABEL: Record<ViewMode, string> = {
@@ -18,7 +22,7 @@ const LABEL: Record<ViewMode, string> = {
  * 件数を切り替えと同じ行に置いているのは、絞り込んだ結果が何件になったのかが
  * 分からないまま延々スクロールする状態を作らないため。
  */
-export default function ViewToggle({ view, onChangeView, count }: Props) {
+export default function ViewToggle({ view, onChangeView, count, unit = '件', note }: Props) {
   return (
     <div className="result-bar">
       {/*
@@ -27,7 +31,8 @@ export default function ViewToggle({ view, onChangeView, count }: Props) {
       */}
       <p className="result-bar__count" role="status">
         <span className="visually-hidden">該当</span>
-        <strong>{count}</strong> 件
+        <strong>{count}</strong> {unit}
+        {note && <span className="result-bar__note">（{note}）</span>}
       </p>
       <div className="view-toggle">
         {(Object.keys(LABEL) as ViewMode[]).map(v => (

@@ -4,6 +4,8 @@ import {
   HALL_EQUIP_FIELDS,
   dedupeByFacility,
   filterHalls,
+  groupByFacility,
+  rentalVariesByHall,
   hallStateFromParams,
   hallStateToParams,
   sortHalls,
@@ -392,6 +394,42 @@ describe('sortHalls', () => {
     const halls = [hall({ ID: 20, 客席数: 2000 }), hall({ ID: 10, 客席数: 300 })]
     sortHalls(halls, '客席数', true)
     expect(halls.map(h => h.ID)).toEqual([20, 10])
+  })
+})
+
+describe('groupByFacility', () => {
+  // リストのカードは1施設1枚。大ホールと中ホールが別のカードに並ばないようにする
+  it('同じ施設のホールを並び順を保ったまま束ねる', () => {
+    const halls = [
+      hall({ ID: 10, キー: '10-大ホール' }),
+      hall({ ID: 20, キー: '20-0' }),
+      hall({ ID: 10, キー: '10-小ホール' }),
+    ]
+    expect(groupByFacility(halls).map(g => g.map(h => h.キー))).toEqual([
+      ['10-大ホール', '10-小ホール'],
+      ['20-0'],
+    ])
+  })
+})
+
+describe('rentalVariesByHall', () => {
+  it('全ホールが同じ状態なら分かれていない', () => {
+    const 休止 = { 状態: '休止' } as const
+    expect(rentalVariesByHall([hall({ ID: 10 }), hall({ ID: 10 })])).toBe(false)
+    expect(rentalVariesByHall([hall({ ID: 10, 貸館: 休止 }), hall({ ID: 10, 貸館: 休止 })])).toBe(
+      false,
+    )
+  })
+
+  // あましんアルカイックホールは大が休止・中が営業中・小が終了
+  it('一部のホールだけ休止していれば分かれている', () => {
+    expect(rentalVariesByHall([hall({ ID: 10 }), hall({ ID: 10, 貸館: { 状態: '休止' } })])).toBe(
+      true,
+    )
+  })
+
+  it('空なら分かれていない', () => {
+    expect(rentalVariesByHall([])).toBe(false)
   })
 })
 
