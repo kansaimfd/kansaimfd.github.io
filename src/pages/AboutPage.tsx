@@ -29,9 +29,40 @@ export default function AboutPage() {
           >
             MIT ライセンス
           </a>{' '}
-          です。商用利用を問わず、自由に利用することができます。
+          です。著作権表示とライセンス全文を同梱すれば、商用利用を問わず自由に改変・再配布が可能です。
         </p>
-        <p>著作権表示とライセンス全文を同梱すれば、自由に改変・再配布が可能です。</p>
+        <p>
+          掲載している施設データは{' '}
+          <a
+            href="https://github.com/kansaimfd/kansaimfd.github.io/blob/master/data/LICENSE.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="about__link"
+          >
+            クリエイティブ・コモンズ 表示 4.0（CC BY 4.0）
+          </a>{' '}
+          です。出典として本サイト名とURLを示せば、商用利用を問わず自由に複製・改変・再配布が可能です。
+        </p>
+      </section>
+
+      <section className="about__section">
+        <h2>出典</h2>
+        <p>
+          地図は{' '}
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="about__link"
+          >
+            © OpenStreetMap contributors
+          </a>{' '}
+          のデータを、OpenStreetMap Foundation が配信するタイルで表示しています。
+        </p>
+        <p>最寄駅の検算には「国土数値情報（鉄道データ）国土交通省」を加工して使用しています。</p>
+        <p>
+          施設の情報は、各施設の公式サイトなどの公開情報をもとに整理しています。施設ごとの最終確認日は詳細ページに表示しています。
+        </p>
       </section>
 
       <section className="about__section">
@@ -57,7 +88,7 @@ export default function AboutPage() {
         <h2>コントリビューション</h2>
         <p>施設データの追加・修正にご協力いただける方を歓迎しています。</p>
         <a
-          href="https://github.com/kansaimfd/kansaimfd.github.io/blob/main/CONTRIBUTING.md"
+          href="https://github.com/kansaimfd/kansaimfd.github.io/blob/master/CONTRIBUTING.md"
           target="_blank"
           rel="noopener noreferrer"
           className="about__link about__link--block"
