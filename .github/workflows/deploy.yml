@@ -28,10 +28,9 @@ jobs:
 
       - run: npm ci
 
+      # 404.html（存在しないURL用）・URLごとの静的HTML・sitemap.xml は
+      # npm run build の最後（scripts/build-static-pages.mjs）が書き出す
       - run: npm run build
-
-      - name: Copy index.html to 404.html for SPA routing
-        run: cp dist/index.html dist/404.html
 
       - uses: actions/configure-pages@v6
 

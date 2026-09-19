@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm install        # 依存関係インストール
 npm run dev        # 開発サーバー起動
-npm run build      # 本番ビルド（YAML→JSON変換 + Viteビルド）
+npm run build      # 本番ビルド（YAML→JSON変換 + Viteビルド + URLごとの静的HTML・sitemap）
 npm run preview    # ビルド結果のプレビュー
 npm run data       # YAML→JSON変換だけを実行（データ検査もここで走る）
 
@@ -86,7 +86,7 @@ node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへ
 - **カバレッジの `include` は src と scripts の全体**。テストから読み込まれなかったファイルも
   0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
   そのため全体の数字は追わない。**追うのは全体値ではなく、テスト対象モジュール
-  （`transform` / `validate` / `coverage` / `station` / `availability` / `address` / `name` /
+  （`transform` / `validate` / `coverage` / `static-pages` / `station` / `availability` / `address` / `name` /
   `rental` / `concerthall` / `practice` / `filter` / `query` / `toggle` / `title` / `mapStyle`）が
   4指標とも100%であること**。これは `vitest.config.ts` の `thresholds` で固定してあり、
   下回ると `npm run check` と CI が落ちる（文章で書いてあるだけでは気づかないうちに落ちていく）。
@@ -177,6 +177,8 @@ React コンポーネント
 - `scripts/transform.mjs` — 変換そのもの（駅徒歩の補完・音楽外の部屋の除外・平坦化）。
   読み書きを伴わないので単体でテストできる（`scripts/transform.test.mjs`）
 - `scripts/validate.mjs` — データ検査（オフラインで完結するもののみ）。ビルド前に自動実行される
+- `scripts/static-pages.mjs` — URLごとの静的HTML（題名・説明・canonical・OGP・構造化データ）と
+  sitemap.xml の組み立て。書き出しは `build-static-pages.mjs` が `npm run build` の最後に行う（→ Deployment）
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
 - `scripts/build-station-master.mjs` — 駅座標マスタの生成（随時。出力はコミット済み）
 - `data/stations.json` — 関西1,793駅の座標。出典: 国土数値情報（鉄道データ）国土交通省
@@ -477,18 +479,22 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
   https://kansaimfd.github.io/ のルートで配信される**（プロジェクトページのようなサブパスは付かない）。
   そのため `vite.config.ts` の `base` と React Router の `basename` はともに **`/`**。
   **この2つは現在の設定でもそうなっている**ので、デプロイ停止中に変更しないこと
-- `deploy.yml` はビルド後に **`index.html` を `404.html` にコピー**する。GitHub Pages は静的配信で
-  SPA のルーティングを知らないため、`/concert/10` のような直リンクはこのフォールバックで表示される
-  （**HTTPステータスは404のままだがアプリは正しく起動する**ので、404を見ても壊れているとは限らない）
-- **検索からの流入は、再開しただけでは戻らない。** このサイトはディレクトリなので
-  検索が主要な入口になるが、いま配信できる形は次の点で検索に載らない。
-  デプロイを再開するときにまとめて手当てすること（停止中に単独で入れても確かめようがない）:
-  - `index.html` に OGP も canonical も無い。SNSに貼っても題名・説明が出ない
-  - `public/` に robots.txt も sitemap.xml も無い。167施設の詳細ページに辿り着く手がかりが無い
-  - 詳細ページは上記のフォールバックで表示されるため、**HTTPステータスが404のまま**。
-    アプリは動くが、検索エンジンには「無いページ」として扱われる。
-    ビルド後にIDごとの静的HTML（題名・説明・`MusicVenue` の構造化データ入り）を
-    書き出すのが、この構成のまま効く手当て
+- **URLごとの静的HTMLはビルドが書き出す**（`scripts/build-static-pages.mjs`）。
+  GitHub Pages は SPA のルーティングを知らないので、以前は `index.html` を `404.html` に写して
+  直リンクを表示させていたが、**HTTPステータスが404のまま**で検索エンジンには「無いページ」だった。
+  いまは `dist/concert/10.html` のように施設ごとのファイルがあり、静的配信のまま200で返る。
+  - 中身（`<body>`）は `index.html` のままで、差し替えるのは `<head>` だけ
+    （題名・説明・canonical・OGP・`MusicVenue`／`Place` の構造化データ）。表示はこれまでどおりアプリが描く
+  - `/concert/10` → `concert/10.html` は、拡張子を省いたURLに `.html` を当てる配信側の挙動に頼っている
+    （GitHub Pages・Cloudflare Pages・`vite preview` はそうする）。一覧（`/concert`）は同名のディレクトリと
+    並ぶので `concert.html` と `concert/index.html` の両方に書いてある。
+    **再開したら `/concert` と `/concert/10` が 200 で返ることを実物で確かめること**（ローカルの preview では確認済み）
+  - `404.html` もビルドが書く（`noindex`、canonical なし）。存在しないURLは従来どおりアプリの「見つかりません」を出す
+  - 絶対URLは `static-pages.mjs` の `SITE_URL`（`https://kansaimfd.github.io`）と `public/robots.txt` にある。
+    **配信先を変えるならこの2か所を直す**
+  - 題名の規則は `src/title.ts` と二重に持っている（.mjs から .ts を読めないため）。一致はテストで確かめている
+- **残っている手当て**: OGP の画像（`og:image`）が無い。SNS に貼ると題名と説明だけのカードになる。
+  配信を始めたら Search Console に sitemap を登録する
 
 ## Notes
 

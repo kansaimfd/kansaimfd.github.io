@@ -40,7 +40,7 @@ export default defineConfig({
       thresholds: {
         'src/{address,availability,concerthall,filter,mapStyle,name,practice,query,rental,station,title,toggle}.ts':
           { statements: 100, branches: 100, functions: 100, lines: 100 },
-        'scripts/{coverage,transform,validate}.mjs': {
+        'scripts/{coverage,static-pages,transform,validate}.mjs': {
           statements: 100,
           branches: 100,
           functions: 100,
