@@ -7,6 +7,8 @@
  * エラーは1件目で止めずに全件集めてから報告する。1つ直すたびにビルドし直すのを避けるため。
  */
 
+import { isMusicRoom, NOT_STATED_FACILITY_FIELDS, NOT_STATED_ROOM_FIELDS } from './transform.mjs'
+
 /** 府県ごとの概略範囲 [南, 北, 西, 東]。厳密な境界ではなく、桁違いの誤りを捕まえるためのもの */
 // prettier-ignore
 const PREF_BOX = {
@@ -416,6 +418,7 @@ export function validate(datasets, { stationMaster } = {}) {
             err(`出典[${i}] の 確認日 は YYYY-MM-DD で書いてください: ${JSON.stringify(s.確認日)}`)
           if (s.項目 != null && !Array.isArray(s.項目))
             err(`出典[${i}] の 項目 は配列で書いてください`)
+          checkNotStated(s.記載なし, f, `出典[${i}]`, err, warn)
         }
       }
 
@@ -481,6 +484,33 @@ export function applyExemptions(warnings, exemptions, err) {
     }
   }
   return result
+}
+
+/**
+ * 出典[].記載なし（公式を確かめたが値を確定できる記載が無かった項目）。
+ *
+ * 知らない項目名はエラーにする。綴りを誤ると、どの部屋にも配られず黙って消える。
+ * **値が埋まった項目が残っていたら警告する**（施設の項目に値がある／掲載される部屋の
+ * すべてに値がある）。再調査で値が分かったのに記載なしが残ると、次に値を消したとき
+ * 「未調査」ではなく「記載なし」と出てしまう。
+ */
+function checkNotStated(names, f, label, err, warn) {
+  if (names == null) return
+  if (!Array.isArray(names)) {
+    err(`${label} の 記載なし は配列で書いてください`)
+    return
+  }
+  const rooms = (f.部屋 ?? []).filter(isMusicRoom)
+  for (const k of names) {
+    if (NOT_STATED_FACILITY_FIELDS.includes(k)) {
+      if (f[k] != null) warn('記載なしとした項目に値がある', `${label} ${k}`)
+    } else if (NOT_STATED_ROOM_FIELDS.includes(k)) {
+      if (rooms.length > 0 && rooms.every(r => r[k] != null))
+        warn('記載なしとした項目に値がある', `${label} ${k}（全室に値あり）`)
+    } else {
+      err(`${label} の 記載なし に書けない項目があります: ${JSON.stringify(k)}`)
+    }
+  }
 }
 
 /** 〇/× が残っていないか。false と「未調査」を混同しないための検査 */

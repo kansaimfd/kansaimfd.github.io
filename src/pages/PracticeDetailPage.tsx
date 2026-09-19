@@ -4,7 +4,13 @@ import { practiceFacility } from '../datasets/facility'
 import type { PracticeRoom } from '../types'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
-import { availabilityText, pianoDetail, standDetail } from '../availability'
+import {
+  availabilityText,
+  blankOf,
+  pianoDetail,
+  standDetail,
+  valueOrNotStated,
+} from '../availability'
 import { PRACTICE_EQUIP_FIELDS } from '../practice'
 import useDocumentTitle from '../useDocumentTitle'
 import RentalNotice from '../components/RentalNotice'
@@ -33,12 +39,23 @@ function maxOf(
 /** 部屋の設備の3値。チェンバロは持つ施設が少ないので、記録がある施設でだけ並べる */
 function roomSpecs(r: PracticeRoom, showChembalo: boolean): Spec[] {
   const specs: Spec[] = [
-    { label: '管楽器', value: r.管楽器 },
-    { label: '打楽器', value: r.打楽器 },
-    { label: 'ピアノ', value: r.ピアノ有無, detail: pianoDetail(r) },
+    { label: '管楽器', value: r.管楽器, blank: blankOf(r, '管楽器') },
+    { label: '打楽器', value: r.打楽器, blank: blankOf(r, '打楽器') },
+    {
+      label: 'ピアノ',
+      value: r.ピアノ有無,
+      detail: pianoDetail(r),
+      blank: blankOf(r, 'ピアノ有無'),
+    },
   ]
-  if (showChembalo) specs.push({ label: 'チェンバロ', value: r.チェンバロ })
-  specs.push({ label: '譜面台', value: r.譜面台貸出, detail: standDetail(r) })
+  if (showChembalo)
+    specs.push({ label: 'チェンバロ', value: r.チェンバロ, blank: blankOf(r, 'チェンバロ') })
+  specs.push({
+    label: '譜面台',
+    value: r.譜面台貸出,
+    detail: standDetail(r),
+    blank: blankOf(r, '譜面台貸出'),
+  })
   return specs
 }
 
@@ -75,10 +92,15 @@ export default function PracticeDetailPage() {
   // 住所と最寄駅は見出しに出しているので、ここには重ねない
   const rows = (
     [
-      ['TEL', p.TEL],
-      ['開館時間', p.開館時間 && p.閉館時間 ? `${p.開館時間} 〜 ${p.閉館時間}` : p.開館時間],
-      ['休館日', p.休館日],
-      ['駐車場', p.駐車場 != null ? `${p.駐車場}台` : undefined],
+      ['TEL', valueOrNotStated(p.TEL, p, 'TEL')],
+      [
+        '開館時間',
+        p.開館時間 && p.閉館時間
+          ? `${p.開館時間} 〜 ${p.閉館時間}`
+          : valueOrNotStated(p.開館時間, p, '開館時間'),
+      ],
+      ['休館日', valueOrNotStated(p.休館日, p, '休館日')],
+      ['駐車場', valueOrNotStated(p.駐車場 != null ? `${p.駐車場}台` : undefined, p, '駐車場')],
       // 情報表は項目名と値が並ぶ形なので、記号ではなく言葉で書く（読み上げでも同じ）
       // 施設レベルの備品は、受付で申し込む貸出備品で設置部屋が決まっていない施設のためのもの
       ['貸出ピアノ', p.ピアノ有無 != null ? availabilityText(p.ピアノ有無) : undefined],

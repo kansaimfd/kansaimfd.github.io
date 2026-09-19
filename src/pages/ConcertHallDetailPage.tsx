@@ -4,7 +4,7 @@ import { concertHallFacility } from '../datasets/facility'
 import type { Hall } from '../types'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
-import { pianoDetail, standDetail } from '../availability'
+import { blankOf, pianoDetail, standDetail, valueOrNotStated } from '../availability'
 import useDocumentTitle from '../useDocumentTitle'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
@@ -59,15 +59,37 @@ function HallRoomStats({ r }: { r: Hall }) {
 /** 部屋の設備の3値。持っている施設が少ない項目は、記録がある場合だけ並べる */
 function hallSpecs(r: Hall, showChembalo: boolean): Spec[] {
   const specs: Spec[] = [
-    { label: 'ピアノ', value: r.ピアノ有無, detail: pianoDetail(r) },
-    { label: 'パイプオルガン', value: r.パイプオルガン, detail: r.オルガン製作者 },
+    {
+      label: 'ピアノ',
+      value: r.ピアノ有無,
+      detail: pianoDetail(r),
+      blank: blankOf(r, 'ピアノ有無'),
+    },
+    {
+      label: 'パイプオルガン',
+      value: r.パイプオルガン,
+      detail: r.オルガン製作者,
+      blank: blankOf(r, 'パイプオルガン'),
+    },
   ]
-  if (showChembalo) specs.push({ label: 'チェンバロ', value: r.チェンバロ })
-  specs.push({ label: '譜面台', value: r.譜面台貸出, detail: standDetail(r) })
-  specs.push({ label: '親子室', value: r.親子室 })
+  if (showChembalo)
+    specs.push({ label: 'チェンバロ', value: r.チェンバロ, blank: blankOf(r, 'チェンバロ') })
+  specs.push({
+    label: '譜面台',
+    value: r.譜面台貸出,
+    detail: standDetail(r),
+    blank: blankOf(r, '譜面台貸出'),
+  })
+  specs.push({ label: '親子室', value: r.親子室, blank: blankOf(r, '親子室') })
   // 併設の練習室にだけ書かれる項目。ホールで「未調査」を並べても手がかりにならない
-  if (r.管楽器 != null) specs.push({ label: '管楽器', value: r.管楽器 })
-  if (r.打楽器 != null) specs.push({ label: '打楽器', value: r.打楽器 })
+  // （公式に記載が無かったと分かっているなら、それは手がかりなので出す）
+  for (const [label, key] of [
+    ['管楽器', '管楽器'],
+    ['打楽器', '打楽器'],
+  ] as const) {
+    if (r[key] != null || blankOf(r, key) === '記載なし')
+      specs.push({ label, value: r[key], blank: blankOf(r, key) })
+  }
   return specs
 }
 
@@ -104,11 +126,16 @@ export default function ConcertHallDetailPage() {
   // 住所と最寄駅は見出しに出しているので、ここには重ねない
   const rows = (
     [
-      ['TEL', f.TEL],
-      ['開館時間', f.開館時間 && f.閉館時間 ? `${f.開館時間} 〜 ${f.閉館時間}` : f.開館時間],
-      ['休館日', f.休館日],
-      ['築年月', f.築年月],
-      ['駐車場', f.駐車場 != null ? `${f.駐車場}台` : undefined],
+      ['TEL', valueOrNotStated(f.TEL, f, 'TEL')],
+      [
+        '開館時間',
+        f.開館時間 && f.閉館時間
+          ? `${f.開館時間} 〜 ${f.閉館時間}`
+          : valueOrNotStated(f.開館時間, f, '開館時間'),
+      ],
+      ['休館日', valueOrNotStated(f.休館日, f, '休館日')],
+      ['築年月', valueOrNotStated(f.築年月, f, '築年月')],
+      ['駐車場', valueOrNotStated(f.駐車場 != null ? `${f.駐車場}台` : undefined, f, '駐車場')],
     ] satisfies Row[]
   ).filter(([, v]) => v != null && v !== '')
 

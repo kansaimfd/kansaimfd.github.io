@@ -8,6 +8,7 @@ import {
   isMusicRoom,
   normalize,
   withLastVerified,
+  withNotStated,
 } from './transform.mjs'
 
 describe('fillWalkMinutes', () => {
@@ -320,6 +321,39 @@ describe('flattenHalls', () => {
   })
 })
 
+describe('withNotStated', () => {
+  const 出典 = 記載なし => [{ URL: 'https://example.com', 確認日: '2026-09-19', 記載なし }]
+
+  it('記載なしを、値の無い施設の項目と部屋の項目にだけ配る', () => {
+    const f = withNotStated({
+      ID: 10,
+      駐車場: 20,
+      出典: [...出典(['駐車場', 'TEL', '管楽器']), ...出典(['打楽器'])],
+      部屋: [{ 部屋名: 'A', 管楽器: true }, { 部屋名: 'B' }],
+    })
+    expect(f.記載なし).toEqual(['TEL'])
+    expect(f.部屋[0].記載なし).toEqual(['打楽器'])
+    expect(f.部屋[1].記載なし).toEqual(['管楽器', '打楽器'])
+  })
+
+  it('配る先が無ければ何も足さない', () => {
+    const f = withNotStated({ ID: 10, TEL: '06', 出典: 出典(['TEL']), 部屋: [{ 管楽器: false }] })
+    expect(f).not.toHaveProperty('記載なし')
+    expect(f.部屋[0]).not.toHaveProperty('記載なし')
+    expect(withNotStated({ ID: 10, 出典: 出典(['TEL']) })).not.toHaveProperty('部屋')
+  })
+
+  it('記載なしが無い施設（出典も無い施設）はそのまま返す', () => {
+    const f = { ID: 10, 出典: [{ URL: 'https://example.com', 確認日: '2026-09-19' }] }
+    expect(withNotStated(f)).toBe(f)
+    expect(withNotStated({ ID: 10 })).toEqual({ ID: 10 })
+  })
+
+  it('配列でない 記載なし は無視する（誤りは検査が止める）', () => {
+    expect(withNotStated({ ID: 10, 出典: 出典('TEL') })).not.toHaveProperty('記載なし')
+  })
+})
+
 describe('normalize', () => {
   it('駅徒歩の補完と音楽外の部屋の除外をまとめて行う', () => {
     const f = normalize({
@@ -332,6 +366,15 @@ describe('normalize', () => {
     expect(f.最寄駅[0].駅徒歩).toBe(6)
     expect(f.部屋.map(r => r.部屋名)).toEqual(['音楽室'])
     expect(f.最終確認日).toBe('2025-06-02')
+  })
+
+  it('記載なしは音楽外の部屋を落としたあとで配る', () => {
+    const f = normalize({
+      ID: 10,
+      部屋: [{ 部屋名: '音楽室' }, { 部屋名: '調理室' }],
+      出典: [{ URL: 'https://example.com', 確認日: '2025-06-02', 記載なし: ['ピアノ有無'] }],
+    })
+    expect(f.部屋).toEqual([{ 部屋名: '音楽室', 記載なし: ['ピアノ有無'] }])
   })
 
   it('検査除外（データ検査のための記録）は画面用のJSONに出さない', () => {

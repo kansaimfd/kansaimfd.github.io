@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Availability, Rental } from '../types'
+import type { Blank } from '../availability'
 import AvailabilityMark from './AvailabilityMark'
 import RentalBadge from './RentalBadge'
 
@@ -8,6 +9,8 @@ export interface Spec {
   value: Availability | undefined
   /** 記号に添える補足 例: グランド・スタインウェイ */
   detail?: string
+  /** 値が無いときの理由（未調査 / 公式に記載なし）。既定は未調査 */
+  blank?: Blank
 }
 
 interface Props {
@@ -47,7 +50,7 @@ export default function RoomCard({ name, 貸館, tag, stats, specs, note }: Prop
           >
             <dt>{s.label}</dt>
             <dd>
-              <AvailabilityMark value={s.value} detail={s.detail} />
+              <AvailabilityMark value={s.value} detail={s.detail} blank={s.blank} />
             </dd>
           </div>
         ))}

@@ -104,19 +104,12 @@ console.log(
 )
 
 // 検査は「書かれている値が正しいか」しか見ない。書かれていない項目の多さはここで出す。
-// 部屋の母数は normalize 後（会議室などを落としたあと）＝利用者が実際に見る部屋にする
+// 変換後の施設を渡す: 部屋は掲載される部屋だけになり（会議室などを落としたあと）、
+// 出典の 記載なし が施設と部屋に配られている
 reportCoverage(
   [
-    {
-      file: 'concerthall',
-      records: rawConcerthalls,
-      rooms: concerthallFacilities.flatMap(f => f.部屋 ?? []),
-    },
-    {
-      file: 'practice',
-      records: rawPractices,
-      rooms: practiceFacilities.flatMap(f => f.部屋 ?? []),
-    },
+    { file: 'concerthall', records: concerthallFacilities },
+    { file: 'practice', records: practiceFacilities },
   ],
   { detailed: detailedCoverage },
 )

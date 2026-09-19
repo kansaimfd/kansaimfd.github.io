@@ -6,29 +6,51 @@
  * 黙っていると「調べていない」と「無い」の区別が数の上では見えないままになる。
  *
  * 利用者から見ると、未調査の多い項目はそのまま**使えない絞り込み**になる。
- * ホール種別が3割しか埋まっていなければ、種別で絞った人は残り7割を見ずに判断している
- * （画面には「未調査のため除外しました」と出るが、どの項目が薄いのかはここでしか分からない）。
+ * 練習室の管楽器が3割しか埋まっていなければ、管楽器で絞った人は残り7割を見ずに判断している
+ * （画面には「分からないため除外しました」と出るが、どの項目が薄いのかはここでしか分からない）。
+ *
+ * **空欄は「未調査」と「公式に記載なし」に分けて数える**（出典[].記載なし）。
+ * 施設のサイトは無いものを書かないので、調べても埋まらない空欄が多い。
+ * 分けないと、調べに行くべき項目と、調べ直しても埋まらない項目の区別がつかない。
  *
  * 読み書きを伴わないので単体でテストできる（coverage.test.mjs）。
  */
 
+import { isHallRoom } from './transform.mjs'
+
 /** 施設ごとに1回数える項目 */
 const FACILITY_FIELDS = ['最寄駅', 'URL', '駐車場', '開館時間', 'TEL', '出典']
 
-/** 部屋ごとに数える項目。一覧の絞り込みに効くものを選ぶ */
-const ROOM_FIELDS = {
+const PRACTICE_ROOM_FIELDS = ['定員', '面積', 'ピアノ有無', '管楽器', '打楽器', '譜面台貸出']
+
+/**
+ * 部屋ごとに数える項目。一覧の絞り込みに効くものを選ぶ。
+ *
+ * **コンサートホール施設の部屋は、ホールと併設の練習室に分けて数える。**
+ * 一覧に出るのもそのとおりで（練習室は練習場一覧へ回る）、練習室に客席数や舞台幅を
+ * 問うても埋まらない。まとめて数えていたころは、一覧のホールでは 88% 埋まっている
+ * 客席数が 44% と出ていた。
+ */
+const ROOM_GROUPS = {
   concerthall: [
-    'ホール種別',
-    '客席数',
-    '舞台幅',
-    '舞台奥行',
-    '楽屋収容人数',
-    'ピアノ有無',
-    'パイプオルガン',
-    '譜面台貸出',
-    '親子室',
+    {
+      単位: 'ホール',
+      pick: isHallRoom,
+      fields: [
+        'ホール種別',
+        '客席数',
+        '舞台幅',
+        '舞台奥行',
+        '楽屋収容人数',
+        'ピアノ有無',
+        'パイプオルガン',
+        '譜面台貸出',
+        '親子室',
+      ],
+    },
+    { 単位: '併設練習室', pick: room => !isHallRoom(room), fields: PRACTICE_ROOM_FIELDS },
   ],
-  practice: ['定員', '面積', 'ピアノ有無', '管楽器', '打楽器', 'チェンバロ', '譜面台貸出'],
+  practice: [{ 単位: '部屋', pick: () => true, fields: [...PRACTICE_ROOM_FIELDS, 'チェンバロ'] }],
 }
 
 /** 空配列は「調べたが無い」ではなく未記入として数える（最寄駅・出典） */
@@ -50,26 +72,49 @@ export function padLabel(name, width = 16) {
 }
 
 /**
- * 1ファイルぶんの項目別カバレッジ。
- * 施設単位と部屋単位で母数が違うので、行に単位を持たせる。
- *
- * **部屋の母数には、掲載される部屋だけを渡すこと**（`rooms`）。
- * YAMLには会議室・和室のように音楽に使えない部屋も残してあり（調査した事実として残す）、
- * それを母数に混ぜると「ホール種別 19%」のように実態より薄く見える。
- * 利用者が見るのは掲載される部屋だけなので、そちらで数えるのが実態に合う。
+ * 1項目ぶん。値のあるもの（記入）、公式に記載が無かったもの（記載なし）、
+ * どちらでもないもの（未調査）に分ける。**手を入れるべきは未調査**で、記載なしは
+ * 公式を読み直しても埋まらない。
  */
-export function fieldCoverage({ file, records, rooms = records.flatMap(r => r.部屋 ?? []) }) {
+function countRow(名前, 単位, items) {
+  const 記入 = items.filter(x => filled(x[名前])).length
+  const 記載なし = items.filter(x => !filled(x[名前]) && x.記載なし?.includes(名前)).length
+  const 母数 = items.length
+  const 未調査 = 母数 - 記入 - 記載なし
+  return {
+    名前,
+    単位,
+    記入,
+    記載なし,
+    未調査,
+    母数,
+    割合: ratio(記入, 母数),
+    未調査割合: ratio(未調査, 母数),
+  }
+}
+
+/**
+ * 1ファイルぶんの項目別カバレッジ。施設単位と部屋単位で母数が違うので、行に単位を持たせる。
+ *
+ * **`records` には変換後（normalize 後）の施設を渡すこと。**
+ * 部屋は掲載される部屋だけになり（会議室・和室を母数に混ぜると実態より薄く見える）、
+ * 出典の記載なしが施設と部屋の `記載なし` に配られている。
+ */
+export function fieldCoverage({ file, records }) {
+  const groups = (ROOM_GROUPS[file] ?? []).map(g => ({
+    ...g,
+    rooms: records.flatMap(r => (r.部屋 ?? []).filter(g.pick)),
+  }))
   const rows = [
-    ...FACILITY_FIELDS.map(名前 => {
-      const 記入 = records.filter(r => filled(r[名前])).length
-      return { 名前, 単位: '施設', 記入, 母数: records.length, 割合: ratio(記入, records.length) }
-    }),
-    ...(ROOM_FIELDS[file] ?? []).map(名前 => {
-      const 記入 = rooms.filter(r => filled(r[名前])).length
-      return { 名前, 単位: '部屋', 記入, 母数: rooms.length, 割合: ratio(記入, rooms.length) }
-    }),
+    ...FACILITY_FIELDS.map(名前 => countRow(名前, '施設', records)),
+    ...groups.flatMap(g => g.fields.map(名前 => countRow(名前, g.単位, g.rooms))),
   ]
-  return { file, 施設数: records.length, 部屋数: rooms.length, rows }
+  return {
+    file,
+    施設数: records.length,
+    部屋数: Object.fromEntries(groups.map(g => [g.単位, g.rooms.length])),
+    rows,
+  }
 }
 
 /** 出典のうち最も新しい確認日。1件も無ければ undefined */
@@ -131,13 +176,21 @@ export function staleRecords(datasets, { today = new Date(), months = 12 } = {})
   return { stale, missing, total, 期限 }
 }
 
-/** 埋まっていない順に並べた、手を入れる価値のある項目 */
+/** 未調査の多い順に並べた、手を入れる価値のある項目（記載なしは調べても埋まらないので数えない） */
 export function thinnest(coverages, limit = 3) {
   return coverages
     .flatMap(c => c.rows.map(r => ({ ...r, file: c.file })))
     .filter(r => r.母数 > 0)
-    .sort((a, b) => a.割合 - b.割合)
+    .sort((a, b) => b.未調査割合 - a.未調査割合)
     .slice(0, limit)
+}
+
+/** 20目盛りの帯。█ 記入 / ▒ 記載なし / · 未調査 */
+function bar(r) {
+  const n = x => (r.母数 === 0 ? 0 : Math.round((x / r.母数) * 20))
+  const 記入 = n(r.記入)
+  const 記載なし = Math.min(n(r.記入 + r.記載なし) - 記入, 20 - 記入)
+  return '█'.repeat(記入) + '▒'.repeat(記載なし) + '·'.repeat(20 - 記入 - 記載なし)
 }
 
 /**
@@ -152,27 +205,33 @@ export function reportCoverage(datasets, { detailed = false, today = new Date() 
 
   if (!detailed) {
     const 薄い = thinnest(coverages)
-      .map(r => `${r.名前} ${r.割合}%`)
+      .map(r => `${r.名前}(${r.単位}) ${r.未調査割合}%`)
       .join('・')
     console.log(
       `調査: 出典なし ${f.未記録}件 / 1年以上前の確認 ${古い}件 / ` +
-        `薄い項目 ${薄い}（項目別は --coverage）`,
+        `未調査の多い項目 ${薄い}（項目別は --coverage）`,
     )
     return
   }
 
   for (const c of coverages) {
-    console.log(`\n■ ${c.file}（施設 ${c.施設数} / 部屋 ${c.部屋数}）`)
+    const 部屋 = Object.entries(c.部屋数)
+      .map(([単位, n]) => ` / ${単位} ${n}`)
+      .join('')
+    console.log(`
+■ ${c.file}（施設 ${c.施設数}${部屋}）  █ 記入 ▒ 公式に記載なし · 未調査`)
     for (const r of c.rows) {
-      const 目盛り = '█'.repeat(Math.round(r.割合 / 5)).padEnd(20, '·')
       console.log(
-        `  ${padLabel(r.名前)} ${r.単位} ${目盛り} ` +
-          `${String(r.割合).padStart(3)}%  ${r.記入}/${r.母数}`,
+        `  ${padLabel(r.名前, 14)} ${padLabel(r.単位, 10)} ${bar(r)} ` +
+          `${String(r.割合).padStart(3)}%  記入 ${r.記入} / 記載なし ${r.記載なし} / ` +
+          `未調査 ${r.未調査}（母数 ${r.母数}）`,
       )
     }
   }
   console.log(
-    `\n■ 確認日の鮮度（${all.length}施設）\n` +
+    `
+■ 確認日の鮮度（${all.length}施設）
+` +
       `  1年以内 ${f['1年以内']} / 1〜2年 ${f['1〜2年']} / ` +
       `2年以上 ${f['2年以上']} / 未記録 ${f.未記録}`,
   )

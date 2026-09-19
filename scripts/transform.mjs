@@ -98,6 +98,73 @@ export function isHallRoom(room) {
   return /ホール/.test(name) && !NOT_CONCERT_HALL.test(name)
 }
 
+/**
+ * 出典[].記載なし に書ける項目。**「公式を確かめたが、値を確定できる記載が無かった」**の記録。
+ *
+ * 設備の3値は未調査をキーの省略で表すが、施設のサイトは「無いもの」をまず書かないので、
+ * 調べても値が埋まらない項目が多い（ピアノ有無は記入のほぼ全部が true）。
+ * 省略のままだと「調べていない」と「調べたが書いていなかった」が区別できず、
+ * どこを調べに行けばよいのかも、利用者に何と説明すべきかも分からない。
+ *
+ * **記載なしは「なし（false）」ではない。** 絞り込みでは未調査と同じく「判断できない」に数える。
+ */
+export const NOT_STATED_FACILITY_FIELDS = [
+  'TEL',
+  '開館時間',
+  '閉館時間',
+  '休館日',
+  '駐車場',
+  '築年月',
+]
+export const NOT_STATED_ROOM_FIELDS = [
+  'ホール種別',
+  '客席数',
+  '面積',
+  '定員',
+  '楽屋収容人数',
+  '舞台幅',
+  '舞台奥行',
+  '管楽器',
+  '打楽器',
+  'ピアノ有無',
+  'ピアノ種別',
+  'ピアノメーカー',
+  'チェンバロ',
+  'パイプオルガン',
+  'オルガン製作者',
+  '譜面台貸出',
+  '譜面台数',
+  '親子室',
+]
+
+/** 施設の出典すべての 記載なし を合わせたもの（どのページで確かめたかは問わない） */
+export function notStatedFields(facility) {
+  const names = (facility.出典 ?? []).flatMap(s => (Array.isArray(s.記載なし) ? s.記載なし : []))
+  return new Set(names)
+}
+
+/**
+ * 出典[].記載なし を、施設と部屋の `記載なし`（値が無い項目だけ）に配る。
+ *
+ * **値のある項目には付けない。** 別のページや別の部屋で値が分かっていれば、そちらが正しい。
+ * 出典は施設単位なので、部屋の項目は値の無い部屋すべてに付く
+ * （公式の部屋一覧を確かめて書いていなかった、という記録のため）。
+ */
+export function withNotStated(facility) {
+  const names = notStatedFields(facility)
+  if (names.size === 0) return facility
+  const own = NOT_STATED_FACILITY_FIELDS.filter(k => names.has(k) && facility[k] == null)
+  const rooms = facility.部屋?.map(room => {
+    const missing = NOT_STATED_ROOM_FIELDS.filter(k => names.has(k) && room[k] == null)
+    return missing.length > 0 ? { ...room, 記載なし: missing } : room
+  })
+  return {
+    ...facility,
+    ...(own.length > 0 && { 記載なし: own }),
+    ...(rooms && { 部屋: rooms }),
+  }
+}
+
 export function normalize(facility) {
   // 検査除外 はデータ検査のための記録で、画面では使わない
   const rest = { ...facility }
@@ -106,7 +173,7 @@ export function normalize(facility) {
   const withRooms = withStations.部屋
     ? { ...withStations, 部屋: withStations.部屋.filter(isMusicRoom) }
     : withStations
-  return withLastVerified(withRooms)
+  return withLastVerified(withNotStated(withRooms))
 }
 
 /**

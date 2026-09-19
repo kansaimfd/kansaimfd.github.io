@@ -942,6 +942,12 @@
   color: var(--color-text-faint);
 }
 
+/* 公式に記載が無かったもの。記号ではなく言葉なので、字を小さくして「なし」の × より退かせる */
+.avail-mark--blank {
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+}
+
 .is-num {
   text-align: right;
   white-space: nowrap;

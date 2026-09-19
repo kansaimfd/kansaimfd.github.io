@@ -13,6 +13,11 @@ export interface Source {
   確認日: string
   /** このURLで裏が取れたフィールド名。省略時はレコード全体 */
   項目?: string[]
+  /**
+   * このURLを確かめたが、値を確定できる記載が無かったフィールド名。
+   * 施設と部屋の `記載なし` の元になる（build-data.mjs が配る）
+   */
+  記載なし?: string[]
   /** 確認できなかった点・不確かな点 */
   備考?: string
 }
@@ -136,6 +141,11 @@ export interface FacilityBase {
   出典?: Source[]
   /** 出典[].確認日 の最新値。build-data.mjs が派生生成する（YAMLには書かない） */
   最終確認日?: string
+  /**
+   * 値が無く、公式にも記載が無かった施設の項目（TEL・駐車場など）。
+   * 出典[].記載なし から build-data.mjs が派生生成する（YAMLには書かない）
+   */
+  記載なし?: string[]
 }
 
 /**
@@ -163,6 +173,11 @@ export type PianoType = 'グランド' | 'アップライト' | '電子'
  */
 interface RoomBase {
   部屋名?: string
+  /**
+   * 値が無く、公式にも記載が無かった部屋の項目。**未調査とは別に表示する**が、
+   * 「なし（false）」ではない。出典[].記載なし から build-data.mjs が派生生成する
+   */
+  記載なし?: string[]
   /** ㎡ */
   面積?: number
   /** 人 */

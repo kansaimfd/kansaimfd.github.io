@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   availabilityMark,
   availabilityText,
+  blankOf,
+  valueOrNotStated,
   hasEquipment,
   pianoDetail,
   standDetail,
@@ -17,6 +19,39 @@ describe('availabilityMark', () => {
   it('未調査を「なし」と区別する', () => {
     expect(availabilityMark(undefined)).toBe('—')
     expect(availabilityMark(undefined)).not.toBe(availabilityMark(false))
+  })
+})
+
+describe('公式に記載なし', () => {
+  const room = { 記載なし: ['管楽器'] }
+
+  it('blankOf は記載なしの項目だけを記載なしと言う', () => {
+    expect(blankOf(room, '管楽器')).toBe('記載なし')
+    expect(blankOf(room, '打楽器')).toBe('未調査')
+    expect(blankOf({}, '管楽器')).toBe('未調査')
+  })
+
+  // 記載なしも「なし」ではない。× と同じにすると、公式が書いていないだけの設備が無いことになる
+  it('記号・言葉とも、未調査とも「なし」とも区別する', () => {
+    const marks = [
+      availabilityMark(undefined, '記載なし'),
+      availabilityMark(undefined),
+      availabilityMark(false),
+    ]
+    expect(new Set(marks).size).toBe(3)
+    expect(availabilityText(undefined, '記載なし')).toBe('公式に記載なし')
+  })
+
+  it('値があれば記載なしより値を出す', () => {
+    expect(availabilityMark(true, '記載なし')).toBe('〇')
+    expect(availabilityText(false, '記載なし')).toBe('なし')
+  })
+
+  it('valueOrNotStated は値・記載なし・未調査（undefined）を返し分ける', () => {
+    const f = { 記載なし: ['駐車場'] }
+    expect(valueOrNotStated('20台', f, '駐車場')).toBe('20台')
+    expect(valueOrNotStated(undefined, f, '駐車場')).toBe('公式に記載なし')
+    expect(valueOrNotStated(undefined, f, 'TEL')).toBeUndefined()
   })
 })
 

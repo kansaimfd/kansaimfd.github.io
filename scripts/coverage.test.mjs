@@ -38,33 +38,70 @@ describe('fieldCoverage', () => {
 
   it('部屋が1つも無ければ割合は0', () => {
     const result = fieldCoverage({ file: 'concerthall', records: [施設()] })
-    expect(row(result, '客席数')).toMatchObject({ 記入: 0, 母数: 0, 割合: 0 })
+    expect(row(result, '客席数')).toMatchObject({ 記入: 0, 母数: 0, 割合: 0, 未調査割合: 0 })
   })
 
   /**
-   * YAMLには会議室・和室のように音楽に使えない部屋も残してある（調査した事実として残す）。
-   * 母数に混ぜると実態より薄く見えるので、掲載される部屋だけを渡せるようにしてある。
+   * 練習室に客席数を問うても埋まらない。まとめて数えていたころは、
+   * 一覧のホールで 88% 埋まっている客席数が 44% と出ていた
    */
-  it('掲載される部屋だけを母数にできる', () => {
-    const records = [施設({ 部屋: [{ 部屋名: '大ホール', 客席数: 800 }, { 部屋名: '会議室' }] })]
-    expect(row(fieldCoverage({ file: 'concerthall', records }), '客席数').母数).toBe(2)
-    const 掲載のみ = fieldCoverage({
+  it('コンサートホール施設はホールと併設の練習室を分けて数える', () => {
+    const result = fieldCoverage({
       file: 'concerthall',
-      records,
-      rooms: [{ 部屋名: '大ホール', 客席数: 800 }],
+      records: [
+        施設({
+          部屋: [
+            { 部屋名: '大ホール', 客席数: 800 },
+            { 部屋名: '練習室1', 定員: 10 },
+          ],
+        }),
+      ],
     })
-    expect(row(掲載のみ, '客席数')).toMatchObject({ 記入: 1, 母数: 1, 割合: 100 })
+    expect(result.部屋数).toEqual({ ホール: 1, 併設練習室: 1 })
+    expect(result.rows.find(r => r.名前 === '客席数')).toMatchObject({
+      単位: 'ホール',
+      母数: 1,
+      割合: 100,
+    })
+    expect(result.rows.find(r => r.名前 === '定員')).toMatchObject({
+      単位: '併設練習室',
+      母数: 1,
+      割合: 100,
+    })
+  })
+
+  it('空欄を「公式に記載なし」と「未調査」に分ける', () => {
+    const result = fieldCoverage({
+      file: 'practice',
+      records: [
+        施設({
+          記載なし: ['駐車場'],
+          部屋: [{ 管楽器: true }, { 記載なし: ['管楽器'] }, {}],
+        }),
+      ],
+    })
+    expect(row(result, '管楽器')).toMatchObject({
+      記入: 1,
+      記載なし: 1,
+      未調査: 1,
+      母数: 3,
+      割合: 33,
+      未調査割合: 33,
+    })
+    expect(row(result, '駐車場')).toMatchObject({ 記入: 0, 記載なし: 1, 未調査: 0 })
   })
 
   it('練習場は練習場の項目を数える', () => {
     const result = fieldCoverage({ file: 'practice', records: [施設({ 部屋: [{ 定員: 20 }] })] })
-    expect(row(result, '定員').記入).toBe(1)
+    expect(row(result, '定員')).toMatchObject({ 単位: '部屋', 記入: 1 })
+    expect(row(result, 'チェンバロ')).toBeDefined()
     expect(row(result, '客席数')).toBeUndefined()
   })
 
   it('知らないファイルでは部屋の項目を数えない', () => {
     const result = fieldCoverage({ file: 'unknown', records: [施設()] })
     expect(result.rows.every(r => r.単位 === '施設')).toBe(true)
+    expect(result.部屋数).toEqual({})
   })
 })
 
@@ -96,7 +133,7 @@ describe('freshness', () => {
 })
 
 describe('thinnest', () => {
-  it('埋まっていない順に返し、母数0の項目は外す', () => {
+  it('未調査の多い順に返し、母数0の項目は外す', () => {
     const coverages = [
       fieldCoverage({
         file: 'concerthall',
@@ -105,8 +142,23 @@ describe('thinnest', () => {
     ]
     const result = thinnest(coverages, 2)
     expect(result).toHaveLength(2)
-    expect(result[0].割合).toBeLessThanOrEqual(result[1].割合)
+    expect(result[0].未調査割合).toBeGreaterThanOrEqual(result[1].未調査割合)
     expect(result.every(r => r.母数 > 0)).toBe(true)
+  })
+
+  // 記載なしは公式を読み直しても埋まらないので、手を入れる先に挙げない
+  it('記載なしは未調査に数えない', () => {
+    const coverages = [
+      fieldCoverage({
+        file: 'practice',
+        records: [施設({ 部屋: [{ 定員: 5, 記載なし: ['管楽器', '打楽器'] }] })],
+      }),
+    ]
+    const names = thinnest(coverages, 20)
+      .filter(r => r.未調査割合 === 100)
+      .map(r => r.名前)
+    expect(names).not.toContain('管楽器')
+    expect(names).toContain('譜面台貸出')
   })
 })
 
@@ -197,6 +249,14 @@ describe('reportCoverage', () => {
     const 出力 = log.mock.calls.map(c => c[0]).join('\n')
     expect(出力).toMatch(/ホール種別/)
     expect(出力).toMatch(/確認日の鮮度/)
+    // 半角の項目名（URL）も全角の項目名と同じ列から単位が始まる。
+    // 詰めるのは文字数ではなく表示幅なので、比べるのも表示幅で（全角は1文字で2桁）
+    const 幅 = t => [...t].reduce((n, ch) => n + (/[ -~]/.test(ch) ? 1 : 2), 0)
+    const 列 = 名前 => {
+      const 行 = 出力.split('\n').find(l => l.startsWith(`  ${名前}`))
+      return 幅(行.slice(0, 行.indexOf('施設')))
+    }
+    expect(列('URL')).toBe(列('最寄駅'))
     log.mockRestore()
   })
 

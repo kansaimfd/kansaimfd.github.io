@@ -1,8 +1,10 @@
 import type { Availability } from '../types'
-import { availabilityMark, availabilityText } from '../availability'
+import { availabilityMark, availabilityText, type Blank } from '../availability'
 
 interface Props {
   value: Availability | undefined
+  /** 値が無いときの理由。既定は未調査 */
+  blank?: Blank
   /** 記号に添える補足 例: グランド・スタインウェイ / 5本 */
   detail?: string
 }
@@ -17,16 +19,14 @@ const MODIFIER: Record<string, string> = { true: 'on', false: 'off' }
  * 「なし」と「未調査」を混同させないためなのに、記号だけを置くと読み上げでは
  * 「—」が無音かダッシュになり、その区別が丸ごと消える。
  */
-export default function AvailabilityMark({ value, detail }: Props) {
+export default function AvailabilityMark({ value, detail, blank = '未調査' }: Props) {
+  const modifier = MODIFIER[String(value)] ?? (blank === '記載なし' ? 'blank' : 'unknown')
   return (
     <>
-      <span
-        aria-hidden
-        className={`avail-mark avail-mark--${MODIFIER[String(value)] ?? 'unknown'}`}
-      >
-        {availabilityMark(value)}
+      <span aria-hidden className={`avail-mark avail-mark--${modifier}`}>
+        {availabilityMark(value, blank)}
       </span>
-      <span className="visually-hidden">{availabilityText(value)}</span>
+      <span className="visually-hidden">{availabilityText(value, blank)}</span>
       {detail && <span> {detail}</span>}
     </>
   )
