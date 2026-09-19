@@ -4,6 +4,8 @@ interface Props<T extends string> {
   sortKey: T
   sortAsc: boolean
   onToggle: (key: T) => void
+  /** 数値の列。見出しもセルと同じく右に寄せる */
+  numeric?: boolean
 }
 
 /**
@@ -19,10 +21,15 @@ export default function SortableTh<T extends string>({
   sortKey,
   sortAsc,
   onToggle,
+  numeric,
 }: Props<T>) {
   const on = sortKey === k
   return (
-    <th scope="col" aria-sort={on ? (sortAsc ? 'ascending' : 'descending') : 'none'}>
+    <th
+      scope="col"
+      className={numeric ? 'is-num' : undefined}
+      aria-sort={on ? (sortAsc ? 'ascending' : 'descending') : 'none'}
+    >
       <button type="button" className="data-table__sortable" onClick={() => onToggle(k)}>
         {label}
         {on && <span aria-hidden>{sortAsc ? ' ▲' : ' ▼'}</span>}

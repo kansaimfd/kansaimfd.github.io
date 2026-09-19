@@ -758,6 +758,11 @@
 
 /* ── 表 ─────────────────────────────────────── */
 
+/*
+ * 一覧の表。**リストのカードと同じ語彙で組む**：行の左端に府県の色、施設名は明朝、
+ * 数値は Stat と同じ明朝の太字、「あり」は設備バッジと同じゴールド。
+ * 以前は素の罫線表で、リストから切り替えると別のサイトのように見えた。
+ */
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--color-line);
@@ -769,35 +774,55 @@
   font-size: var(--fs-base);
 }
 
+/* 見出しはカードの府県帯と同じ、上から白へ抜けるグラデーション */
 .data-table thead {
-  background: var(--color-cream);
-  border-bottom: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-gold-chip);
+  background: linear-gradient(180deg, var(--color-gold-tint) 0%, var(--color-surface) 100%);
 }
 
 .data-table th {
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
   color: var(--color-navy-700);
-  font-size: var(--fs-sm);
+  font-family: var(--font-serif);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
+.data-table th:first-child {
+  padding-left: 1.25rem;
+}
+
 .data-table td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-line-soft);
-  vertical-align: top;
+  vertical-align: middle;
+}
+
+/* 行の左端の府県色。カードの border-left と同じ太さ（罫にすると行の間で途切れる） */
+.data-table td:first-child {
+  padding-left: 1.25rem;
+  box-shadow: inset 3px 0 0 var(--pref-accent);
 }
 
 .data-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
+.data-table tbody tr {
+  transition: background-color 0.15s;
+}
+
 .data-table tbody tr:hover {
-  background: var(--color-cream);
+  background: var(--pref-tint);
 }
 
 /* 見出しの中身は button（th はキーボードで辿れない）。セル全体を押せるように広げる */
 .data-table__sortable {
   width: 100%;
+  font-weight: inherit;
+  letter-spacing: inherit;
   text-align: inherit;
   cursor: pointer;
 }
@@ -806,23 +831,115 @@
   color: var(--color-gold-700);
 }
 
+/* 並び替えの向きの記号は、リストの「あり」と同じゴールドで目に留める */
+.data-table th[aria-sort='ascending'] .data-table__sortable,
+.data-table th[aria-sort='descending'] .data-table__sortable {
+  color: var(--color-gold-700);
+}
+
+.data-table__name {
+  min-width: 12rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 40rem) {
+  .data-table__name {
+    min-width: 16rem;
+  }
+}
+
 .data-table__link {
   color: var(--color-navy-700);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  border-bottom: 1px solid transparent;
 }
 
 .data-table__link:hover {
-  color: var(--color-gold-700);
-  text-decoration: underline;
+  color: var(--color-navy-700);
+  border-bottom-color: var(--color-gold-500);
 }
 
-.data-table__note {
-  display: block;
-  margin-top: 0.125rem;
-  max-width: 18rem;
-  color: var(--color-text-muted);
+.data-table__room {
+  color: var(--color-text-faint);
   font-size: var(--fs-xs);
-  /* 見出し側で折り返しを止めていても、注記は文なので折り返す */
-  white-space: normal;
+}
+
+/* カードの .facility-card__type と同じ小札 */
+.data-table__tag {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0.125rem 0.4375rem;
+  border: 1px solid var(--pref-chip);
+  border-radius: var(--radius-xs);
+  background: var(--pref-tint);
+  color: var(--pref-accent);
+  font-size: var(--fs-2xs);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.data-table__sub {
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* 府県名の小札。色は行の data-pref から来る */
+.pref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--pref-chip);
+  border-radius: var(--radius-pill);
+  background: var(--pref-tint);
+  color: var(--pref-accent);
+  font-family: var(--font-serif);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.pref-chip::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--pref-accent);
+}
+
+/* 表の数値。Stat（カードの数値）の縮小版 */
+.table-num {
+  color: var(--color-navy-700);
+  font-family: var(--font-serif);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-num__sep {
+  margin: 0 0.125rem;
+  color: var(--color-text-faint);
+  font-weight: 400;
+}
+
+.table-num--empty {
+  color: var(--color-text-faint);
+  font-size: var(--fs-xs);
+  font-weight: 400;
+}
+
+/* 設備の3値。「あり」だけをゴールドで立たせ、「なし」「未調査」は退かせる */
+.avail-mark--on {
+  color: var(--color-gold-700);
+  font-weight: 700;
+}
+
+.avail-mark--off {
+  color: var(--color-text-muted);
+}
+
+.avail-mark--unknown {
+  color: var(--color-text-faint);
 }
 
 .is-num {

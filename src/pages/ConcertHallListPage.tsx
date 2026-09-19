@@ -30,6 +30,7 @@ import Stat from '../components/Stat'
 import EquipBadge from '../components/EquipBadge'
 import SortableTh from '../components/SortableTh'
 import AvailabilityMark from '../components/AvailabilityMark'
+import TableNum from '../components/TableNum'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 import UnknownNotice from '../components/UnknownNotice'
@@ -114,8 +115,15 @@ export default function ConcertHallListPage() {
   // 地図はこの配列が変わるたびにピンを置き直すので、描画ごとに作り直さない
   const mapFacilities = useMemo(() => dedupeByFacility(filtered), [filtered])
 
-  const sortTh = (k: HallSortKey, label: string) => (
-    <SortableTh k={k} label={label} sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+  const sortTh = (k: HallSortKey, label: string, numeric?: boolean) => (
+    <SortableTh
+      k={k}
+      label={label}
+      sortKey={sortKey}
+      sortAsc={sortAsc}
+      onToggle={toggleSort}
+      numeric={numeric}
+    />
   )
 
   return (
@@ -278,9 +286,11 @@ export default function ConcertHallListPage() {
                 {sortTh('施設名', '施設名')}
                 {sortTh('都道府県', '都道府県')}
                 <th scope="col">市区町村</th>
-                {sortTh('客席数', '客席数')}
-                <th scope="col">舞台(W×D)</th>
-                {sortTh('最寄駅徒歩', '徒歩(分)')}
+                {sortTh('客席数', '客席数', true)}
+                <th scope="col" className="is-num">
+                  舞台(W×D m)
+                </th>
+                {sortTh('最寄駅徒歩', '徒歩(分)', true)}
                 <th scope="col" className="is-center">
                   ピアノ
                 </th>
@@ -291,22 +301,28 @@ export default function ConcertHallListPage() {
             </thead>
             <tbody>
               {filtered.map(h => (
-                <tr key={h.キー}>
-                  <td>
+                <tr key={h.キー} data-pref={h.都道府県}>
+                  <td className="data-table__name">
                     <Link to={`/concert/${h.ID}`} className="data-table__link">
                       {h.施設名}
-                      {h.部屋名 ? `（${h.部屋名}）` : ''}
                     </Link>
+                    {h.部屋名 && <span className="data-table__room">（{h.部屋名}）</span>}
                     <RentalBadge 貸館={h.貸館} />
                     <UsageConditionBadge 利用条件={h.利用条件} />
                   </td>
-                  <td className="is-nowrap">{h.都道府県}</td>
-                  <td className="is-nowrap">{h.市区町村}</td>
-                  <td className="is-num">{h.客席数 ?? '—'}</td>
                   <td className="is-nowrap">
-                    {h.舞台幅 != null && h.舞台奥行 != null ? `${h.舞台幅}×${h.舞台奥行}` : '—'}
+                    <span className="pref-chip">{h.都道府県}</span>
                   </td>
-                  <td className="is-num">{minWalk(h) < NO_WALK ? minWalk(h) : '—'}</td>
+                  <td className="data-table__sub is-nowrap">{h.市区町村}</td>
+                  <td className="is-num">
+                    <TableNum values={[h.客席数]} />
+                  </td>
+                  <td className="is-num">
+                    <TableNum values={[h.舞台幅, h.舞台奥行]} />
+                  </td>
+                  <td className="is-num">
+                    <TableNum values={[minWalk(h) < NO_WALK ? minWalk(h) : undefined]} />
+                  </td>
                   <td className="is-center">
                     <AvailabilityMark value={h.ピアノ有無} />
                   </td>

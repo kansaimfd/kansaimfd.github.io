@@ -7,6 +7,9 @@ interface Props {
   detail?: string
 }
 
+/** 記号の色分け。「あり」だけを設備バッジと同じゴールドで立たせる */
+const MODIFIER: Record<string, string> = { true: 'on', false: 'off' }
+
 /**
  * 表の中の「〇 / × / —」。
  *
@@ -17,7 +20,12 @@ interface Props {
 export default function AvailabilityMark({ value, detail }: Props) {
   return (
     <>
-      <span aria-hidden>{availabilityMark(value)}</span>
+      <span
+        aria-hidden
+        className={`avail-mark avail-mark--${MODIFIER[String(value)] ?? 'unknown'}`}
+      >
+        {availabilityMark(value)}
+      </span>
       <span className="visually-hidden">{availabilityText(value)}</span>
       {detail && <span> {detail}</span>}
     </>

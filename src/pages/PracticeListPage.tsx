@@ -30,6 +30,7 @@ import Stat from '../components/Stat'
 import EquipBadge from '../components/EquipBadge'
 import SortableTh from '../components/SortableTh'
 import AvailabilityMark from '../components/AvailabilityMark'
+import TableNum from '../components/TableNum'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 import UnknownNotice from '../components/UnknownNotice'
@@ -124,8 +125,15 @@ export default function PracticeListPage() {
     update({ prefs: toggleIn(prefs, pref), city: '' })
   }
 
-  const sortTh = (k: PracticeSortKey, label: string) => (
-    <SortableTh k={k} label={label} sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
+  const sortTh = (k: PracticeSortKey, label: string, numeric?: boolean) => (
+    <SortableTh
+      k={k}
+      label={label}
+      sortKey={sortKey}
+      sortAsc={sortAsc}
+      onToggle={toggleSort}
+      numeric={numeric}
+    />
   )
 
   return (
@@ -275,9 +283,13 @@ export default function PracticeListPage() {
                 {sortTh('施設名', '施設名')}
                 {sortTh('都道府県', '都道府県')}
                 <th scope="col">市区町村</th>
-                <th scope="col">最大定員</th>
-                <th scope="col">最大面積(㎡)</th>
-                {sortTh('最寄駅徒歩', '徒歩(分)')}
+                <th scope="col" className="is-num">
+                  最大定員
+                </th>
+                <th scope="col" className="is-num">
+                  最大面積(㎡)
+                </th>
+                {sortTh('最寄駅徒歩', '徒歩(分)', true)}
                 <th scope="col" className="is-center">
                   ピアノ
                 </th>
@@ -291,20 +303,28 @@ export default function PracticeListPage() {
             </thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={practiceDetailPath(p)}>
-                  <td>
+                <tr key={practiceDetailPath(p)} data-pref={p.都道府県}>
+                  <td className="data-table__name">
                     <Link to={practiceDetailPath(p)} className="data-table__link">
                       {p.施設名}
                     </Link>
-                    {p.ホール併設 && <span className="data-table__note">ホール併設</span>}
                     <RentalBadge 貸館={p.貸館} />
                     <UsageConditionBadge 利用条件={p.利用条件} />
+                    {p.ホール併設 && <span className="data-table__tag">ホール併設</span>}
                   </td>
-                  <td className="is-nowrap">{p.都道府県}</td>
-                  <td className="is-nowrap">{p.市区町村}</td>
-                  <td className="is-num">{maxCapacity(p) || '—'}</td>
-                  <td className="is-num">{maxArea(p) || '—'}</td>
-                  <td className="is-num">{minWalk(p) < NO_WALK ? minWalk(p) : '—'}</td>
+                  <td className="is-nowrap">
+                    <span className="pref-chip">{p.都道府県}</span>
+                  </td>
+                  <td className="data-table__sub is-nowrap">{p.市区町村}</td>
+                  <td className="is-num">
+                    <TableNum values={[maxCapacity(p) || undefined]} />
+                  </td>
+                  <td className="is-num">
+                    <TableNum values={[maxArea(p) || undefined]} />
+                  </td>
+                  <td className="is-num">
+                    <TableNum values={[minWalk(p) < NO_WALK ? minWalk(p) : undefined]} />
+                  </td>
                   <td className="is-center">
                     <AvailabilityMark value={PRACTICE_EQUIP_FIELDS[0].state(p)} />
                   </td>
