@@ -5,13 +5,15 @@
       "name": "kansai-mfd dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
-      "port": 5173
+      "port": 5173,
+      "autoPort": true
     },
     {
       "name": "kansai-mfd preview",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "preview", "--", "--port", "4180", "--strictPort"],
-      "port": 4180
+      "runtimeArgs": ["run", "preview"],
+      "port": 4173,
+      "autoPort": true
     }
   ]
 }
