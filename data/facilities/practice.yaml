@@ -4762,6 +4762,11 @@
   申込URL: https://www.city.minoh.lg.jp/katudou/community/comucen/komisenn_zenntaizu.html
   料金URL: https://www.city.minoh.lg.jp/katudou/community/comucen/komisenn_zenntaizu.html
   駐車場: 0
+  検査除外:
+    - 警告: 部屋が未登録
+      理由: >-
+        箕面市の公式ページ・公共施設予約システムのどちらにも部屋構成と音楽設備の記載が無い（予約は窓口のみ）。
+        音楽に使えることは管理者が把握しているため掲載は続け、部屋は裏付けが取れるまで登録しない（2026-09-19 判断）
   出典:
     - URL: https://www.city.minoh.lg.jp/katudou/community/comucen/sena.html
       確認日: '2026-09-12'
