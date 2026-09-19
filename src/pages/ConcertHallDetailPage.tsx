@@ -81,14 +81,15 @@ function hallSpecs(r: Hall, showChembalo: boolean): Spec[] {
     blank: blankOf(r, '譜面台貸出'),
   })
   specs.push({ label: '親子室', value: r.親子室, blank: blankOf(r, '親子室') })
-  // 併設の練習室にだけ書かれる項目。ホールで「未調査」を並べても手がかりにならない
-  // （公式に記載が無かったと分かっているなら、それは手がかりなので出す）
+  // 併設の練習室にだけ書かれる項目。ホールで「未調査」を並べても手がかりにならない。
+  // 練習室なら「公式に記載なし」は手がかりなので出す。客席のあるホールには出さない
+  // （出典の記載なしは施設の全室に配られるので、ホールにも付いてしまう）
   for (const [label, key] of [
     ['管楽器', '管楽器'],
     ['打楽器', '打楽器'],
   ] as const) {
-    if (r[key] != null || blankOf(r, key) === '記載なし')
-      specs.push({ label, value: r[key], blank: blankOf(r, key) })
+    const notStated = r.客席数 == null && blankOf(r, key) === '記載なし'
+    if (r[key] != null || notStated) specs.push({ label, value: r[key], blank: blankOf(r, key) })
   }
   return specs
 }

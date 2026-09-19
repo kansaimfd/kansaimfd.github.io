@@ -349,6 +349,31 @@ describe('withNotStated', () => {
     expect(withNotStated({ ID: 10 })).toEqual({ ID: 10 })
   })
 
+  it('部屋に書いた記載なしはその部屋だけに付き、出典の分と合わさる', () => {
+    const f = withNotStated({
+      ID: 10,
+      出典: 出典(['打楽器']),
+      部屋: [
+        { 部屋名: 'A', 記載なし: ['ピアノ有無'] },
+        { 部屋名: 'B', 記載なし: ['管楽器'], 管楽器: true },
+        { 部屋名: 'C' },
+      ],
+    })
+    expect(f.部屋.map(r => r.記載なし)).toEqual([['打楽器', 'ピアノ有無'], ['打楽器'], ['打楽器']])
+  })
+
+  it('出典に記載なしが無くても、部屋の記載なしは配る（値があれば消す）', () => {
+    const f = withNotStated({
+      ID: 10,
+      部屋: [
+        { 部屋名: 'A', 記載なし: ['管楽器'] },
+        { 部屋名: 'B', 記載なし: ['管楽器'], 管楽器: true },
+      ],
+    })
+    expect(f.部屋[0].記載なし).toEqual(['管楽器'])
+    expect(f.部屋[1]).not.toHaveProperty('記載なし')
+  })
+
   it('配列でない 記載なし は無視する（誤りは検査が止める）', () => {
     expect(withNotStated({ ID: 10, 出典: 出典('TEL') })).not.toHaveProperty('記載なし')
   })

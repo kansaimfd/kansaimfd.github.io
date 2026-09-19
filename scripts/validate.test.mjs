@@ -235,6 +235,20 @@ describe('出典の 記載なし', () => {
     expect(kindsOf(会議室だけ空き)).toEqual(['記載なしとした項目に値がある'])
   })
 
+  it('部屋にも書ける。書けない項目はエラー、値があれば警告', () => {
+    expect(errorsOf(部屋付き({ 記載なし: ['親子室'] }))).toEqual([])
+    expect(warningsOf(部屋付き({ 記載なし: ['親子室'] }))).toEqual([])
+    expectOneError(部屋付き({ 記載なし: 'x' }), /部屋\[0\]（大ホール） の 記載なし は配列/)
+    expectOneError(部屋付き({ 記載なし: ['TEL'] }), /部屋\[0\]（大ホール） の 記載なし に書けない/)
+    expect(warningsOf(部屋付き({ 客席数: 1500, 記載なし: ['客席数'] }))).toEqual([
+      {
+        kind: '記載なしとした項目に値がある',
+        detail: '[concerthall ID:10] テストホール 部屋[0]（大ホール） 客席数',
+      },
+    ])
+    expect(errorsOf(施設({ 部屋: [{ 記載なし: ['x'] }] }))[0]).toMatch(/^.*部屋\[0\] の 記載なし/)
+  })
+
   it('部屋が未登録なら部屋の項目では警告しない', () => {
     expect(kindsOf(記載なし(['定員'], { 部屋: undefined }))).not.toContain(
       '記載なしとした項目に値がある',

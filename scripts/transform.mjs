@@ -149,14 +149,22 @@ export function notStatedFields(facility) {
  * **値のある項目には付けない。** 別のページや別の部屋で値が分かっていれば、そちらが正しい。
  * 出典は施設単位なので、部屋の項目は値の無い部屋すべてに付く
  * （公式の部屋一覧を確かめて書いていなかった、という記録のため）。
+ * **1室だけの話なら部屋側に `記載なし` を書く**（「小スタジオBのピアノの記載は無い」を
+ * 出典に書くと、ほかの部屋まで記載なしになる）。出力では両方を合わせる。
  */
 export function withNotStated(facility) {
   const names = notStatedFields(facility)
-  if (names.size === 0) return facility
+  const roomNamed = facility.部屋?.some(r => Array.isArray(r.記載なし)) ?? false
+  if (names.size === 0 && !roomNamed) return facility
   const own = NOT_STATED_FACILITY_FIELDS.filter(k => names.has(k) && facility[k] == null)
   const rooms = facility.部屋?.map(room => {
-    const missing = NOT_STATED_ROOM_FIELDS.filter(k => names.has(k) && room[k] == null)
-    return missing.length > 0 ? { ...room, 記載なし: missing } : room
+    const mine = Array.isArray(room.記載なし) ? room.記載なし : []
+    const missing = NOT_STATED_ROOM_FIELDS.filter(
+      k => (names.has(k) || mine.includes(k)) && room[k] == null,
+    )
+    const rest = { ...room }
+    delete rest.記載なし
+    return missing.length > 0 ? { ...rest, 記載なし: missing } : rest
   })
   return {
     ...facility,

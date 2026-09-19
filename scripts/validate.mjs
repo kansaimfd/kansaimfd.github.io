@@ -406,6 +406,21 @@ export function validate(datasets, { stationMaster } = {}) {
         }
       }
 
+      // ── 部屋の 記載なし ──
+      for (const [i, r] of (Array.isArray(f.部屋) ? f.部屋 : []).entries()) {
+        if (r?.記載なし == null) continue
+        const label = `部屋[${i}]${r.部屋名 ? `（${r.部屋名}）` : ''}`
+        if (!Array.isArray(r.記載なし)) {
+          err(`${label} の 記載なし は配列で書いてください`)
+          continue
+        }
+        for (const k of r.記載なし) {
+          if (!NOT_STATED_ROOM_FIELDS.includes(k))
+            err(`${label} の 記載なし に書けない項目があります: ${JSON.stringify(k)}`)
+          else if (r[k] != null) warn('記載なしとした項目に値がある', `${label} ${k}`)
+        }
+      }
+
       // ── 出典 ──
       if (f.出典 == null) {
         warn('出典が未記録')
