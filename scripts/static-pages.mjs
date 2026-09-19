@@ -26,6 +26,18 @@ export function pageTitle(name) {
   return trimmed ? `${trimmed} | ${SITE_NAME}` : SITE_NAME
 }
 
+/**
+ * SNS のカードに出す画像。全ページ共通の1枚（原稿は design/ogp/ogp.html）。
+ * 施設ごとには作らない。施設名はカードの題名に出るので、画像に入れても得るものが小さい割に、
+ * ビルドに日本語フォントと画像生成を抱えることになるため
+ */
+export const OGP_IMAGE = {
+  url: `${SITE_URL}/ogp.png`,
+  width: 1200,
+  height: 630,
+  alt: '関西音楽施設 Directory — コンサートホールと音楽練習場を、客席数・設備・最寄駅から探す',
+}
+
 export const SITE_DESCRIPTION =
   '関西（大阪・京都・兵庫・奈良・滋賀・和歌山）のコンサートホールと音楽練習場を、客席数・舞台寸法・設備・最寄駅から探せる非公式のディレクトリです。'
 
@@ -176,7 +188,11 @@ export function renderPage(template, page) {
     `<meta property="og:title" content="${escapeHtml(title)}" />`,
     `<meta property="og:description" content="${escapeHtml(page.description)}" />`,
     `<meta property="og:url" content="${escapeHtml(url)}" />`,
-    `<meta name="twitter:card" content="summary" />`,
+    `<meta property="og:image" content="${OGP_IMAGE.url}" />`,
+    `<meta property="og:image:width" content="${OGP_IMAGE.width}" />`,
+    `<meta property="og:image:height" content="${OGP_IMAGE.height}" />`,
+    `<meta property="og:image:alt" content="${escapeHtml(OGP_IMAGE.alt)}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
     ...(page.jsonLd
       ? [`<script type="application/ld+json">${scriptJson(page.jsonLd)}</script>`]
       : []),

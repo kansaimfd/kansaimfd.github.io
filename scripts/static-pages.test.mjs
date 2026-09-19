@@ -14,6 +14,7 @@ import {
   renderNotFound,
   buildSitemap,
   outputFiles,
+  OGP_IMAGE,
 } from './static-pages.mjs'
 import * as title from '../src/title.ts'
 
@@ -194,6 +195,23 @@ describe('renderPage', () => {
     expect(html).toContain(
       '<meta property="og:title" content="A&amp;B &quot;ホール&quot; | 関西音楽施設ディレクトリ" />',
     )
+  })
+
+  it('全ページ共通の OGP 画像を絶対URLで持ち、大きい画像のカードにする', () => {
+    expect(html).toContain(
+      '<meta property="og:image" content="https://kansaimfd.github.io/ogp.png" />',
+    )
+    expect(html).toContain('<meta property="og:image:width" content="1200" />')
+    expect(html).toContain('<meta property="og:image:height" content="630" />')
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />')
+  })
+
+  it('OGP 画像のファイルが public/ にあり、宣言した寸法と一致する', () => {
+    const png = readFileSync(resolve(root, 'public/ogp.png'))
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([
+      OGP_IMAGE.width,
+      OGP_IMAGE.height,
+    ])
   })
 
   it('構造化データの中の </script> で script 要素が閉じられない', () => {

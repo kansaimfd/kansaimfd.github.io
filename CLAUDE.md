@@ -206,6 +206,7 @@ React コンポーネント
   （OSMF の規約が、配信停止に備えてURLを散らばらせないよう求めているため）
 - `src/components/createMap.ts` — 地図の共通初期化とピン。**maplibre-gl を import するのはここだけ**
 - `src/pref.ts` — 府県の並びと英字表記（**色は持たない**。→ Design）
+- `design/ogp/` — OGP 画像の原稿（HTML）。書き出した PNG は `public/ogp.png`（→ Deployment）
 - `src/styles/` — スタイルシート。読み込み順に tokens → base → layout → components → pages
 - `src/components/` — 共通UIコンポーネント
 - `src/pages/` — ページ単位のコンポーネント
@@ -493,8 +494,13 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
   - 絶対URLは `static-pages.mjs` の `SITE_URL`（`https://kansaimfd.github.io`）と `public/robots.txt` にある。
     **配信先を変えるならこの2か所を直す**
   - 題名の規則は `src/title.ts` と二重に持っている（.mjs から .ts を読めないため）。一致はテストで確かめている
-- **残っている手当て**: OGP の画像（`og:image`）が無い。SNS に貼ると題名と説明だけのカードになる。
-  配信を始めたら Search Console に sitemap を登録する
+  - **OGP 画像は全ページ共通の1枚**（`public/ogp.png`、1200×630）。原稿は `design/ogp/ogp.html` で、
+    dev サーバーで `/design/ogp/ogp.html` を 1200×630 で開いてスクリーンショットを撮れば作り直せる
+    （`file://` では Google Fonts が効かないので dev サーバー経由で開く）。
+    **画像は CSS 変数を読めないので、`tokens.css` の色やロゴを変えたら原稿を合わせて PNG を作り直す**。
+    施設ごとの画像は作らない（施設名はカードの題名に出る。ビルドに日本語フォントと画像生成を抱えるほどの得が無い）
+- **残っている手当て**: 配信を始めたら Search Console に sitemap を登録し、
+  X・Facebook の確認ツールでカードの見え方を確かめる
 
 ## Notes
 
