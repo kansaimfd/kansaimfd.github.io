@@ -11,9 +11,17 @@
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Webフォントの CSS は描画を止めないように読む（media="print" で取得し、届いたら all に切り替える）。
+      日本語は字形ごとに約120の unicode-range に分かれていて、この CSS だけで数百KBある。
+      ウェイトは個別に並べず範囲（400..700）で頼む。配られるフォントファイルはどちらも同じ可変フォントで、
+      個別指定だとウェイトの数だけ @font-face が複製され CSS が約3倍になる（685KB → 229KB）
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@400;600;700&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400..700&family=Noto+Serif+JP:wght@400..700&display=swap"
+      media="print"
+      onload="this.media = 'all'"
     />
   </head>
   <body>
