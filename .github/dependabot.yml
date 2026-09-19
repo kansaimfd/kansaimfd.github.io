@@ -14,7 +14,7 @@ updates:
       # 開発ツール（lint・整形・テスト・型）は挙動が変わってもサイトには出ないので束ねる
       dev:
         dependency-type: development
-      # React・Router・Leaflet は表示に直結するので、まとめても別の束にする
+      # React・Router・MapLibre は表示に直結するので、まとめても別の束にする
       runtime:
         dependency-type: production
 

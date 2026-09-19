@@ -20,7 +20,7 @@ import { practiceDetailPath } from './practice'
 // 「Not implemented」が出てテスト出力が埋まるので差し替えておく
 vi.stubGlobal('scrollTo', vi.fn())
 
-// 地図そのものは対象外。leaflet は jsdom に無い API を使う
+// 地図そのものは対象外。maplibre-gl は jsdom に無い WebGL と Worker を使う
 vi.mock('./components/DetailMap', () => ({ default: () => <div data-testid="map" /> }))
 vi.mock('./components/FacilityMap', () => ({ default: () => <div data-testid="map" /> }))
 

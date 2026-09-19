@@ -38,7 +38,7 @@ export default defineConfig({
        * 動的 import の関数を作るためで、100%にするには167施設を全部読むしかない。
        */
       thresholds: {
-        'src/{address,availability,concerthall,filter,name,practice,query,rental,station,title,toggle}.ts':
+        'src/{address,availability,concerthall,filter,mapStyle,name,practice,query,rental,station,title,toggle}.ts':
           { statements: 100, branches: 100, functions: 100, lines: 100 },
         'scripts/{coverage,transform,validate}.mjs': {
           statements: 100,

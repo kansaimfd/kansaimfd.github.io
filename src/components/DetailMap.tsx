@@ -1,19 +1,23 @@
-import { MapContainer, TileLayer, Marker } from 'react-leaflet'
+import { useEffect, useRef } from 'react'
+import { createMap, createPin, maplibregl } from './createMap'
 
 interface Props {
   lat: number
   lng: number
   name: string
+  都道府県: string
 }
 
-export default function DetailMap({ lat, lng }: Props) {
-  return (
-    <MapContainer center={[lat, lng]} zoom={15} className="map map--detail">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <Marker position={[lat, lng]} />
-    </MapContainer>
-  )
+export default function DetailMap({ lat, lng, name, 都道府県 }: Props) {
+  const container = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const map = createMap(container.current!, { center: [lng, lat], zoom: 15 })
+    new maplibregl.Marker({ element: createPin(都道府県, name, false), anchor: 'bottom' })
+      .setLngLat([lng, lat])
+      .addTo(map)
+    return () => map.remove()
+  }, [lat, lng, name, 都道府県])
+
+  return <div ref={container} className="map map--detail" />
 }

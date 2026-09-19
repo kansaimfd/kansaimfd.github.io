@@ -32,7 +32,7 @@ import UsageConditionBadge from '../components/UsageConditionBadge'
 import UnknownNotice from '../components/UnknownNotice'
 import ClosedToggle from '../components/ClosedToggle'
 
-// 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
+// 地図は maplibre-gl（gzip で約420KB）を引き込むので、地図表示に切り替えるまで読み込まない
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
 
 // 表の見出しからも並び替えられるので、どのキーも昇順・降順の両方を載せる
@@ -105,6 +105,9 @@ export default function ConcertHallListPage() {
     })
     return { ...result, filtered: sortHalls(result.filtered, sortKey, sortAsc) }
   }, [query, prefs, hallTypes, seats, stageW, stageD, equip, showClosed, sortKey, sortAsc])
+
+  // 地図はこの配列が変わるたびにピンを置き直すので、描画ごとに作り直さない
+  const mapFacilities = useMemo(() => dedupeByFacility(filtered), [filtered])
 
   const sortTh = (k: HallSortKey, label: string) => (
     <SortableTh k={k} label={label} sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
@@ -299,10 +302,7 @@ export default function ConcertHallListPage() {
 
       {view === 'map' && (
         <Suspense fallback={<p className="loading">地図を読み込んでいます…</p>}>
-          <FacilityMap
-            facilities={dedupeByFacility(filtered)}
-            detailPath={f => `/concert/${f.ID}`}
-          />
+          <FacilityMap facilities={mapFacilities} detailPath={f => `/concert/${f.ID}`} />
         </Suspense>
       )}
     </div>

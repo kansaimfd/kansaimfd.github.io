@@ -21,18 +21,17 @@
     "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build"
   },
   "dependencies": {
-    "leaflet": "^1.9.4",
+    "maplibre-gl": "^6.10.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.14.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@maplibre/maplibre-gl-style-spec": "^26.4.4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@types/js-yaml": "^4.0.9",
-    "@types/leaflet": "^1.9.21",
     "@types/node": "^22.20.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

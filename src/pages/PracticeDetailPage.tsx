@@ -1,8 +1,7 @@
-import { use } from 'react'
+import { use, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { practiceFacility } from '../datasets/facility'
 import { stationLabel } from '../station'
-import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { availabilityText, pianoDetail, standDetail } from '../availability'
@@ -12,6 +11,10 @@ import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
+
+// 地図は maplibre-gl（gzip で約420KB）を引き込むので、ページ本体と分けて後から読む。
+// 待つあいだは同じ大きさの枠を置き、読み込み後に下の内容がずれないようにする
+const DetailMap = lazy(() => import('../components/DetailMap'))
 
 export default function PracticeDetailPage() {
   const { id } = useParams()
@@ -74,7 +77,9 @@ export default function PracticeDetailPage() {
       <RentalNotice 貸館={p.貸館} />
       <UsageConditionNote 利用条件={p.利用条件} />
 
-      <DetailMap lat={p.緯度} lng={p.経度} name={p.施設名} />
+      <Suspense fallback={<div className="map map--detail" />}>
+        <DetailMap lat={p.緯度} lng={p.経度} name={p.施設名} 都道府県={p.都道府県} />
+      </Suspense>
 
       <div className="detail__actions">
         {p.URL && (

@@ -60,6 +60,26 @@
   --color-usage-line: #c4b5fd;
   --color-usage-text: #5b21b6;
 
+  /*
+   * 地図の地の色（src/mapStyle.ts が描画の直前に読む）。
+   * 主役は施設のピンなので、地はクリームに寄せて彩度を落とし、ピンの府県色より前に出さない。
+   * 高速道路だけゴールドにして、広域で見たときの目印にする
+   */
+  --map-land: #f4f1e8;
+  --map-green: #e3e7d3;
+  --map-water: #cdd9e3;
+  --map-building: #e8e2d4;
+  --map-road: #fff;
+  --map-road-casing: #e2dbcb;
+  --map-motorway: #ecd896;
+  --map-motorway-casing: #c9ab55;
+  --map-rail: #b3ada1;
+  --map-boundary: #8e97aa;
+  --map-label: #555c69;
+  --map-label-strong: #1b2e4b;
+  --map-label-water: #4d6781;
+  --map-halo: #f8f6f0;
+
   /* 書体 */
   --font-sans: 'Noto Sans JP', sans-serif;
   --font-serif: 'Noto Serif JP', serif;

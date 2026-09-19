@@ -35,7 +35,7 @@ import UsageConditionBadge from '../components/UsageConditionBadge'
 import UnknownNotice from '../components/UnknownNotice'
 import ClosedToggle from '../components/ClosedToggle'
 
-// 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
+// 地図は maplibre-gl（gzip で約420KB）を引き込むので、地図表示に切り替えるまで読み込まない
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
 
 // 表の見出しからも並び替えられるので、どのキーも昇順・降順の両方を載せる

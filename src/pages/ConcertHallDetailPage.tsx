@@ -1,9 +1,8 @@
-import { use } from 'react'
+import { use, lazy, Suspense } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { concertHallFacility } from '../datasets/facility'
 import { stationLabel } from '../station'
 import type { Hall } from '../types'
-import DetailMap from '../components/DetailMap'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { pianoDetail, standDetail } from '../availability'
@@ -13,6 +12,10 @@ import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
+
+// 地図は maplibre-gl（gzip で約420KB）を引き込むので、ページ本体と分けて後から読む。
+// 待つあいだは同じ大きさの枠を置き、読み込み後に下の内容がずれないようにする
+const DetailMap = lazy(() => import('../components/DetailMap'))
 
 type Row = [string, string | number | undefined | null]
 
@@ -75,7 +78,9 @@ export default function ConcertHallDetailPage() {
       <RentalNotice 貸館={f.貸館} />
       <UsageConditionNote 利用条件={f.利用条件} />
 
-      <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} />
+      <Suspense fallback={<div className="map map--detail" />}>
+        <DetailMap lat={f.緯度} lng={f.経度} name={f.施設名} 都道府県={f.都道府県} />
+      </Suspense>
 
       <div className="detail__actions">
         {f.URL && (

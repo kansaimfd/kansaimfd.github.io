@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **React + TypeScript** — UIフレームワーク
 - **素のCSS** — スタイリング（`src/styles/` のグローバルCSS。CSSフレームワークは使わない）
 - **React Router v7** — クライアントサイドルーティング（`basename="/"`）
-- **Leaflet + react-leaflet + OpenStreetMap** — 地図表示
+- **MapLibre GL JS + OpenStreetMap のベクトルタイル**（OSMF 配信の Shortbread）— 地図表示
 - **js-yaml** — YAML→JSON変換（ビルドスクリプト内で使用）
 
 ## Commands
@@ -83,7 +83,7 @@ node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへ
   0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
   そのため全体の数字は追わない。**追うのは全体値ではなく、テスト対象モジュール
   （`transform` / `validate` / `coverage` / `station` / `availability` / `address` / `name` /
-  `rental` / `concerthall` / `practice` / `filter` / `query` / `toggle` / `title`）が
+  `rental` / `concerthall` / `practice` / `filter` / `query` / `toggle` / `title` / `mapStyle`）が
   4指標とも100%であること**。これは `vitest.config.ts` の `thresholds` で固定してあり、
   下回ると `npm run check` と CI が落ちる（文章で書いてあるだけでは気づかないうちに落ちていく）。
   **しきい値は `--coverage` のときしか効かない**ので、`check` と CI は `test:coverage` を回す。
@@ -196,6 +196,9 @@ React コンポーネント
 - `src/address.ts` — 住所の連結（`geocodableAddress()` は建物名を含めない）
 - `src/availability.ts` — 設備の3値（あり／なし／未調査）の表示と絞り込み
 - `src/name.ts` — 施設名の五十音順ソート
+- `src/mapStyle.ts` — 地図のスタイル（MapLibre の style JSON）。タイル・フォントの配信元URLはここにだけ書く
+  （OSMF の規約が、配信停止に備えてURLを散らばらせないよう求めているため）
+- `src/components/createMap.ts` — 地図の共通初期化とピン。**maplibre-gl を import するのはここだけ**
 - `src/pref.ts` — 府県の並びと英字表記（**色は持たない**。→ Design）
 - `src/styles/` — スタイルシート。読み込み順に tokens → base → layout → components → pages
 - `src/components/` — 共通UIコンポーネント
@@ -411,6 +414,11 @@ React コンポーネント
   **色の定義は `styles/tokens.css` の `[data-pref='京都府']` だけに置く。**
   要素に `data-pref={都道府県}` を付ければ `--pref-accent` / `--pref-tint` / `--pref-chip` が切り替わる。
   JS 側に色表を持たせない（カードとピルで別々に持つと必ず食い違う）
+- **地図**: 地は `tokens.css` の `--map-*` で塗る（クリーム寄りで彩度を落とし、ピンより前に出さない）。
+  WebGL で描くので CSS変数を直接は使えず、`createMap.ts` が描画前に値を読んで `buildMapStyle()` に渡す。
+  **ピンは府県アクセント色のしずく型**で、`data-pref` を付けた DOM 要素なので色は CSS から来る。
+  maplibre-gl は gzip 約420KB あるので、**地図のコンポーネントは一覧・詳細とも遅延読み込み**する
+  （v6 はバンドラを通すと共有部分が本体とワーカーに二重に入る。v5 なら約280KB だが既知の脆弱性がある）
 - **フォント**: 見出しに Noto Serif JP（クラシカル感）、本文に Noto Sans JP
 - **テーマ**: クラシック音楽・オーケストラ・親しみやすい・モダン
 
