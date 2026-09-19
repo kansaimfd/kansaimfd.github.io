@@ -5,6 +5,7 @@ import { NO_WALK, minWalk } from '../station'
 import { ALL_PREFS } from '../pref'
 import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
+import { isClosed } from '../rental'
 import {
   ALL_HALL_TYPES,
   HALL_EQUIP_FIELDS,
@@ -30,6 +31,7 @@ import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 import UnknownNotice from '../components/UnknownNotice'
+import ClosedToggle from '../components/ClosedToggle'
 
 // 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
@@ -46,6 +48,8 @@ const SORT_OPTIONS: SortOption<HallSortKey>[] = [
   { key: '最寄駅徒歩', asc: false, label: '最寄駅徒歩（遠い順）' },
 ]
 
+const closedCount = concerthalls.filter(h => isClosed(h.貸館)).length
+
 export default function ConcertHallListPage() {
   useDocumentTitle('コンサートホール一覧')
 
@@ -55,7 +59,19 @@ export default function ConcertHallListPage() {
    */
   const [params, setParams] = useSearchParams()
   const state = useMemo(() => hallStateFromParams(params), [params])
-  const { query, prefs, hallTypes, seats, stageW, stageD, equip, view, sortKey, sortAsc } = state
+  const {
+    query,
+    prefs,
+    hallTypes,
+    seats,
+    stageW,
+    stageD,
+    equip,
+    showClosed,
+    view,
+    sortKey,
+    sortAsc,
+  } = state
 
   /**
    * 条件をひとつ変えるたびに履歴をひとつ積む（戻るで直前の絞り込みに戻れる）。
@@ -85,9 +101,10 @@ export default function ConcertHallListPage() {
       stageW,
       stageD,
       equip,
+      showClosed,
     })
     return { ...result, filtered: sortHalls(result.filtered, sortKey, sortAsc) }
-  }, [query, prefs, hallTypes, seats, stageW, stageD, equip, sortKey, sortAsc])
+  }, [query, prefs, hallTypes, seats, stageW, stageD, equip, showClosed, sortKey, sortAsc])
 
   const sortTh = (k: HallSortKey, label: string) => (
     <SortableTh k={k} label={label} sortKey={sortKey} sortAsc={sortAsc} onToggle={toggleSort} />
@@ -171,6 +188,12 @@ export default function ConcertHallListPage() {
           })}
         </FilterRow>
 
+        <ClosedToggle
+          on={showClosed}
+          count={closedCount}
+          onToggle={() => update({ showClosed: !showClosed })}
+        />
+
         <div className="ranges">
           <RangeInput
             label="CAPACITY"
@@ -206,7 +229,7 @@ export default function ConcertHallListPage() {
             <FacilityCard
               key={h.キー}
               facility={h}
-              detailBasePath="/concert"
+              detailPath={`/concert/${h.ID}`}
               stats={
                 <>
                   <Stat values={[h.客席数]} unit="席" caption="CAPACITY" />
@@ -296,7 +319,10 @@ export default function ConcertHallListPage() {
 
       {view === 'map' && (
         <Suspense fallback={<p className="loading">地図を読み込んでいます…</p>}>
-          <FacilityMap facilities={dedupeByFacility(filtered)} detailBasePath="/concert" />
+          <FacilityMap
+            facilities={dedupeByFacility(filtered)}
+            detailPath={f => `/concert/${f.ID}`}
+          />
         </Suspense>
       )}
     </div>

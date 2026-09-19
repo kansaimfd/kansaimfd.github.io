@@ -3,6 +3,7 @@
  *
  *   data/facilities/concerthall.yaml  1レコード = 1施設（部屋[] を内包）
  *     ├→ src/data/concerthalls.json           施設 × ホール に平坦化（一覧・地図用）
+ *     ├→ src/data/practices.json（追記）      ホールでない部屋を練習場一覧へ
  *     └→ src/data/concert/<ID>.json           施設1件（詳細ページ用）
  *   data/facilities/practice.yaml
  *     ├→ src/data/practices.json              一覧用に絞ったもの
@@ -19,7 +20,7 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import yaml from 'js-yaml'
 import { validate, report } from './validate.mjs'
-import { normalize, flattenHalls, toPracticeList } from './transform.mjs'
+import { normalize, flattenHalls, toPracticeList, toHallPracticeList } from './transform.mjs'
 import { reportCoverage } from './coverage.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -63,7 +64,11 @@ if (
 const concerthallFacilities = rawConcerthalls.map(normalize)
 const practiceFacilities = rawPractices.map(normalize)
 const concerthalls = flattenHalls(concerthallFacilities)
-const practices = toPracticeList(practiceFacilities)
+// 練習場一覧には、コンサートホール施設に併設された練習室・リハーサル室なども並べる
+const practices = [
+  ...toPracticeList(practiceFacilities),
+  ...toHallPracticeList(concerthallFacilities),
+]
 
 const outDir = resolve(root, 'src/data')
 // 施設を削除したりIDを変えたりしたときに、前回の出力が残らないよう作り直す

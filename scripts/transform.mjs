@@ -73,6 +73,31 @@ export function isMusicRoom(room) {
   return MUSIC_ROOM_NAME.test(name) && !NON_MUSIC_HALL.test(name)
 }
 
+/**
+ * 「ホール」と名が付いても、客席を組んで演奏会を開く部屋ではないもの。
+ * 平土間の宴会場・展示場・会議場で、定員と面積しか書かれていない。
+ */
+const NOT_CONCERT_HALL = /レセプション|展示|エントランス|コンベンション|交流|セミナー|控室/
+
+/**
+ * コンサートホール一覧に載せる部屋か。**載せない部屋は練習場一覧に回す**（toHallPracticeList）。
+ *
+ * コンサートホール施設は練習室・リハーサル室・スタジオを併設しているのが普通で、
+ * それらをホールと並べると一覧の半分以上（284行中151行）が客席数も舞台も無い部屋になっていた。
+ * 探している人にとっては練習場なので、そちらに出す。
+ *
+ * ホールと言えるのは、客席・舞台・パイプオルガン・ホール種別のどれかが書かれているか、
+ * 名前が「◯◯ホール」のもの（設備が未調査の小ホールも残す）。
+ * **部屋名の無い部屋はホール扱い**にする。単一ホールの施設は部屋名を省略してよい決まりのため。
+ */
+export function isHallRoom(room) {
+  if (['客席数', 'ホール種別', '舞台幅', '舞台奥行'].some(k => room[k] !== undefined)) return true
+  if (room.パイプオルガン === true) return true
+  const name = room.部屋名
+  if (name == null) return true
+  return /ホール/.test(name) && !NOT_CONCERT_HALL.test(name)
+}
+
 export function normalize(facility) {
   const withStations = facility.最寄駅
     ? { ...facility, 最寄駅: fillWalkMinutes(facility.最寄駅) }
@@ -179,13 +204,14 @@ function pick(source, fields) {
 }
 
 /**
- * 施設 × ホール に平坦化する。
+ * 施設 × ホール に平坦化する。ホールでない部屋（isHallRoom）は載せない。
  * 部屋が未登録の施設も一覧から消えないよう、空の部屋を1つ補う。
  */
 export function flattenHalls(facilities) {
   return facilities.flatMap(facility => {
     const rest = pick(facility, LIST_FACILITY_FIELDS)
-    const rooms = facility.部屋?.length ? facility.部屋 : [{}]
+    const halls = facility.部屋?.filter(isHallRoom) ?? []
+    const rooms = halls.length ? halls : [{}]
     return rooms.map((room, i) => ({
       ...rest,
       ...pick(room, LIST_ROOM_FIELDS),
@@ -205,5 +231,42 @@ export function toPracticeList(facilities) {
     const item = pick(facility, LIST_PRACTICE_FIELDS)
     if (facility.部屋) item.部屋 = facility.部屋.map(room => pick(room, LIST_PRACTICE_ROOM_FIELDS))
     return item
+  })
+}
+
+/** 借りられる度合いの順。複数の部屋の状態を1つにまとめるときに、いちばん借りやすいものを採る */
+const RENTAL_ORDER = ['予定', '休止', '終了', '廃止']
+
+/**
+ * 施設としての貸館の状態。施設側に書かれていればそれ、
+ * 無ければ**全室が休止・終了しているときだけ**、いちばん借りやすい部屋の状態を採る
+ * （1室でも通常どおり貸していれば、施設としては借りられる）。
+ */
+function rentalOf(facility, rooms) {
+  if (facility.貸館) return facility.貸館
+  if (rooms.some(r => !r.貸館)) return undefined
+  return rooms
+    .map(r => r.貸館)
+    .reduce((a, b) => (RENTAL_ORDER.indexOf(a.状態) <= RENTAL_ORDER.indexOf(b.状態) ? a : b))
+}
+
+/**
+ * コンサートホール施設の、ホールでない部屋（練習室・リハーサル室・スタジオなど）を
+ * 練習場一覧の形にする。部屋が無い施設は出さない。
+ *
+ * **詳細ページはコンサートホール側（/concert/:id）を使う**ので `ホール併設: true` を付ける。
+ * IDの名前空間はファイルごとに別なので、練習場の同じIDの施設とは区別が要る。
+ */
+export function toHallPracticeList(facilities) {
+  return facilities.flatMap(facility => {
+    const rooms = facility.部屋?.filter(r => !isHallRoom(r)) ?? []
+    if (rooms.length === 0) return []
+    const item = pick(facility, LIST_PRACTICE_FIELDS)
+    const 貸館 = rentalOf(facility, rooms)
+    if (貸館) item.貸館 = 貸館
+    else delete item.貸館
+    item.部屋 = rooms.map(room => pick(room, LIST_PRACTICE_ROOM_FIELDS))
+    item.ホール併設 = true
+    return [item]
   })
 }

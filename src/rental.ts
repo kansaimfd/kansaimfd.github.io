@@ -42,6 +42,22 @@ export function rentalBadgeLabel(r: Rental): string {
   return r.状態 === '休止' ? '休止中' : r.状態 === '終了' ? '貸館終了' : HEAD[r.状態]
 }
 
+/**
+ * もう借りられないことが確定しているもの（終了・廃止）。**一覧では既定で隠す。**
+ * 休止は再開が予定されているので隠さない（予約の再開を待っている人がいる）。
+ */
+export function isClosed(r: Rental | undefined): boolean {
+  return r != null && FINAL.includes(r.状態)
+}
+
+/**
+ * 一覧の絞り込み条件。貸館を終えた施設は、利用者が表示を選んだときだけ出す。
+ * 値は必ず判断できるので、未調査にはならない。
+ */
+export function matchRentable(r: Rental | undefined, showClosed: boolean): 'pass' | 'fail' {
+  return showClosed || !isClosed(r) ? 'pass' : 'fail'
+}
+
 /** 予定は「まだ借りられる」ので、借りられないものとは色を分ける */
 export function isStillRentable(r: Rental | undefined): boolean {
   return r == null || r.状態 === '予定'

@@ -15,7 +15,10 @@ import {
   type FilterResult,
 } from './filter'
 import { ALL_PREFS } from './pref'
+import { matchRentable } from './rental'
 import {
+  readFlag,
+  writeFlag,
   readList,
   readNumber,
   readSet,
@@ -119,6 +122,8 @@ export interface PracticeCriteria {
   /** 「◯分以内」。空文字は指定なし */
   walk: string
   equip: Set<string>
+  /** 貸館を終えた（終了・廃止）ものも出すか。既定では出さない */
+  showClosed: boolean
 }
 
 /**
@@ -127,7 +132,8 @@ export interface PracticeCriteria {
  */
 function practiceConditions(c: PracticeCriteria): Condition<PracticeListItem>[] {
   return [
-    // 都道府県・市区町村・施設名・住所は必ずあるので、未調査にはならない
+    // 貸館の状態・都道府県・市区町村・施設名・住所は必ず判断できるので、未調査にはならない
+    { label: '貸館', match: p => matchRentable(p.貸館, c.showClosed) },
     { label: '都道府県', match: p => matchOneOf(p.都道府県, c.prefs) },
     { label: '市区町村', match: p => matchOneOf(p.市区町村, c.city ? [c.city] : []) },
     { label: 'フリーワード', match: p => matchText(searchText(p), c.query) },
@@ -176,6 +182,14 @@ export function sortPractices(
   })
 }
 
+/**
+ * 詳細ページのパス。**コンサートホールに併設された練習室はホール側の詳細ページに行く**
+ * （ID もコンサートホール側のもの）。同じIDの練習場と区別がつくので、React の key にも使う。
+ */
+export function practiceDetailPath(p: Pick<PracticeListItem, 'ID' | 'ホール併設'>): string {
+  return `${p.ホール併設 ? '/concert' : '/practice'}/${p.ID}`
+}
+
 /** 一覧ページの状態。**絞り込みだけでなく表示と並び替えもURLに載せる** */
 export interface PracticePageState extends PracticeCriteria {
   view: ViewMode
@@ -203,6 +217,7 @@ export function practiceStateFromParams(params: URLSearchParams): PracticePageSt
     station: readText(params, 'station'),
     walk: readNumber(params, 'walk'),
     equip: readSet(params, 'equip', PRACTICE_EQUIP_KEYS),
+    showClosed: readFlag(params, 'closed'),
     view: readView(params),
     sortKey: key,
     sortAsc: asc,
@@ -218,6 +233,7 @@ export function practiceStateToParams(s: PracticePageState): URLSearchParams {
   writeText(params, 'station', s.station)
   writeText(params, 'walk', s.walk)
   writeSet(params, 'equip', s.equip, PRACTICE_EQUIP_KEYS)
+  writeFlag(params, 'closed', s.showClosed)
   writeView(params, s.view)
   writeSort(params, s.sortKey, s.sortAsc, '施設名')
   return params

@@ -3,6 +3,8 @@ import {
   fillWalkMinutes,
   flattenHalls,
   toPracticeList,
+  toHallPracticeList,
+  isHallRoom,
   isMusicRoom,
   normalize,
   withLastVerified,
@@ -108,7 +110,108 @@ describe('withLastVerified', () => {
   })
 })
 
+describe('isHallRoom', () => {
+  it.each([
+    [{ 部屋名: 'リハーサル室', 客席数: 100 }, '客席数がある'],
+    [{ 部屋名: 'スタジオ', 舞台幅: 10 }, '舞台がある'],
+    [{ 部屋名: '音楽室', ホール種別: '小ホール・サロン' }, 'ホール種別がある'],
+    [{ 部屋名: '練習室', パイプオルガン: true }, 'パイプオルガンがある'],
+    [{ 部屋名: '小ホール' }, '設備が未調査でも名前がホール'],
+    [{}, '部屋名の無い単一ホール'],
+  ])('%o はホール（%s）', room => {
+    expect(isHallRoom(room)).toBe(true)
+  })
+
+  it.each([
+    { 部屋名: 'リハーサル室', ピアノ有無: true, 定員: 50 },
+    { 部屋名: '練習室1' },
+    { 部屋名: 'スタジオA', 面積: 80 },
+    { 部屋名: 'レセプションホール', ピアノ有無: true, 定員: 120 },
+    { 部屋名: '展示ホール', 面積: 177 },
+    { 部屋名: 'コンベンションホール', ピアノ有無: true },
+  ])('%o はホールではない', room => {
+    expect(isHallRoom(room)).toBe(false)
+  })
+})
+
+describe('toHallPracticeList', () => {
+  const facility = {
+    ID: 10,
+    施設名: 'テスト文化会館',
+    都道府県: '大阪府',
+    TEL: '06-0000-0000',
+    部屋: [
+      { 部屋名: '大ホール', 客席数: 1500 },
+      { 部屋名: 'リハーサル室', 定員: 80, 面積: 200, ピアノ有無: true, 打楽器: true },
+      { 部屋名: '練習室1', 定員: 10 },
+    ],
+  }
+
+  it('ホールでない部屋だけを練習場の形にし、併設の印を付ける', () => {
+    expect(toHallPracticeList([facility])).toEqual([
+      {
+        ID: 10,
+        施設名: 'テスト文化会館',
+        都道府県: '大阪府',
+        部屋: [{ 定員: 80, 面積: 200, ピアノ有無: true, 打楽器: true }, { 定員: 10 }],
+        ホール併設: true,
+      },
+    ])
+  })
+
+  it('ホールしか無い施設は出さない', () => {
+    expect(toHallPracticeList([{ ID: 20, 部屋: [{ 部屋名: '大ホール' }] }])).toEqual([])
+    expect(toHallPracticeList([{ ID: 30 }])).toEqual([])
+  })
+
+  it('全室が貸館を終えていれば、施設としても終えている', () => {
+    const [item] = toHallPracticeList([
+      {
+        ID: 40,
+        部屋: [
+          { 部屋名: '大ホール', 客席数: 800 },
+          { 部屋名: '練習室A', 貸館: { 状態: '終了' } },
+          { 部屋名: '練習室B', 貸館: { 状態: '休止' } },
+          { 部屋名: '練習室C', 貸館: { 状態: '廃止' } },
+        ],
+      },
+    ])
+    // いちばん借りやすい状態を採る（休止は再開がある）
+    expect(item.貸館).toEqual({ 状態: '休止' })
+  })
+
+  it('1室でも通常どおりなら、施設としては借りられる', () => {
+    const [item] = toHallPracticeList([
+      {
+        ID: 50,
+        部屋: [{ 部屋名: '練習室A', 貸館: { 状態: '終了' } }, { 部屋名: '練習室B' }],
+      },
+    ])
+    expect(item.貸館).toBeUndefined()
+  })
+
+  it('施設側の貸館はそのまま使う', () => {
+    const [item] = toHallPracticeList([
+      { ID: 60, 貸館: { 状態: '廃止' }, 部屋: [{ 部屋名: '練習室' }] },
+    ])
+    expect(item.貸館).toEqual({ 状態: '廃止' })
+  })
+})
+
 describe('flattenHalls', () => {
+  it('ホールでない部屋は一覧に載せない', () => {
+    const halls = flattenHalls([
+      {
+        ID: 10,
+        部屋: [
+          { 部屋名: '大ホール', 客席数: 1500 },
+          { 部屋名: 'リハーサル室', 定員: 80 },
+        ],
+      },
+    ])
+    expect(halls.map(h => h.部屋名)).toEqual(['大ホール'])
+  })
+
   it('施設 × ホール に平坦化し、施設属性を各ホールへ配る', () => {
     const halls = flattenHalls([
       {

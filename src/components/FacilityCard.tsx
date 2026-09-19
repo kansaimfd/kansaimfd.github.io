@@ -26,12 +26,14 @@ type CardFacility = Pick<
 > & {
   部屋名?: string
   ホール種別?: HallType
+  /** 練習場一覧に並べた、コンサートホール併設の練習室など */
+  ホール併設?: true
 }
 
 interface Props {
   facility: CardFacility
-  /** 詳細ページの接頭辞 例: /concert */
-  detailBasePath: string
+  /** 詳細ページのパス 例: /concert/10 */
+  detailPath: string
   /** 客席数・定員など、一覧ごとに変わる数値の欄 */
   stats: ReactNode
   /** 設備バッジの並び */
@@ -45,20 +47,21 @@ interface Props {
  * 一覧ごとに変わるのは数値の欄と設備バッジだけ。以前は一覧ごとにカードを
  * 別々に書いていて、片方だけ手を入れた結果2つの見た目に分かれた。
  */
-export default function FacilityCard({ facility: f, detailBasePath, stats, equip }: Props) {
+export default function FacilityCard({ facility: f, detailPath, stats, equip }: Props) {
   return (
     <article className="facility-card" data-pref={f.都道府県}>
       <PrefBand 都道府県={f.都道府県} />
       <div className="facility-card__body">
         <div className="facility-card__main">
           <div className="facility-card__title-row">
-            <Link to={`${detailBasePath}/${f.ID}`} className="facility-card__name">
+            <Link to={detailPath} className="facility-card__name">
               {f.施設名}
             </Link>
             {f.部屋名 && <span className="facility-card__room">（{f.部屋名}）</span>}
             <RentalBadge 貸館={f.貸館} />
             <UsageConditionBadge 利用条件={f.利用条件} />
             {f.ホール種別 && <span className="facility-card__type">{f.ホール種別}</span>}
+            {f.ホール併設 && <span className="facility-card__type">ホール併設</span>}
           </div>
 
           <p className="facility-card__address">{localAddress(f)}</p>

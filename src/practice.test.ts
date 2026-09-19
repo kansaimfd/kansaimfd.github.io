@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PracticeListItem } from './types'
 import {
+  practiceDetailPath,
   facilityState,
   filterPractices,
   maxArea,
@@ -32,6 +33,7 @@ const NO_CRITERIA: PracticeCriteria = {
   station: '',
   walk: '',
   equip: new Set(),
+  showClosed: false,
 }
 
 const criteria = (over: Partial<PracticeCriteria>): PracticeCriteria => ({
@@ -287,6 +289,22 @@ describe('sortPractices', () => {
   })
 })
 
+describe('practiceDetailPath', () => {
+  it('ホール併設の部屋はコンサートホールの詳細ページへ行く', () => {
+    expect(practiceDetailPath(practice({ ID: 30 }))).toBe('/practice/30')
+    expect(practiceDetailPath(practice({ ID: 30, ホール併設: true }))).toBe('/concert/30')
+  })
+})
+
+describe('貸館を終えた練習場', () => {
+  it('表示を選んだときだけ出す', () => {
+    const list = [practice({ ID: 10 }), practice({ ID: 20, 貸館: { 状態: '終了' } })]
+    expect(filterPractices(list, NO_CRITERIA).filtered.map(p => p.ID)).toEqual([10])
+    const shown = filterPractices(list, { ...NO_CRITERIA, showClosed: true })
+    expect(shown.filtered.map(p => p.ID)).toEqual([10, 20])
+  })
+})
+
 describe('URLとの往復', () => {
   it('何も絞り込んでいなければクエリは空', () => {
     const state = practiceStateFromParams(new URLSearchParams(''))
@@ -302,6 +320,7 @@ describe('URLとの往復', () => {
       station: '烏丸駅',
       walk: '10',
       equip: new Set(['piano', 'perc']),
+      showClosed: true,
       view: 'map',
       sortKey: '最寄駅徒歩',
       sortAsc: true,
@@ -314,6 +333,7 @@ describe('URLとの往復', () => {
       station: '烏丸駅',
       walk: '10',
       equip: new Set(['piano', 'perc']),
+      showClosed: true,
       view: 'map',
       sortKey: '最寄駅徒歩',
       sortAsc: true,

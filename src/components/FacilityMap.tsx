@@ -20,10 +20,14 @@ L.Icon.Default.mergeOptions({
 
 interface Props {
   facilities: MappableFacility[]
-  detailBasePath: string
+  /**
+   * 詳細ページのパス。練習場一覧にはコンサートホール併設の部屋が混ざり、
+   * 施設ごとに行き先が違うので、接頭辞ではなく施設から求める。マーカーの key にも使う
+   */
+  detailPath: (f: MappableFacility) => string
 }
 
-export default function FacilityMap({ facilities, detailBasePath }: Props) {
+export default function FacilityMap({ facilities, detailPath }: Props) {
   return (
     <MapContainer center={[34.7, 135.5]} zoom={9} className="map map--list">
       <TileLayer
@@ -31,7 +35,7 @@ export default function FacilityMap({ facilities, detailBasePath }: Props) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {facilities.map(f => (
-        <Marker key={f.ID} position={[f.緯度, f.経度]}>
+        <Marker key={detailPath(f)} position={[f.緯度, f.経度]}>
           <Popup>
             <div className="map-popup">
               <p className="map-popup__name">
@@ -44,7 +48,7 @@ export default function FacilityMap({ facilities, detailBasePath }: Props) {
                   {stationLabel(s)}
                 </p>
               ))}
-              <Link to={`${detailBasePath}/${f.ID}`} className="map-popup__link">
+              <Link to={detailPath(f)} className="map-popup__link">
                 詳細を見る →
               </Link>
             </div>

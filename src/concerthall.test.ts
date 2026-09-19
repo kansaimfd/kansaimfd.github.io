@@ -32,6 +32,7 @@ const NO_CRITERIA: HallCriteria = {
   stageW: ['', ''],
   stageD: ['', ''],
   equip: new Set(),
+  showClosed: false,
 }
 
 const criteria = (over: Partial<HallCriteria>): HallCriteria => ({ ...NO_CRITERIA, ...over })
@@ -40,6 +41,22 @@ describe('filterHalls', () => {
   it('条件が空なら全件そのまま', () => {
     const halls = [hall({ ID: 10 }), hall({ ID: 20 })]
     expect(filterHalls(halls, NO_CRITERIA).filtered).toEqual(halls)
+  })
+
+  it('貸館を終えたものは、表示を選んだときだけ出す', () => {
+    const halls = [
+      hall({ ID: 10 }),
+      hall({ ID: 20, 貸館: { 状態: '終了' } }),
+      hall({ ID: 30, 貸館: { 状態: '廃止' } }),
+      // 休止は再開を待つ人がいる。予定はまだ借りられる。どちらも隠さない
+      hall({ ID: 40, 貸館: { 状態: '休止' } }),
+      hall({ ID: 50, 貸館: { 状態: '予定' } }),
+    ]
+    expect(filterHalls(halls, NO_CRITERIA).filtered.map(h => h.ID)).toEqual([10, 40, 50])
+    const shown = filterHalls(halls, criteria({ showClosed: true }))
+    expect(shown.filtered.map(h => h.ID)).toEqual([10, 20, 30, 40, 50])
+    // 隠したのは状態が分かっているからで、未調査のせいではない
+    expect(filterHalls(halls, NO_CRITERIA).unknownExcluded).toBe(0)
   })
 
   it('府県は選んだもののどれかに当たれば残す', () => {
@@ -409,6 +426,7 @@ describe('URLとの往復', () => {
       stageW: ['', '20'],
       stageD: ['10', ''],
       equip: new Set(['piano', 'organ']),
+      showClosed: true,
       view: 'table',
       sortKey: '客席数',
       sortAsc: false,
@@ -421,6 +439,7 @@ describe('URLとの往復', () => {
       stageW: ['', '20'],
       stageD: ['10', ''],
       equip: new Set(['piano', 'organ']),
+      showClosed: true,
       view: 'table',
       sortKey: '客席数',
       sortAsc: false,

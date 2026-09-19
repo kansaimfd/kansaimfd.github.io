@@ -13,6 +13,8 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import App from './App'
 import { concerthalls } from './datasets/concerthalls'
 import { practices } from './datasets/practices'
+import { isClosed } from './rental'
+import { practiceDetailPath } from './practice'
 
 // jsdom は window.scrollTo を実装していない。ScrollToTop が呼ぶだけで
 // 「Not implemented」が出てテスト出力が埋まるので差し替えておく
@@ -110,20 +112,38 @@ describe('導線', () => {
     expect(paths).toContain('/about')
   })
 
-  // 施設名リンクは同一施設の複数ホールで重複するので、href の集合で見る
+  // 施設名リンクは同一施設の複数ホールで重複するので、href の集合で見る。
+  // 貸館を終えた施設は既定で隠すので、表示を選んだ状態で見る
   it('コンサートホール一覧から全施設の詳細ページへ行ける', () => {
-    renderAt('/concert')
+    renderAt('/concert?closed=1')
     const hrefs = new Set(linkHrefs())
     const 抜け = concerthalls.filter(h => !hrefs.has(`/concert/${h.ID}`)).map(h => h.施設名)
     expect(抜け).toEqual([])
   })
 
+  // ホール併設の部屋はコンサートホール側の詳細ページへ行く
   it('練習場一覧から全施設の詳細ページへ行ける', async () => {
-    renderAt('/practice')
+    renderAt('/practice?closed=1')
     await screen.findByRole('heading', { name: '練習場一覧', level: 1 })
     const hrefs = new Set(linkHrefs())
-    const 抜け = practices.filter(p => !hrefs.has(`/practice/${p.ID}`)).map(p => p.施設名)
+    const 抜け = practices.filter(p => !hrefs.has(practiceDetailPath(p))).map(p => p.施設名)
     expect(抜け).toEqual([])
+  })
+
+  it.each([
+    ['/concert', concerthalls],
+    ['/practice', practices],
+  ] as const)('%s は貸館を終えた施設を既定で隠し、選べば出す', async (path, list) => {
+    const closed = list.filter(f => isClosed(f.貸館)).length
+    renderAt(path)
+    // 件数は数字だけで探すと、カードの面積・定員と取り違える
+    const count = () => document.querySelector('.result-bar__count strong')?.textContent
+    const toggle = await screen.findByRole('button', { name: /貸館終了・閉館も表示/ })
+    expect(count()).toBe(String(list.length - closed))
+
+    fireEvent.click(toggle)
+    expect(currentUrl()).toBe(`${path}?closed=1`)
+    expect(count()).toBe(String(list.length))
   })
 
   /**
@@ -175,8 +195,8 @@ describe('導線', () => {
    * 描画してボタンを探す以外に気づく方法が無い。
    */
   it.each([
-    ['/concert', 'コンサートホール一覧', concerthalls.length],
-    ['/practice', '練習場一覧', practices.length],
+    ['/concert', 'コンサートホール一覧', concerthalls.filter(h => !isClosed(h.貸館)).length],
+    ['/practice', '練習場一覧', practices.filter(p => !isClosed(p.貸館)).length],
   ])('%s で件数と表示切替が出ている', async (path, heading, count) => {
     renderAt(path)
     await screen.findByRole('heading', { name: heading as string, level: 1 })
@@ -209,7 +229,7 @@ describe('絞り込みとURL', () => {
     renderAt('/concert?pref=大阪府')
 
     expect(screen.getByRole('button', { name: /大阪府/ })).toHaveProperty('ariaPressed', 'true')
-    const 大阪の件数 = concerthalls.filter(h => h.都道府県 === '大阪府').length
+    const 大阪の件数 = concerthalls.filter(h => h.都道府県 === '大阪府' && !isClosed(h.貸館)).length
     expect(screen.getByText(String(大阪の件数))).toBeDefined()
   })
 

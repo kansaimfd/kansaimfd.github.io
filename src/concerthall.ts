@@ -13,7 +13,10 @@ import { fullAddress } from './address'
 import { compareByName } from './name'
 import { minWalk, stationNames } from './station'
 import { ALL_PREFS } from './pref'
+import { matchRentable } from './rental'
 import {
+  readFlag,
+  writeFlag,
   readList,
   readRange,
   readSet,
@@ -93,6 +96,8 @@ export interface HallCriteria {
   stageW: Range
   stageD: Range
   equip: Set<string>
+  /** 貸館を終えた（終了・廃止）ものも出すか。既定では出さない */
+  showClosed: boolean
 }
 
 export type { FilterResult }
@@ -106,7 +111,8 @@ export type { FilterResult }
  */
 function hallConditions(c: HallCriteria): Condition<ConcertHall>[] {
   return [
-    // 都道府県・施設名・住所は必ずあるので、未調査にはならない
+    // 貸館の状態・都道府県・施設名・住所は必ず判断できるので、未調査にはならない
+    { label: '貸館', match: h => matchRentable(h.貸館, c.showClosed) },
     { label: '都道府県', match: h => matchOneOf(h.都道府県, c.prefs) },
     { label: 'フリーワード', match: h => matchText(searchText(h), c.query) },
     { label: 'ホール種別', match: h => matchOneOf(h.ホール種別, c.hallTypes) },
@@ -194,6 +200,7 @@ export function hallStateFromParams(params: URLSearchParams): HallPageState {
     stageW: readRange(params, 'stagew'),
     stageD: readRange(params, 'staged'),
     equip: readSet(params, 'equip', HALL_EQUIP_KEYS),
+    showClosed: readFlag(params, 'closed'),
     view: readView(params),
     sortKey: key,
     sortAsc: asc,
@@ -209,6 +216,7 @@ export function hallStateToParams(s: HallPageState): URLSearchParams {
   writeRange(params, 'stagew', s.stageW)
   writeRange(params, 'staged', s.stageD)
   writeSet(params, 'equip', s.equip, HALL_EQUIP_KEYS)
+  writeFlag(params, 'closed', s.showClosed)
   writeView(params, s.view)
   writeSort(params, s.sortKey, s.sortAsc, '施設名')
   return params

@@ -5,11 +5,13 @@ import { NO_WALK, minWalk, stationLabels, stationNames } from '../station'
 import { ALL_PREFS } from '../pref'
 import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
+import { isClosed } from '../rental'
 import {
   PRACTICE_EQUIP_FIELDS,
   filterPractices,
   maxArea,
   maxCapacity,
+  practiceDetailPath,
   practiceStateFromParams,
   practiceStateToParams,
   sortPractices,
@@ -31,6 +33,7 @@ import AvailabilityMark from '../components/AvailabilityMark'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 import UnknownNotice from '../components/UnknownNotice'
+import ClosedToggle from '../components/ClosedToggle'
 
 // 地図は leaflet を引き込むので、地図表示に切り替えるまで読み込まない
 const FacilityMap = lazy(() => import('../components/FacilityMap'))
@@ -52,6 +55,8 @@ function unique<T>(arr: T[]): T[] {
 /** 定員が1件も入っていないうちは、必ず0件になる絞り込みを見せない */
 const hasCapacityData = practices.some(p => maxCapacity(p) > 0)
 
+const closedCount = practices.filter(p => isClosed(p.貸館)).length
+
 export default function PracticeListPage() {
   useDocumentTitle('練習場一覧')
 
@@ -61,7 +66,8 @@ export default function PracticeListPage() {
    */
   const [params, setParams] = useSearchParams()
   const state = useMemo(() => practiceStateFromParams(params), [params])
-  const { query, prefs, city, capacity, station, walk, equip, view, sortKey, sortAsc } = state
+  const { query, prefs, city, capacity, station, walk, equip, showClosed, view, sortKey, sortAsc } =
+    state
 
   /**
    * 条件をひとつ変えるたびに履歴をひとつ積む（戻るで直前の絞り込みに戻れる）。
@@ -108,9 +114,10 @@ export default function PracticeListPage() {
       station,
       walk,
       equip,
+      showClosed,
     })
     return { ...result, filtered: sortPractices(result.filtered, sortKey, sortAsc) }
-  }, [query, prefs, city, capacity, station, walk, equip, sortKey, sortAsc])
+  }, [query, prefs, city, capacity, station, walk, equip, showClosed, sortKey, sortAsc])
 
   function togglePref(pref: string) {
     // 府県を変えると選べる市区町村が変わるので、選択済みの市区町村は落とす
@@ -126,7 +133,9 @@ export default function PracticeListPage() {
       <header className="page-head">
         <p className="page-head__eyebrow">REHEARSAL ROOMS</p>
         <h1 className="page-head__title">練習場一覧</h1>
-        <p className="page-head__lead">関西の練習場を定員・設備・アクセスで比較</p>
+        <p className="page-head__lead">
+          関西の練習場を定員・設備・アクセスで比較。ホールに併設された練習室・リハーサル室も含みます
+        </p>
       </header>
 
       <FilterPanel
@@ -199,6 +208,12 @@ export default function PracticeListPage() {
           </FilterRow>
         )}
 
+        <ClosedToggle
+          on={showClosed}
+          count={closedCount}
+          onToggle={() => update({ showClosed: !showClosed })}
+        />
+
         <div className="ranges">
           {hasCapacityData && (
             <BoundInput
@@ -227,9 +242,9 @@ export default function PracticeListPage() {
         <div className="facility-list">
           {filtered.map(p => (
             <FacilityCard
-              key={p.ID}
+              key={practiceDetailPath(p)}
               facility={p}
-              detailBasePath="/practice"
+              detailPath={practiceDetailPath(p)}
               stats={
                 <>
                   <Stat values={[maxCapacity(p) || null]} unit="名" caption="CAPACITY" />
@@ -276,11 +291,12 @@ export default function PracticeListPage() {
             </thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.ID}>
+                <tr key={practiceDetailPath(p)}>
                   <td>
-                    <Link to={`/practice/${p.ID}`} className="data-table__link">
+                    <Link to={practiceDetailPath(p)} className="data-table__link">
                       {p.施設名}
                     </Link>
+                    {p.ホール併設 && <span className="data-table__note">ホール併設</span>}
                     <RentalBadge 貸館={p.貸館} />
                     <UsageConditionBadge 利用条件={p.利用条件} />
                   </td>
@@ -314,7 +330,7 @@ export default function PracticeListPage() {
 
       {view === 'map' && (
         <Suspense fallback={<p className="loading">地図を読み込んでいます…</p>}>
-          <FacilityMap facilities={filtered} detailBasePath="/practice" />
+          <FacilityMap facilities={filtered} detailPath={practiceDetailPath} />
         </Suspense>
       )}
     </div>

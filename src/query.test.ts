@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  readFlag,
+  writeFlag,
   readList,
   readNumber,
   readRange,
@@ -81,6 +83,22 @@ describe('readNumber', () => {
     expect(readNumber(params('cap=50'), 'cap')).toBe('50')
     expect(readNumber(params('cap=-3'), 'cap')).toBe('')
     expect(readNumber(params(''), 'cap')).toBe('')
+  })
+})
+
+describe('readFlag / writeFlag', () => {
+  it('1 のときだけオン', () => {
+    expect(readFlag(params('closed=1'), 'closed')).toBe(true)
+    expect(readFlag(params('closed=true'), 'closed')).toBe(false)
+    expect(readFlag(params(''), 'closed')).toBe(false)
+  })
+
+  it('オフはURLに載せない', () => {
+    const p = params('')
+    writeFlag(p, 'closed', false)
+    expect(p.toString()).toBe('')
+    writeFlag(p, 'closed', true)
+    expect(p.toString()).toBe('closed=1')
   })
 })
 

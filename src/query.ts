@@ -63,6 +63,15 @@ export function readNumber(params: URLSearchParams, key: string): string {
   return asNumberText(params.get(key) ?? '')
 }
 
+/** オン・オフの条件。`1` のときだけオン（既定はオフなのでURLに載せない） */
+export function readFlag(params: URLSearchParams, key: string): boolean {
+  return params.get(key) === '1'
+}
+
+export function writeFlag(params: URLSearchParams, key: string, on: boolean): void {
+  if (on) params.set(key, '1')
+}
+
 export function readView(params: URLSearchParams): ViewMode {
   const v = params.get('view')
   return VIEWS.find(x => x === v) ?? 'list'

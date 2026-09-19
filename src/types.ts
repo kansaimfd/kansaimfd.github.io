@@ -149,6 +149,8 @@ export type MappableFacility = Pick<
 > & {
   /** 平坦化したコンサートホールだけが持つ */
   部屋名?: string
+  /** 練習場一覧に並べた、コンサートホール併設の部屋だけが持つ */
+  ホール併設?: true
 }
 
 export type PianoType = 'グランド' | 'アップライト' | '電子'
@@ -317,4 +319,9 @@ export type PracticeListItem = Pick<
   | 'ピアノ有無'
 > & {
   部屋?: Pick<PracticeRoom, '定員' | '面積' | 'ピアノ有無' | '管楽器' | '打楽器' | 'チェンバロ'>[]
+  /**
+   * コンサートホール施設に併設された練習室・リハーサル室など（transform.mjs の
+   * toHallPracticeList）。**詳細ページは /concert/:id** で、ID もコンサートホール側のもの。
+   */
+  ホール併設?: true
 }

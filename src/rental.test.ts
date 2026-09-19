@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Rental } from './types'
-import { isStillRentable, rentalBadgeLabel, rentalNotice } from './rental'
+import { isClosed, isStillRentable, matchRentable, rentalBadgeLabel, rentalNotice } from './rental'
 
 describe('rentalNotice', () => {
   it('通常どおり貸している施設では何も出さない', () => {
@@ -45,6 +45,24 @@ describe('rentalNotice', () => {
 
   it('期間も理由も分からなければ見出しだけ', () => {
     expect(rentalNotice({ 状態: '休止' })).toBe('貸館休止中')
+  })
+})
+
+describe('isClosed', () => {
+  it('終了・廃止だけが「もう借りられない」', () => {
+    expect(isClosed(undefined)).toBe(false)
+    expect(isClosed({ 状態: '予定' })).toBe(false)
+    expect(isClosed({ 状態: '休止' })).toBe(false)
+    expect(isClosed({ 状態: '終了' })).toBe(true)
+    expect(isClosed({ 状態: '廃止' })).toBe(true)
+  })
+})
+
+describe('matchRentable', () => {
+  it('表示を選ぶまで、貸館を終えたものを外す', () => {
+    expect(matchRentable({ 状態: '終了' }, false)).toBe('fail')
+    expect(matchRentable({ 状態: '終了' }, true)).toBe('pass')
+    expect(matchRentable(undefined, false)).toBe('pass')
   })
 })
 
