@@ -181,7 +181,7 @@ React コンポーネント
   sitemap.xml の組み立て。書き出しは `build-static-pages.mjs` が `npm run build` の最後に行う（→ Deployment）
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
 - `scripts/build-station-master.mjs` — 駅座標マスタの生成（随時。出力はコミット済み）
-- `data/stations.json` — 関西1,793駅の座標。出典: 国土数値情報（鉄道データ）国土交通省
+- `data/stations.json` — 関西1,904駅の座標（同名でも事業者が違えば別の駅）。出典: 国土数値情報（鉄道データ）国土交通省
 - `src/data/` — 変換後JSONの出力先（`.gitignore` 済み。ビルドのたびに作り直す）
 - `src/types.ts` — `ConcertHallFacility` / `ConcertHall` / `Practice` / `PracticeListItem` 型定義。
   **一覧用の型（`ConcertHall` / `PracticeListItem`）は `transform.mjs` の採用リストと対になっている。**

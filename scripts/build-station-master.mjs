@@ -57,15 +57,22 @@ const segments = geojson.features
   })
 
 // 同じ駅が路線ごとに複数セグメントに分かれているのでまとめる。
-// ただし同名の別駅（JR福島駅と阪神福島駅など）は離れているので別エントリのまま残す。
+// ただし同名の別駅（JR福島駅と阪神福島駅など）は別エントリのまま残す。
+//
+// **事業者が違えば、近くても別の駅として扱う。** 以前は駅名と距離（500m以内）だけで
+// まとめていたため、約400m離れた阪急と阪神の大阪梅田駅が1点になり、座標がその中間に来ていた。
+// 阪神側の出口に近い施設（大阪駅前第3ビル）が「公式の徒歩3分より実際は遠い」と誤って警告された。
+// 検査は同名の候補のうち施設に最も近いものを採るので、分けておけば取り違えない
 const byName = new Map()
 for (const s of segments) {
-  if (!byName.has(s.駅)) byName.set(s.駅, [])
-  byName.get(s.駅).push(s)
+  const key = `${s.駅}|${s.事業者}`
+  if (!byName.has(key)) byName.set(key, [])
+  byName.get(key).push(s)
 }
 
 const stations = []
-for (const [name, segs] of byName) {
+for (const segs of byName.values()) {
+  const name = segs[0].駅
   const clusters = []
   for (const s of segs) {
     const hit = clusters.find(c => distance(c.緯度, c.経度, s.pos[0], s.pos[1]) < SAME_STATION)
