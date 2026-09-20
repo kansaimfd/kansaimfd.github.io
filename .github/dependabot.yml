@@ -11,12 +11,36 @@ updates:
       interval: monthly
     open-pull-requests-limit: 3
     groups:
-      # 開発ツール（lint・整形・テスト・型）は挙動が変わってもサイトには出ないので束ねる
+      # 開発ツール（lint・整形・テスト・型）は挙動が変わってもサイトには出ないので束ねる。
+      # **major は束ねない。** 束ねていたころ、typescript 6→7 が typescript-eslint の
+      # ピア依存に弾かれて npm ci の段階で落ち、TSと無関係な8件まで道連れになった。
+      # major が1件ずつ来れば、止まるのはその1件で済む
       dev:
         dependency-type: development
+        update-types: [minor, patch]
       # React・Router・MapLibre は表示に直結するので、まとめても別の束にする
       runtime:
         dependency-type: production
+        update-types: [minor, patch]
+      # eslint 本体と @eslint/js は同じリポジトリから出ており major は対で上がる。
+      # 別々のPRにすると片方だけ入った状態ができるので、major のときだけ束ねる
+      eslint:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'eslint-plugin-*'
+          - 'typescript-eslint'
+        update-types: [major]
+    ignore:
+      # typescript-eslint 8.70.0 のピア依存が typescript ">=4.8.4 <6.1.0" で、
+      # TS 7 に対応しているのは alpha 版（8.70.1-alpha.*）だけ。
+      # **対応版が出たらこの2行を消し、typescript と typescript-eslint を一緒に上げる**
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      # 型が実行環境を追い越さないようにする。Node は22系（engines / .nvmrc）なので
+      # @types/node も22系に留める。**Node を上げるときに一緒に上げる**
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   # ワークフローが使う actions も古くなる（actions/checkout など）
   - package-ecosystem: github-actions

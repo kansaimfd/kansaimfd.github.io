@@ -69,7 +69,12 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
 - **Node は 22 系**（`.nvmrc` / `package.json` の `engines`）。CI は `.nvmrc` を見る
 - **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す
   （`permissions: contents: read` と `concurrency` を明示してある）。
-  依存と actions の更新は Dependabot（`.github/dependabot.yml`）が月次でまとめて出す
+  依存と actions の更新は Dependabot（`.github/dependabot.yml`）が月次で出す。
+  **束ねるのは minor と patch だけで、major は1件ずつ来る**（eslint 一族だけは対で上がるので束ねる）。
+  major を混ぜていたころ、`typescript` 6→7 が `typescript-eslint` のピア依存に弾かれて
+  `npm ci` の段階で落ち、TSと無関係な8件まで道連れになった。
+  **`typescript` と `@types/node` の major は ignore してある**（前者は typescript-eslint が
+  TS 7 に対応するまで、後者は Node 22 に型を合わせるため）
 - **月次のリンク検査**（`.github/workflows/audit-urls.yml`）が毎月1日に `audit-urls.mjs` を回し、
   結果を Issue にまとめる（題名が `リンク切れ検査:` で始まる Issue を**使い回して更新**する。
   毎月新しく立てると同じ施設の話が何本も並んで追えなくなる。全件正常になれば自動で閉じる。
