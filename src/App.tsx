@@ -12,8 +12,9 @@ import RouteErrorBoundary from './components/ErrorBoundary'
  * このサイトについてを読む人も、見ないホール一覧のデータを落としてから
  * 目的のページを読むことになる（外部リンク・検索結果からの流入がこれに当たる）。
  *
- * 分割すると入口の表示に1往復増えるが、入口以外の全ページが gzip 約90KB軽くなる。
+ * 分割すると入口の表示に1往復増えるが、入口以外の全ページから一覧ぶんのJSONが消える。
  * 一覧そのものは分割後も1ファイルで届くので、増えるのは往復であって転送量ではない。
+ * 入口の大きさは check-dist.mjs の ENTRY_BUDGET が見張っている。
  */
 const ConcertHallListPage = lazy(() => import('./pages/ConcertHallListPage'))
 const ConcertHallDetailPage = lazy(() => import('./pages/ConcertHallDetailPage'))

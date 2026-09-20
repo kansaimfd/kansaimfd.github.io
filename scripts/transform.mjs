@@ -196,8 +196,8 @@ export function normalize(facility) {
  * スキーマにフィールドを足すたび除外を書き足すのは忘れるが、
  * こちらの形なら「一覧で使う」と決めたときにしか増えない。
  *
- * **捨てているわけではない**。詳細ページは施設単位の
- * concerthallFacilities.json を読むので、そちらには全フィールドが残る。
+ * **捨てているわけではない**。詳細ページは施設1件ぶんの
+ * src/data/concert/<ID>.json を読むので、そちらには全フィールドが残る。
  * 対応する型は types.ts の ConcertHall（ここを変えたらあちらも変える）。
  */
 const LIST_FACILITY_FIELDS = [

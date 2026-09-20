@@ -89,7 +89,7 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
   **リンク検査が見つけるのは「開かなくなったURL」だけ**で、開くけれど中身が変わった施設
   （休館・移転・貸館終了・料金改定）は見つからないため、別に要る。
   外部アクセスはしないが、ビルドを止める類のものでもないので `ci.yml` には入れない
-- 動いている GitHub Actions はこの3つ（`deploy.yml` は停止中。→ Deployment）
+- 動いている GitHub Actions はこの3つと、main への push で配信する `deploy.yml`（→ Deployment）
 - **Prettier の対象はコードだけ**。`data/` のYAMLと `*.md` は `.prettierignore` で除外している
   （YAMLは桁を揃えたコメントや引用符の使い分けに意味があるため）。
   コード側でも桁揃えを保ちたい箇所には `// prettier-ignore` を置く（`validate.mjs` の `PREF_BOX`）
@@ -160,13 +160,13 @@ React コンポーネント
 
 **ルートは全部分割する。一覧も静的に読まない。** 以前はコンサートホール一覧だけ
 静的に読んでいたが（入口なので1往復を惜しんだ）、その一覧は全ホールぶんのJSONを抱えていて、
-**入口以外から来た人にもまるごと配られていた**。入口チャンクは gzip 95.9KB → 75.0KB になり、
-一覧を見ない利用者（詳細への直リンク・練習場・このサイトについて）はそのぶん軽くなる。
-代わりに入口の表示に1往復増える。
+**入口以外から来た人にもまるごと配られていた**。分割すると、一覧を見ない利用者
+（詳細への直リンク・練習場・このサイトについて）は一覧ぶんのJSONを落とさずに済む。
+代わりに入口の表示に1往復増える。入口の大きさは `check-dist.mjs` の `ENTRY_BUDGET` が止める。
 
 **詳細ページ用は1施設1ファイルに分ける。** 全施設をまとめた1つのJSONを
 静的 import していたころ、`/concert/10` を直接開いた利用者は1施設を見るために
-88施設ぶん（gzip 171KB）を落としていた。`src/datasets/facility.ts` が
+全施設ぶん（当時 gzip 171KB）を落としていた。`src/datasets/facility.ts` が
 `import.meta.glob` で1件ずつ動的に読む（施設1件あたり gzip 約4KB）。
 
 ### 一覧の状態はURLが持つ
@@ -204,9 +204,10 @@ React コンポーネント
 - `scripts/static-pages.mjs` — URLごとの静的HTML（題名・説明・canonical・OGP・構造化データ）と
   sitemap.xml の組み立て。書き出しは `build-static-pages.mjs` が `npm run build` の最後に行う（→ Deployment）
 - `scripts/check-dist.mjs` — 出来た `dist/` を `vite preview` で実際に配って検品する。
-  **デプロイを止めているあいだ、ここが唯一の実物の確認経路**。全URLが200で返り、
-  題名・canonical・noscript の本文がページごとに違うこと、404.html が noindex で
-  canonical を持たないこと、**入口チャンクが gzip 86KB を超えないこと**を見る
+  **デプロイは CI の完了を待たないので、成果物を実際に配ってみる経路はここだけ**。
+  全URLが200で返り、題名・canonical・noscript の本文がページごとに違うこと、
+  404.html が noindex で canonical を持たないこと、
+  **入口チャンクが `ENTRY_BUDGET`（gzip）を超えないこと**を見る
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
 - `scripts/url-audit.mjs` — 「開くが別サイト」の判定（一致率・英語ページ・文字符号化）。
   **通信を持たないので単体でテストできる**（`audit-urls.mjs` が決めているのは月次Issueの中身で、
