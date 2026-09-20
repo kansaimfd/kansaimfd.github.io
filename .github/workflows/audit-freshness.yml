@@ -53,8 +53,10 @@ jobs:
               `${r.URL ? `  - ${r.URL}\n` : ''}`
             ).join('')
 
-            // 既存の Issue を探す。ラベルを作らずに済むよう題名で見分ける
-            const { data: issues } = await github.rest.issues.listForRepo({
+            // 既存の Issue を探す。ラベルを作らずに済むよう題名で見分ける。
+            // **1ページ目だけを見ない**——Issue が100件を超えると見つけ損ね、
+            // 毎月新しい Issue を立ててしまう（使い回すためにこの探索がある）
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
               ...context.repo, state: 'open', per_page: 100,
             })
             const existing = issues.find(i => i.title.startsWith(TITLE_PREFIX))

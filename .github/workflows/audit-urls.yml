@@ -32,8 +32,9 @@ jobs:
 
       - run: npm ci
 
-      # 失敗させない。検査そのものが通らなかったのか、リンクが切れていたのかを
-      # Issue の側で見分けたいので、結果はファイルに落として次のステップで読む
+      # **リンクが切れていても検査自体は成功**（終了コード0）。切れているかどうかは
+      # Issue の側で示したいので、結果はファイルに落として次のステップで読む。
+      # 検査そのものが通らなかったとき（例外）はここで落ち、実行が赤くなる
       - name: リンクを検査する
         run: node scripts/audit-urls.mjs --json > audit.json
 
@@ -52,8 +53,10 @@ jobs:
               `  - ${r.why}${r.title ? ` / title: ${r.title}` : ''}`
             ).join('\n')
 
-            // 既存の Issue を探す。ラベルを作らずに済むよう題名で見分ける
-            const { data: issues } = await github.rest.issues.listForRepo({
+            // 既存の Issue を探す。ラベルを作らずに済むよう題名で見分ける。
+            // **1ページ目だけを見ない**——Issue が100件を超えると見つけ損ね、
+            // 毎月新しい Issue を立ててしまう（使い回すためにこの探索がある）
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
               ...context.repo, state: 'open', per_page: 100,
             })
             const existing = issues.find(i => i.title.startsWith(TITLE_PREFIX))

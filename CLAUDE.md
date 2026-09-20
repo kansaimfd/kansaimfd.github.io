@@ -69,7 +69,9 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
   依存と actions の更新は Dependabot（`.github/dependabot.yml`）が月次でまとめて出す
 - **月次のリンク検査**（`.github/workflows/audit-urls.yml`）が毎月1日に `audit-urls.mjs` を回し、
   結果を Issue にまとめる（題名が `リンク切れ検査:` で始まる Issue を**使い回して更新**する。
-  毎月新しく立てると同じ施設の話が何本も並んで追えなくなる。全件正常になれば自動で閉じる）。
+  毎月新しく立てると同じ施設の話が何本も並んで追えなくなる。全件正常になれば自動で閉じる。
+  探索は `github.paginate` で全ページ見る——1ページ目だけだと Issue が100件を超えたときに
+  見つけ損ね、使い回すはずが毎月新しく立ってしまう）。
   外部アクセスを伴うので `ci.yml` には入れない
 - **月次の鮮度検査**（`.github/workflows/audit-freshness.yml`）が毎月1日に
   `audit-freshness.mjs` を回し、確認から1年を超えた施設と出典の無い施設を Issue にまとめる
