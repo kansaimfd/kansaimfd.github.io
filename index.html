@@ -25,6 +25,21 @@
     />
   </head>
   <body>
+    <!--
+      JS を実行しない閲覧者とクローラに見せる本文。**<body> は他に何も無い。**
+      ビルドが書き出す施設ごとのHTMLでは、ここを施設名・住所・最寄駅・公式サイトに
+      差し替える（scripts/static-pages.mjs の renderNoscript）。
+      この既定の中身は dev サーバーと、差し替えの対象にならない場合に出る
+    -->
+    <noscript>
+      <div class="noscript">
+        <h1>関西音楽施設ディレクトリ</h1>
+        <p>
+          関西のコンサートホールと音楽練習場を、客席数・設備・最寄駅から探せる非公式のディレクトリです。
+        </p>
+        <p>絞り込みと地図の表示には JavaScript が要ります。</p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

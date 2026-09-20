@@ -57,7 +57,11 @@ export default function App() {
         </div>
       </header>
 
-      <main className="site-main" id="main">
+      {/*
+        tabIndex={-1} はページ遷移でここへフォーカスを移すため（ScrollToTop）。
+        キーボードの Tab 順には入らない（-1 なのでプログラムからだけ当たる）
+      */}
+      <main className="site-main" id="main" tabIndex={-1}>
         {/*
           読み込みの失敗を受け止める。**Suspense の外側に置く。**
           ページもデータも遅延読み込みなので、取得に失敗すると例外は描画の

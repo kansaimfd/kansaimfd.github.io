@@ -64,6 +64,9 @@ const escapeHtml = s =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 
+/** index.html の既定の <noscript>。ページごとの本文に差し替える */
+const NOSCRIPT_RE = /<noscript>[\s\S]*?<\/noscript>/
+
 /** <script> の中に置く JSON。`</script>` で閉じられないよう < を逃がす */
 const scriptJson = value => JSON.stringify(value).replace(/</g, '\\u003c')
 
@@ -141,6 +144,31 @@ export function facilityJsonLd(f, kind, url) {
 }
 
 /**
+ * 住所の連結。`src/address.ts` と同じ規則（.mjs から .ts は読めないので写してある）。
+ * 建物名まで出すのは、人が読むための表示だから（ジオコーディング用ではない）
+ */
+function fullAddress(f) {
+  return `${f.都道府県}${f.市区町村}${f.番地以下}${f.建物 ? ` ${f.建物}` : ''}`
+}
+
+/**
+ * JS を実行しない閲覧者・クローラに見せる本文の中身。
+ *
+ * **生成されるHTMLの <body> は `<div id="root">` だけ**で、表示はアプリが描く。
+ * 検索エンジンの多くは JS を実行するが、実行しないクローラ・読み上げ環境・
+ * JS を切っている閲覧者には、施設ページが**まったくの白紙**に見えていた。
+ * 構造化データは <head> にあるので機械には届くが、人が読める文字が1つも無い。
+ */
+function facilityFallback(f) {
+  const access = accessText(f.最寄駅)
+  return {
+    heading: f.施設名,
+    lines: [fullAddress(f), access].filter(Boolean),
+    link: f.URL ? { href: f.URL, label: '公式サイト' } : undefined,
+  }
+}
+
+/**
  * 書き出すページの一覧。
  *
  * 練習場一覧に並ぶ「ホール併設」の練習室は詳細が /concert/:id にあるので、
@@ -154,6 +182,7 @@ export function buildPages({ concert, practice }) {
       name: f.施設名,
       description,
       jsonLd: facilityJsonLd(f, kind, SITE_URL + path),
+      fallback: facilityFallback(f),
       lastmod: f.最終確認日,
     }
   }
@@ -217,6 +246,41 @@ export function renderPage(template, page) {
     .replace(titleRe, () => `<title>${escapeHtml(title)}</title>`)
     .replace(descRe, () => `<meta name="description" content="${escapeHtml(page.description)}" />`)
     .replace(/[ \t]*<\/head>/, end => `${head}${end}`)
+    .replace(NOSCRIPT_RE, () => renderNoscript(page))
+}
+
+/** サイト内の主な行き先。JS が無くても辿れるようにする */
+const NOSCRIPT_NAV = [
+  ['/concert', 'コンサートホール一覧'],
+  ['/practice', '練習場一覧'],
+  ['/about', 'このサイトについて'],
+]
+
+/**
+ * `<noscript>` の中身。**このページで唯一、人が読める本文になりうる場所。**
+ * 施設ページでは施設名・住所・最寄駅・公式サイトを出す（→ facilityFallback）。
+ */
+export function renderNoscript(page) {
+  const fb = page.fallback
+  const lines = [
+    `<h1>${escapeHtml(fb?.heading ?? page.name ?? SITE_NAME)}</h1>`,
+    `<p>${escapeHtml(page.description)}</p>`,
+    ...(fb?.lines ?? []).map(l => `<p>${escapeHtml(l)}</p>`),
+    ...(fb?.link
+      ? [
+          `<p><a href="${escapeHtml(fb.link.href)}" rel="noopener noreferrer">${escapeHtml(fb.link.label)}</a></p>`,
+        ]
+      : []),
+    `<p>絞り込みと地図の表示には JavaScript が要ります。</p>`,
+    `<p>${NOSCRIPT_NAV.map(([href, label]) => `<a href="${href}">${label}</a>`).join(' / ')}</p>`,
+  ]
+  return [
+    '<noscript>',
+    '      <div class="noscript">',
+    ...lines.map(l => `        ${l}`),
+    '      </div>',
+    '    </noscript>',
+  ].join('\n')
 }
 
 /**

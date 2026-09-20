@@ -8,7 +8,7 @@
  * lint も通るので、描画して辿る以外に気づく方法が無い。
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import App from './App'
 import { concerthalls } from './datasets/concerthalls'
@@ -119,6 +119,35 @@ describe('導線', () => {
     const hrefs = new Set(linkHrefs())
     const 抜け = concerthalls.filter(h => !hrefs.has(`/concert/${h.ID}`)).map(h => h.施設名)
     expect(抜け).toEqual([])
+  })
+
+  /**
+   * 画面の中身が入れ替わってもフォーカスは押したリンクに残る。
+   * 読み上げは新しいページに気づかず、Tab の続きも前のページの位置から始まる。
+   * 最初の表示では動かさない（ブラウザのスクロール復元と #main への着地を上書きするため）
+   */
+  it('ページを移るとフォーカスが本文へ移り、最初の表示では動かない', async () => {
+    renderAt('/concert')
+    await screen.findByRole('heading', { level: 1 })
+    expect(document.activeElement).toBe(document.body)
+
+    const detail = screen
+      .getAllByRole('link')
+      .find(a => /^\/concert\/\d+$/.test(a.getAttribute('href') ?? ''))!
+    // リンクの遷移は fireEvent では起きない（React Router のハンドラが受け取らない）。
+    // 実際のクリックと同じ経路になるよう要素の click() を呼ぶ
+    detail.click()
+    await waitFor(() => expect(currentUrl()).toBe(detail.getAttribute('href')))
+    expect(document.activeElement).toBe(document.getElementById('main'))
+  })
+
+  // 絞り込みはクエリに載るだけなので、条件を変えても入力欄からフォーカスを奪わない
+  it('絞り込みではフォーカスを動かさない', () => {
+    renderAt('/concert')
+    const pill = screen.getByRole('button', { name: '大阪府' })
+    pill.focus()
+    fireEvent.click(pill)
+    expect(document.activeElement).toBe(pill)
   })
 
   // 大ホール・中ホールが別々のカードに並ぶと、同じ住所と駅が繰り返されて施設の数が読めない

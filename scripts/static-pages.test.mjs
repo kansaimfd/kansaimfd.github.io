@@ -183,6 +183,34 @@ describe('buildPages', () => {
     )
   })
 
+  // JS を実行しない閲覧者に見せる本文（<body> はほかに何も無い）
+  it('施設ページは JS 無しで読む本文の材料を持つ', () => {
+    const [f] = buildPages({
+      concert: [
+        {
+          ...base,
+          建物: 'やまと郡山城ホール',
+          URL: 'https://example.com/',
+          最寄駅: [{ 駅: '近鉄郡山駅', 駅徒歩: 7 }],
+        },
+      ],
+      practice: [],
+    }).filter(p => p.path === '/concert/10')
+    expect(f.fallback.heading).toBe('テストホール')
+    // 建物名まで出す（人が読むための表示。ジオコーディング用の住所とは別）
+    expect(f.fallback.lines).toEqual([
+      '奈良県大和郡山市北郡山町211-3 やまと郡山城ホール',
+      '近鉄郡山駅から徒歩7分',
+    ])
+    expect(f.fallback.link).toEqual({ href: 'https://example.com/', label: '公式サイト' })
+  })
+
+  it('公式サイトの無い施設ではリンクを持たない', () => {
+    const f = pages.find(p => p.path === '/concert/10')
+    expect(f.fallback.link).toBeUndefined()
+    expect(f.fallback.lines).toEqual(['奈良県大和郡山市北郡山町211-3'])
+  })
+
   it('施設ページは施設名・構造化データ・最終確認日を持つ', () => {
     const concert = pages.find(p => p.path === '/concert/10')
     expect(concert.name).toBe('テストホール')
@@ -241,14 +269,67 @@ describe('renderPage', () => {
     )
   })
 
-  it('構造化データが無いページには script を足さず、本文は変えない', () => {
+  it('構造化データが無いページには script を足さない', () => {
     const plain = renderPage(indexHtml, {
       path: '/about',
       name: 'このサイトについて',
       description: 'd',
     })
     expect(plain).not.toContain('application/ld+json')
-    expect(plain.slice(plain.indexOf('<body>'))).toBe(indexHtml.slice(indexHtml.indexOf('<body>')))
+  })
+
+  // 差し替えるのは <head> と <noscript> だけ。表示はこれまでどおりアプリが描く
+  it('本文は <noscript> のほかを変えない', () => {
+    const body = html.slice(html.indexOf('<body>'))
+    expect(body).toContain('<div id="root"></div>')
+    expect(body.replace(/<noscript>[\s\S]*?<\/noscript>/, '')).toBe(
+      indexHtml.slice(indexHtml.indexOf('<body>')).replace(/<noscript>[\s\S]*?<\/noscript>/, ''),
+    )
+  })
+
+  /**
+   * 生成されるHTMLの <body> は <div id="root"> だけで、表示はアプリが描く。
+   * JS を実行しないクローラ・閲覧者には、施設ページが白紙に見えていた
+   */
+  it('JS が無くても施設名・住所・最寄駅・公式サイトが読める', () => {
+    const withFallback = renderPage(indexHtml, {
+      path: '/concert/10',
+      name: 'テストホール',
+      description: '説明',
+      fallback: {
+        heading: 'テストホール',
+        lines: ['大阪府大阪市北区1-1', '大阪城公園駅から徒歩5分'],
+        link: { href: 'https://example.com/', label: '公式サイト' },
+      },
+    })
+    const noscript = withFallback.match(/<noscript>[\s\S]*?<\/noscript>/)[0]
+    expect(noscript).toContain('<h1>テストホール</h1>')
+    expect(noscript).toContain('大阪府大阪市北区1-1')
+    expect(noscript).toContain('大阪城公園駅から徒歩5分')
+    expect(noscript).toContain('href="https://example.com/"')
+    // JS が無くても他の一覧へ辿れる
+    expect(noscript).toContain('href="/practice"')
+  })
+
+  it('施設に紐付かないページでもページ名と説明を出す', () => {
+    const noscript = renderPage(indexHtml, {
+      path: '/about',
+      name: 'このサイトについて',
+      description: '概要・利用規約',
+    }).match(/<noscript>[\s\S]*?<\/noscript>/)[0]
+    expect(noscript).toContain('<h1>このサイトについて</h1>')
+    expect(noscript).toContain('概要・利用規約')
+  })
+
+  it('本文の差し込みも HTML として逃がす', () => {
+    const noscript = renderPage(indexHtml, {
+      path: '/concert/10',
+      name: 'x',
+      description: 'd',
+      fallback: { heading: '<script>alert(1)</script>', lines: ['a & b'] },
+    }).match(/<noscript>[\s\S]*?<\/noscript>/)[0]
+    expect(noscript).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+    expect(noscript).toContain('a &amp; b')
   })
 
   it('index.html から題名か説明が消えていたら止める', () => {
