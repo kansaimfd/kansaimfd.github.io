@@ -51,9 +51,40 @@ describe('ID', () => {
   it('ファイルが違えば同じIDでもよい', () => {
     const { errors } = validate([
       { file: 'concerthall', records: [施設({ ID: 10 })] },
-      { file: 'practice', records: [施設({ ID: 10 })] },
+      { file: 'practice', records: [施設({ ID: 10, 施設名: 'テストスタジオ' })] },
     ])
     expect(errors).toEqual([])
+  })
+})
+
+/**
+ * 同じ施設が二重に載っていないか。**IDの重複では気づけない。**
+ * 阿倍野区民センターは練習場からコンサートホールへ「移した」もので、
+ * 消し忘れれば一覧に二重に出るうえ、片方だけ更新されて食い違っていく
+ */
+describe('施設名の重複', () => {
+  it('同じファイルの中で重複したら警告', () => {
+    // 1レコード = 1施設。複数ホールの施設は行を分けず 部屋 配列に入れる
+    expect(kindsOf(施設({ ID: 10 }), 施設({ ID: 20 }))).toEqual(['施設名が重複している'])
+  })
+
+  it('ファイルをまたいで重複しても警告', () => {
+    const { warnings } = validate([
+      { file: 'concerthall', records: [施設({ ID: 10 })] },
+      { file: 'practice', records: [施設({ ID: 30 })] },
+    ])
+    expect(warnings.map(w => w.kind)).toEqual(['施設名が重複している'])
+    expect(warnings[0].detail).toMatch(/concerthall ID:10 と同じ名前/)
+  })
+
+  it('空白と全角・半角の違いは同じ名前とみなす', () => {
+    expect(
+      kindsOf(施設({ ID: 10, 施設名: 'ＲＨＹ スタジオ' }), 施設({ ID: 20, 施設名: 'RHYスタジオ' })),
+    ).toEqual(['施設名が重複している'])
+  })
+
+  it('名前が違えば警告しない', () => {
+    expect(kindsOf(施設({ ID: 10 }), 施設({ ID: 20, 施設名: 'べつのホール' }))).toEqual([])
   })
 })
 

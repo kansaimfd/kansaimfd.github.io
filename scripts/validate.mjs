@@ -150,6 +150,16 @@ export function validate(datasets, { stationMaster } = {}) {
   const exempted = []
   /** 路線名: 正規化後 → 実際に使われている表記の集合 */
   const lineVariants = new Map()
+  /**
+   * 施設名 → 最初に現れた場所。**ファイルをまたいで見る。**
+   *
+   * IDの重複はファイルごとに見ているが、同じ施設が両方のファイルに載っていても
+   * IDの名前空間が別なので気づけない。阿倍野区民センターは練習場から
+   * コンサートホールへ「移した」もので、消し忘れれば一覧に二重に出るうえ、
+   * 片方だけ更新されて食い違っていく。同じファイルの中での重複も同じ理由で拾う
+   * （1レコード = 1施設。複数ホールは 部屋 配列に入れる）。
+   */
+  const seenNames = new Map()
 
   for (const { file, records } of datasets) {
     const seenIds = new Map()
@@ -205,6 +215,13 @@ export function validate(datasets, { stationMaster } = {}) {
       if (/(ビル|階|[0-9]+F|B[0-9]+F)/i.test(f.番地以下)) {
         err(`建物名は 建物 フィールドに分けてください: ${f.番地以下}`)
       }
+
+      // ── 施設名の重複（同じファイルの中でも、ファイルをまたいでも）──
+      // ここに来るのは必須フィールドが揃っているときだけなので、施設名は必ずある
+      const nameKey = String(f.施設名).normalize('NFKC').replace(/\s/g, '')
+      const sameName = seenNames.get(nameKey)
+      if (sameName) warn('施設名が重複している', `${sameName.file} ID:${sameName.ID} と同じ名前`)
+      else seenNames.set(nameKey, { file, ID: f.ID })
 
       // ── 施設名かな ──
       // 漢字を含む名前は読みが機械的に決まらないため、五十音順ソートに 施設名かな が要る
