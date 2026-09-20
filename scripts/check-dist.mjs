@@ -38,11 +38,14 @@ const dataDir = resolve(root, 'src/data')
 /**
  * 入口（index.html が直接読む js と css）の上限。gzip 後のバイト数。
  *
- * 現状は js 約74KB + css 約6KB。**一覧のJSONを静的に import すると約20KB増える**ので、
+ * 現状は js 約81KB + css 約5KB。**一覧のJSONを静的に import すると約20KB増える**ので、
  * そこへ戻る前に止まる余裕にしてある。意図して増やすときは、何が増えたのかを
  * コミットメッセージに書いたうえでこの数字を上げる。
+ *
+ * 86KB から上げたのは React 19.3 で、**プロジェクト側の退行ではなく React 自体が太った**
+ * （react-dom の unpacked が 7.32MB → 8.06MB）。入口は 78.3KB から 86.7KB になった。
  */
-const ENTRY_BUDGET = 86 * 1024
+const ENTRY_BUDGET = 90 * 1024
 
 const errors = []
 const fail = msg => errors.push(msg)
