@@ -1,0 +1,113 @@
+# 確認日の鮮度を月次で見る。
+#
+# リンク検査（audit-urls.yml）が見つけるのは「開かなくなったURL」だけで、
+# **開くけれど中身が変わった**施設は見つからない。休館・移転・貸館の終了・
+# 料金改定は告知なく起きるので、確認から間が空いた施設は「正しく見えるが実際とは違う」
+# 状態になりうる。**古い情報は誤りより気づきにくい。**
+#
+# 検査そのものは外部アクセスをしない（YAMLの 出典.確認日 を読むだけ）が、
+# ビルドを止める類のものでもないので ci.yml には入れず、ここで月次に回して
+# Issue に集約する（実行ログは流れていくので、放っておくと誰も見ない）。
+name: Audit freshness
+
+on:
+  schedule:
+    # 毎月1日 10:00 JST（cron はUTC）。リンク検査の1時間後にずらしてある
+    - cron: '0 1 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: 確認日を検査する
+        run: node scripts/audit-freshness.mjs --json > freshness.json
+
+      - name: 結果を Issue にまとめる
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const { stale, missing, total, months, 期限 } = JSON.parse(
+              fs.readFileSync('freshness.json', 'utf8'),
+            )
+            const TITLE_PREFIX = '確認日の鮮度:'
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+
+            const list = (rows) => rows.map(r =>
+              `- [ ] **${r.施設名}**（${r.file} ID:${r.ID}）` +
+              `${r.確認日 ? ` 確認日 ${r.確認日}` : ''}\n` +
+              `${r.URL ? `  - ${r.URL}\n` : ''}`
+            ).join('')
+
+            // 既存の Issue を探す。ラベルを作らずに済むよう題名で見分ける
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo, state: 'open', per_page: 100,
+            })
+            const existing = issues.find(i => i.title.startsWith(TITLE_PREFIX))
+
+            if (stale.length === 0 && missing.length === 0) {
+              core.info(`全${total}件が${months}か月以内に確認済み。Issue は作らない`)
+              if (existing) {
+                await github.rest.issues.createComment({
+                  ...context.repo, issue_number: existing.number,
+                  body: `全${total}件が${months}か月以内の確認になりました。閉じます。\n\n実行: ${run}`,
+                })
+                await github.rest.issues.update({
+                  ...context.repo, issue_number: existing.number, state: 'closed',
+                })
+              }
+              return
+            }
+
+            const body = [
+              `施設 ${total}件のうち、${stale.length + missing.length}件が再確認の対象です。`,
+              ``,
+              `**直し方**: 公式サイトを開いて現在の記載を確かめ、`,
+              `\`data/facilities/*.yaml\` の値と \`出典.確認日\` を更新してください。`,
+              `**値が変わっていなくても確認日は更新します**（「その日時点では正しかった」の記録なので）。`,
+              `貸館を終えていた場合は \`貸館.状態\` を直します（CLAUDE.md の記述ルール）。`,
+              ``,
+              `## ${months}か月より前の確認（${期限} より古い｜${stale.length}件）`,
+              ``,
+              stale.length ? list(stale) : 'なし',
+              ``,
+              `## 出典なし（${missing.length}件）`,
+              ``,
+              `確認日そのものが無いもの。**裏が取れていない**ため、詳細ページには`,
+              `「出典・確認日は未記録です」と出ています。`,
+              ``,
+              missing.length ? list(missing) : 'なし',
+              ``,
+              `---`,
+              `確認済み ${total - stale.length - missing.length}件 / 要再確認 ${stale.length}件 / 出典なし ${missing.length}件`,
+              `（\`Audit freshness\` ワークフローが自動で作成・更新しています。実行: ${run}）`,
+            ].join('\n')
+
+            const title = `${TITLE_PREFIX} 要再確認 ${stale.length}件・出典なし ${missing.length}件`
+
+            if (existing) {
+              // 毎月新しい Issue を立てると、同じ施設の話が何本も並んで追えなくなる
+              await github.rest.issues.update({
+                ...context.repo, issue_number: existing.number, title, body,
+              })
+              core.info(`#${existing.number} を更新しました`)
+            } else {
+              const { data: created } = await github.rest.issues.create({
+                ...context.repo, title, body,
+              })
+              core.info(`#${created.number} を作成しました`)
+            }

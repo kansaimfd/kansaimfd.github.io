@@ -103,6 +103,34 @@ export function freshness(records, today = new Date()) {
   return counts
 }
 
+/**
+ * 確認から間が空いた施設を、古い順に並べて返す。
+ *
+ * `freshness()` が件数を数えるのに対し、こちらは**どの施設か**を返す。
+ * 月次の見直し（audit-freshness.mjs）が Issue に並べるために使う。
+ * 出典が無い施設は「確認日が古い」とは別の問題なので分けて返す。
+ */
+export function staleRecords(datasets, { today = new Date(), months = 12 } = {}) {
+  const 境界 = new Date(today)
+  境界.setMonth(境界.getMonth() - months)
+  const 期限 = 境界.toISOString().slice(0, 10)
+
+  const stale = []
+  const missing = []
+  let total = 0
+  for (const { file, records } of datasets) {
+    for (const r of records) {
+      total += 1
+      const 確認日 = lastCheckedOn(r)
+      if (!確認日) missing.push({ file, ID: r.ID, 施設名: r.施設名, URL: r.URL })
+      else if (確認日 < 期限) stale.push({ file, ID: r.ID, 施設名: r.施設名, URL: r.URL, 確認日 })
+    }
+  }
+  // 古いものから直したいので、確認日の昇順に並べる
+  stale.sort((a, b) => (a.確認日 < b.確認日 ? -1 : a.確認日 > b.確認日 ? 1 : 0))
+  return { stale, missing, total, 期限 }
+}
+
 /** 埋まっていない順に並べた、手を入れる価値のある項目 */
 export function thinnest(coverages, limit = 3) {
   return coverages

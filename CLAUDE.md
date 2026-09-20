@@ -39,6 +39,7 @@ node scripts/build-data.mjs --verbose  # データ検査の警告を全件表示
 node scripts/build-data.mjs --coverage # 項目別の調査カバレッジと確認日の鮮度を表で出す
 node scripts/audit-coordinates.mjs     # 座標を国土地理院のジオコーディングで検算（随時）
 node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへの転用」を検査（月次CIでも回る）
+node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と出典の無い施設を出す（月次CIでも回る）
 ```
 
 **型チェックとテストの前には `npm run data` が要る**。`src/data/*.json` は `.gitignore` 済みで、
@@ -68,7 +69,13 @@ node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへ
   結果を Issue にまとめる（題名が `リンク切れ検査:` で始まる Issue を**使い回して更新**する。
   毎月新しく立てると同じ施設の話が何本も並んで追えなくなる。全件正常になれば自動で閉じる）。
   外部アクセスを伴うので `ci.yml` には入れない
-- 動いている GitHub Actions はこの2つ（`deploy.yml` は停止中。→ Deployment）
+- **月次の鮮度検査**（`.github/workflows/audit-freshness.yml`）が毎月1日に
+  `audit-freshness.mjs` を回し、確認から1年を超えた施設と出典の無い施設を Issue にまとめる
+  （題名が `確認日の鮮度:` で始まる Issue を使い回す。全件新しくなれば自動で閉じる）。
+  **リンク検査が見つけるのは「開かなくなったURL」だけ**で、開くけれど中身が変わった施設
+  （休館・移転・貸館終了・料金改定）は見つからないため、別に要る。
+  外部アクセスはしないが、ビルドを止める類のものでもないので `ci.yml` には入れない
+- 動いている GitHub Actions はこの3つ（`deploy.yml` は停止中。→ Deployment）
 - **Prettier の対象はコードだけ**。`data/` のYAMLと `*.md` は `.prettierignore` で除外している
   （YAMLは桁を揃えたコメントや引用符の使い分けに意味があるため）。
   コード側でも桁揃えを保ちたい箇所には `// prettier-ignore` を置く（`validate.mjs` の `PREF_BOX`）
@@ -180,6 +187,7 @@ React コンポーネント
 - `scripts/static-pages.mjs` — URLごとの静的HTML（題名・説明・canonical・OGP・構造化データ）と
   sitemap.xml の組み立て。書き出しは `build-static-pages.mjs` が `npm run build` の最後に行う（→ Deployment）
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
+- `scripts/audit-freshness.mjs` — 確認日の鮮度の一覧（選び出しは `coverage.mjs` の `staleRecords`）
 - `scripts/build-station-master.mjs` — 駅座標マスタの生成（随時。出力はコミット済み）
 - `data/stations.json` — 関西1,904駅の座標（同名でも事業者が違えば別の駅）。出典: 国土数値情報（鉄道データ）国土交通省
 - `src/data/` — 変換後JSONの出力先（`.gitignore` 済み。ビルドのたびに作り直す）

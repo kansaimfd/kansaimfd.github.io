@@ -5,6 +5,7 @@ import {
   lastCheckedOn,
   padLabel,
   reportCoverage,
+  staleRecords,
   thinnest,
 } from './coverage.mjs'
 
@@ -106,6 +107,60 @@ describe('thinnest', () => {
     expect(result).toHaveLength(2)
     expect(result[0].割合).toBeLessThanOrEqual(result[1].割合)
     expect(result.every(r => r.母数 > 0)).toBe(true)
+  })
+})
+
+describe('staleRecords', () => {
+  const datasets = [
+    {
+      file: 'concerthall',
+      records: [
+        { ID: 10, 施設名: '新しい', 出典: [{ 確認日: '2026-06-01' }] },
+        { ID: 20, 施設名: '古い', 出典: [{ 確認日: '2024-01-10' }] },
+        { ID: 30, 施設名: 'もっと古い', 出典: [{ 確認日: '2023-05-02' }] },
+        { ID: 40, 施設名: '出典なし' },
+      ],
+    },
+  ]
+  const today = new Date('2026-09-18')
+
+  // リンク検査が見つけるのは「開かなくなったURL」だけで、
+  // 開くが中身が変わった施設（休館・移転・貸館終了）は見つからない
+  it('期限より古い確認日の施設を、古い順に返す', () => {
+    const { stale, 期限 } = staleRecords(datasets, { today })
+    expect(期限).toBe('2025-09-18')
+    expect(stale.map(r => r.ID)).toEqual([30, 20])
+    expect(stale[0].確認日).toBe('2023-05-02')
+  })
+
+  // 「確認が古い」と「そもそも裏が取れていない」は別の問題なので分けて出す
+  it('出典が無い施設は別に返す', () => {
+    const { missing, total } = staleRecords(datasets, { today })
+    expect(missing.map(r => r.ID)).toEqual([40])
+    expect(total).toBe(4)
+  })
+
+  // 同じ確認日で順序が入れ替わると、Issue の並びが毎月跳ねる
+  it('確認日が同じなら元の順序のまま、新しいものは後ろへ', () => {
+    const 並び = [
+      {
+        file: 'practice',
+        records: [
+          { ID: 10, 出典: [{ 確認日: '2024-01-10' }] },
+          { ID: 20, 出典: [{ 確認日: '2024-01-10' }] },
+          { ID: 30, 出典: [{ 確認日: '2025-01-01' }] },
+        ],
+      },
+    ]
+    expect(staleRecords(並び, { today }).stale.map(r => r.ID)).toEqual([10, 20, 30])
+  })
+
+  it('期限は月数で変えられる', () => {
+    expect(staleRecords(datasets, { today, months: 1 }).stale.map(r => r.ID)).toEqual([30, 20, 10])
+  })
+
+  it('既定の今日でも動く', () => {
+    expect(staleRecords(datasets).total).toBe(4)
   })
 })
 
