@@ -129,11 +129,17 @@ const freePort = () =>
   })
 
 const port = await freePort()
-const preview = spawn('npx', ['vite', 'preview'], {
-  cwd: root,
-  env: { ...process.env, PORT: String(port) },
-  stdio: 'ignore',
-})
+// **npx 経由で起動しない。** kill が届くのは npx までで、その下の vite が生き残り、
+// npm run check のたびにサーバーが積み上がる。vite を直接の子にして確実に止める
+const preview = spawn(
+  process.execPath,
+  [resolve(root, 'node_modules/vite/bin/vite.js'), 'preview'],
+  {
+    cwd: root,
+    env: { ...process.env, PORT: String(port) },
+    stdio: 'ignore',
+  },
+)
 
 const base = `http://localhost:${port}`
 const sleep = ms => new Promise(r => setTimeout(r, ms))
