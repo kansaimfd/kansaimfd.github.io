@@ -297,10 +297,8 @@ export function flattenHalls(facilities) {
 }
 
 /**
- * 練習場を一覧用に絞る。部屋は一覧が読む項目だけに畳む。
- *
- * 一覧と詳細で同じJSONを配っていたころ、練習場しか見ない利用者にも
- * 出典（施設あたり最大5KB）が全件ぶん届いていた。
+ * 練習場を一覧用に絞る。部屋は一覧が読む項目だけに畳む
+ * （何を残すかは LIST_PRACTICE_FIELDS、分ける理由は src/types.ts の PracticeListItem）。
  */
 export function toPracticeList(facilities) {
   return facilities.map(facility => {

@@ -81,10 +81,9 @@ const facilities = [...readDir('concert'), ...readDir('practice')]
 const pages = buildPages({ concert: readDir('concert'), practice: readDir('practice') })
 
 /**
- * 説明文が名乗る府県と、実際に載っている府県が合っているか。
- *
- * 以前は6府県を名乗りながら和歌山県の施設が1件も無く、検索結果から来た人には
- * 「和歌山があるはず」に見えていた。**足したときも外したときも、ここで気づく。**
+ * 説明文が名乗る府県と、実際に載っている府県が合っているか
+ * （名乗りを実データに合わせる理由は static-pages.mjs の DESCRIBED_PREFS）。
+ * **足したときも外したときも、ここで気づく。**
  */
 const 実データの府県 = [...new Set(facilities.map(f => f.都道府県.replace(/[府県]$/, '')))]
 const 名乗り = [...DESCRIBED_PREFS]
