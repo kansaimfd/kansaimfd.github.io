@@ -363,8 +363,8 @@
 }
 
 .view-toggle__btn--on {
-  border-color: var(--color-navy-700);
-  background: var(--color-navy-700);
+  border-color: var(--color-navy-surface);
+  background: var(--color-navy-surface);
   color: #fff;
 }
 
@@ -412,7 +412,7 @@
   height: 3rem;
   padding: 0 1rem;
   border-bottom: 1px solid var(--pref-chip);
-  background: linear-gradient(180deg, var(--pref-tint) 0%, #fff 100%);
+  background: linear-gradient(180deg, var(--pref-tint) 0%, var(--color-surface) 100%);
 }
 
 .pref-band__dot {
@@ -1195,7 +1195,7 @@ div.map-pin {
 }
 
 .btn--primary {
-  background: var(--color-navy-700);
+  background: var(--color-navy-surface);
   color: #fff;
 }
 

@@ -11,6 +11,13 @@
   --color-navy-700: #1b2e4b;
   --color-navy-800: #152440;
   --color-navy-900: #0f1b30;
+  /*
+   * **面としてのネイビー**（ヘッダー・主ボタン・表示の切り替えの選択中）。
+   * 700 は27か所で**文字色**として使っていて、ダークでは面は暗いまま・
+   * 文字は明るく、と逆へ動く。1つの値では両方を兼ねられないので名前を分ける。
+   * 値はライトでは 700 と同じ。
+   */
+  --color-navy-surface: #1b2e4b;
   --color-gold-400: #d4aa45;
   --color-gold-500: #b8962e;
   /* 図形・大きな文字むけ（クリーム地で 3.6:1）。本文の文字色には薄すぎる */
@@ -137,8 +144,15 @@
   --pref-chip: #c4d8cc;
 }
 
+/*
+ * 奈良だけゴールドが濃い。**アクセントは文字色になる**（府県チップ、カードの見出し、
+ * 表の府県欄）ので、他の5府県と同じ濃さが要る。gold-500 の #b8962e は
+ * 白地で 2.8:1・自分の tint で 2.6:1 しかなく、このファイル自身が
+ * 「500 と 600 は文字以外にしか使わない」と書いているとおりだった。
+ * 値は --color-gold-700 と同じ（文字として読めるゴールドはこれだけ）。
+ */
 [data-pref='奈良県'] {
-  --pref-accent: #b8962e;
+  --pref-accent: #876a1c;
   --pref-tint: #faf4df;
   --pref-chip: #ecd896;
 }
@@ -153,4 +167,145 @@
   --pref-accent: #8a3e3e;
   --pref-tint: #f5e9e9;
   --pref-chip: #d9b8b8;
+}
+
+/*
+ * ── ダークモード ──────────────────────────────────────────
+ *
+ * **値だけを差し替える。役割の名前は変えない。** どの CSS も
+ * `var(--color-text)` `var(--color-surface)` としか書いていないので、
+ * ここで値を入れ替えれば画面全体が付いてくる（色は tokens.css にしか
+ * 書かない、という決まりがそのまま効く）。
+ *
+ * ブランド名のトークン（cream / navy / gold）は**役割の名前として残す**。
+ * 「クリーム」は地色、「サーフェス」はカード・表の面、という対応はダークでも
+ * 同じで、変わるのは値だけ。名前を付け替えると 2,200 行の参照を全部書き換える
+ * ことになり、その差分の中に色の変更が埋もれる。
+ *
+ * **コントラストは contrast.test.ts が両方のテーマで見ている**
+ * （文字は 4.5:1、罫と大きな文字は 3:1）。ここの値を薄くすると落ちる。
+ *
+ * 地図の色（--map-*）も入れ替える。mapStyle.ts は地図を組み立てる直前に
+ * getComputedStyle で読むので、**読んだあとに OS 側の設定を変えても
+ * その地図には追いつかない**（再読み込みで切り替わる）。
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 地と面。面のほうを明るくして、カード・表が地から浮くようにする */
+    --color-cream: #11161f;
+    --color-surface: #1a2130;
+
+    /*
+     * 文字。ライトと同じく3段で、いちばん薄い faint でも地・面の両方で 4.5:1。
+     * 対 --color-cream: text 15.6 / muted 9.5 / faint 7.0
+     */
+    --color-text: #f0eee9;
+    --color-text-muted: #b4bcca;
+    --color-text-faint: #98a1b0;
+
+    /* 罫。暗い地では白を薄く重ねるより、青みを残したほうが濁らない */
+    --color-line: #333c4d;
+    --color-line-soft: #28303e;
+    --color-line-faint: #222a37;
+
+    /*
+     * ネイビー。**面としての navy-surface は暗いまま**（ヘッダーと主ボタンは
+     * 白文字を載せている）。文字としての 700 だけが明るい側へ動く。
+     * 800 は主ボタンのホバーの地なので、これも暗いまま。
+     */
+    --color-navy-50: #1c2636;
+    --color-navy-700: #9fb6d4;
+    --color-navy-800: #131d31;
+    --color-navy-900: #0b1220;
+    --color-navy-surface: #1b2740;
+
+    /*
+     * ゴールド。ライトでは「クリーム地で薄すぎる」ほうが問題だったが、
+     * 暗い地では逆に浮くので、彩度を落として明るさで持たせる。
+     * 400 はネイビーの面の上にしか出ないので触らない。
+     */
+    --color-gold-500: #d9b258;
+    --color-gold-600: #c9a03e;
+    --color-gold-700: #e3c377;
+    --color-gold-tint: #2a2415;
+    --color-gold-chip: #4a3d1c;
+
+    /* 貸館の休止・終了（借りられない） */
+    --color-alert-tint: #3a2a10;
+    --color-alert-line: #7a5c20;
+    --color-alert-text: #f0cd82;
+    --color-alert-tint-soft: #2a1f0c;
+    --color-alert-line-soft: #5c4518;
+    --color-alert-text-soft: #e0bd72;
+
+    /* 休館予定（告知はあるが今は借りられる） */
+    --color-info-tint: #0d2333;
+    --color-info-line: #2b6a8f;
+    --color-info-text: #8ed0f0;
+
+    /* 利用条件（今も貸しているが、借りられる人が限られる） */
+    --color-usage-tint: #1e1a33;
+    --color-usage-line: #5a4a9a;
+    --color-usage-text: #c4b5fd;
+
+    /* 地図。地を沈めて、施設のピン（府県色）だけが前に出る関係は変えない */
+    --map-land: #151a22;
+    --map-green: #1a2419;
+    --map-water: #16222e;
+    --map-building: #1e242e;
+    --map-road: #2a313c;
+    --map-road-casing: #1c222b;
+    --map-motorway: #5c4a20;
+    --map-motorway-casing: #3d3116;
+    --map-rail: #3a4150;
+    --map-boundary: #4a5568;
+    --map-label: #a8b0be;
+    --map-label-strong: #dbe3f0;
+    --map-label-water: #7fa8c8;
+    --map-halo: #11161f;
+
+    --pref-tint: var(--color-navy-50);
+    --pref-chip: #2d3d55;
+  }
+
+  /*
+   * 府県アクセント。**ライトの表をそのまま使えない**——tint は面の上に敷く
+   * 淡い色なので、暗い画面では明るい板が残る。accent は tint の上の文字色に
+   * なるので、府県ごとに 4.5:1 を保つところまで明るくする。
+   */
+  [data-pref='大阪府'] {
+    --pref-accent: #7da2d4;
+    --pref-tint: #1a2433;
+    --pref-chip: #2d3d55;
+  }
+
+  [data-pref='京都府'] {
+    --pref-accent: #c99f84;
+    --pref-tint: #2a211b;
+    --pref-chip: #4a3a2e;
+  }
+
+  [data-pref='兵庫県'] {
+    --pref-accent: #7fc0a6;
+    --pref-tint: #152520;
+    --pref-chip: #274337;
+  }
+
+  [data-pref='奈良県'] {
+    --pref-accent: #d4b25e;
+    --pref-tint: #2a2415;
+    --pref-chip: #4a3d1c;
+  }
+
+  [data-pref='滋賀県'] {
+    --pref-accent: #8ab0d0;
+    --pref-tint: #17222c;
+    --pref-chip: #2b3d4d;
+  }
+
+  [data-pref='和歌山県'] {
+    --pref-accent: #d49090;
+    --pref-tint: #2a1a1a;
+    --pref-chip: #4a2e2e;
+  }
 }
