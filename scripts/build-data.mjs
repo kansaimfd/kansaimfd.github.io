@@ -18,7 +18,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import yaml from 'js-yaml'
+import * as yaml from 'js-yaml'
 import { validate, report } from './validate.mjs'
 import { normalize, flattenHalls, toPracticeList, toHallPracticeList } from './transform.mjs'
 import { reportCoverage } from './coverage.mjs'

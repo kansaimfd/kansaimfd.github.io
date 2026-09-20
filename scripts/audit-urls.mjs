@@ -12,7 +12,7 @@
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import yaml from 'js-yaml'
+import * as yaml from 'js-yaml'
 import { decodeBody, judgePage } from './url-audit.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
