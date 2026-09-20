@@ -37,6 +37,19 @@ const filled = value => value != null && (!Array.isArray(value) || value.length 
 const ratio = (n, total) => (total === 0 ? 0 : Math.round((n / total) * 100))
 
 /**
+ * 全角を2桁、半角を1桁として数えた表示幅。
+ * `padEnd` は文字数で詰めるので、`最寄駅` と `URL` が同じ列に揃わない。
+ */
+const displayWidth = name =>
+  [...name].reduce((n, ch) => n + (/[\u0020-\u007e\uff61-\uff9f]/.test(ch) ? 1 : 2), 0)
+
+/** 項目名を表示幅で揃える。半角1桁ぶんの端数は半角空白で埋める */
+export function padLabel(name, width = 16) {
+  const 不足 = Math.max(0, width - displayWidth(name))
+  return name + '　'.repeat(Math.floor(不足 / 2)) + ' '.repeat(不足 % 2)
+}
+
+/**
  * 1ファイルぶんの項目別カバレッジ。
  * 施設単位と部屋単位で母数が違うので、行に単位を持たせる。
  *
@@ -125,7 +138,7 @@ export function reportCoverage(datasets, { detailed = false, today = new Date() 
     for (const r of c.rows) {
       const 目盛り = '█'.repeat(Math.round(r.割合 / 5)).padEnd(20, '·')
       console.log(
-        `  ${r.名前.padEnd(8, '　')} ${r.単位} ${目盛り} ` +
+        `  ${padLabel(r.名前)} ${r.単位} ${目盛り} ` +
           `${String(r.割合).padStart(3)}%  ${r.記入}/${r.母数}`,
       )
     }

@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fieldCoverage, freshness, lastCheckedOn, reportCoverage, thinnest } from './coverage.mjs'
+import {
+  fieldCoverage,
+  freshness,
+  lastCheckedOn,
+  padLabel,
+  reportCoverage,
+  thinnest,
+} from './coverage.mjs'
 
 const 施設 = (overrides = {}) => ({ ID: 10, 施設名: 'テストホール', ...overrides })
 const row = (result, 名前) => result.rows.find(r => r.名前 === 名前)
@@ -99,6 +106,20 @@ describe('thinnest', () => {
     expect(result).toHaveLength(2)
     expect(result[0].割合).toBeLessThanOrEqual(result[1].割合)
     expect(result.every(r => r.母数 > 0)).toBe(true)
+  })
+})
+
+describe('padLabel', () => {
+  // padEnd は文字数で詰めるので、半角の「URL」と全角の「最寄駅」が同じ列に揃わなかった
+  it('全角と半角が混ざっても表示幅で揃う', () => {
+    const 幅 = s => [...s].reduce((n, ch) => n + (/[\u0020-\u007e]/.test(ch) ? 1 : 2), 0)
+    expect(幅(padLabel('最寄駅'))).toBe(16)
+    expect(幅(padLabel('URL'))).toBe(16)
+    expect(幅(padLabel('楽屋収容人数'))).toBe(16)
+  })
+
+  it('幅に収まらない名前はそのまま返す', () => {
+    expect(padLabel('とても長い項目名です', 4)).toBe('とても長い項目名です')
   })
 })
 
