@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { compareUnknownLast } from './sort'
+import { compareUnknownLast, sortOptions } from './sort'
 
 describe('compareUnknownLast', () => {
   it('分かっている値は向きどおりに並べる', () => {
@@ -29,5 +29,33 @@ describe('compareUnknownLast', () => {
 
   it('未調査どうしは元の順序のまま', () => {
     expect(compareUnknownLast(undefined, undefined, 1)).toBe(0)
+  })
+})
+
+describe('sortOptions', () => {
+  it('キーごとに昇順・降順の両方を作る', () => {
+    expect(sortOptions(['都道府県'])).toEqual([
+      { key: '都道府県', asc: true, label: '都道府県（昇順）' },
+      { key: '都道府県', asc: false, label: '都道府県（降順）' },
+    ])
+  })
+
+  // 「まず選びたい向き」を先に出す。客席数は多い順、徒歩は近い順
+  it('先に出す向きは項目ごとに決まっている', () => {
+    expect(sortOptions(['客席数'])[0]).toEqual({
+      key: '客席数',
+      asc: false,
+      label: '客席数（多い順）',
+    })
+    expect(sortOptions(['最寄駅徒歩'])[0].asc).toBe(true)
+  })
+
+  it('渡した順に並べる', () => {
+    expect(sortOptions(['施設名', '最寄駅徒歩']).map(o => o.key)).toEqual([
+      '施設名',
+      '施設名',
+      '最寄駅徒歩',
+      '最寄駅徒歩',
+    ])
   })
 })

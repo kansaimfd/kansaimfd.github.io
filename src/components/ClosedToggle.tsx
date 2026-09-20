@@ -1,4 +1,5 @@
 import FilterRow from './FilterRow'
+import Pill from './Pill'
 
 interface Props {
   on: boolean
@@ -20,15 +21,7 @@ export default function ClosedToggle({ on, count, onToggle }: Props) {
   if (count === 0) return null
   return (
     <FilterRow label="RENTAL" title="貸館">
-      <button
-        type="button"
-        aria-pressed={on}
-        onClick={onToggle}
-        className={on ? 'pill pill--on' : 'pill'}
-      >
-        {on && <span className="pill__check">✓</span>}
-        貸館終了・閉館も表示（{count}件）
-      </button>
+      <Pill on={on} onClick={onToggle} label={`貸館終了・閉館も表示（${count}件）`} />
     </FilterRow>
   )
 }

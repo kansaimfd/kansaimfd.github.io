@@ -1,8 +1,7 @@
-export interface SortOption<T extends string> {
-  key: T
-  asc: boolean
-  label: string
-}
+import type { SortOption } from '../sort'
+
+// 選択肢の文言は sort.ts が両一覧ぶんまとめて持つ（→ sortOptions）
+export type { SortOption }
 
 interface Props<T extends string> {
   /** **昇順・降順の両方を必ず載せる。** 表の見出しクリックでどちらにもなるため */
