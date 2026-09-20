@@ -77,9 +77,6 @@ export function applyConditions<T>(items: T[], conditions: Condition<T>[]): Filt
  * 大文字・小文字を NFKC で、カタカナとひらがなを `toHiragana` で揃える。
  * 施設名かなはひらがなで書く決まりなので、「ホール」と打った人が
  * 「ほーる」に当たらないと、かなを検索対象に入れた意味が無い。
- *
- * 外部サイトとの照合（audit-urls.mjs）では以前から NFKC で均していたが、
- * 利用者が打つ側は均していなかった。
  */
 const normalize = (s: string): string => toHiragana(s.normalize('NFKC').toLowerCase())
 
