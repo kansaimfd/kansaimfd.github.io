@@ -9,6 +9,8 @@ import { isClosed } from '../rental'
 import {
   PRACTICE_EQUIP_FIELDS,
   filterPractices,
+  knownArea,
+  knownCapacity,
   maxArea,
   maxCapacity,
   practiceDetailPath,
@@ -49,8 +51,9 @@ const SORT_OPTIONS: SortOption<PracticeSortKey>[] = [
   { key: '最寄駅徒歩', asc: false, label: '最寄駅徒歩（遠い順）' },
 ]
 
-/** 定員が1件も入っていないうちは、必ず0件になる絞り込みを見せない */
-const hasCapacityData = practices.some(p => maxCapacity(p) > 0)
+/** 1件も入っていないうちは、必ず0件になる絞り込みを見せない */
+const hasCapacityData = practices.some(p => knownCapacity(p) != null)
+const hasAreaData = practices.some(p => knownArea(p) != null)
 
 const closedCount = practices.filter(p => isClosed(p.貸館)).length
 
@@ -63,8 +66,20 @@ export default function PracticeListPage() {
    */
   const [params, setParams] = useSearchParams()
   const state = useMemo(() => practiceStateFromParams(params), [params])
-  const { query, prefs, city, capacity, station, walk, equip, showClosed, view, sortKey, sortAsc } =
-    state
+  const {
+    query,
+    prefs,
+    city,
+    capacity,
+    area,
+    station,
+    walk,
+    equip,
+    showClosed,
+    view,
+    sortKey,
+    sortAsc,
+  } = state
 
   /**
    * 条件をひとつ変えるたびに履歴をひとつ積む（戻るで直前の絞り込みに戻れる）。
@@ -95,13 +110,14 @@ export default function PracticeListPage() {
       prefs,
       city,
       capacity,
+      area,
       station,
       walk,
       equip,
       showClosed,
     })
     return { ...result, filtered: sortPractices(result.filtered, sortKey, sortAsc) }
-  }, [query, prefs, city, capacity, station, walk, equip, showClosed, sortKey, sortAsc])
+  }, [query, prefs, city, capacity, area, station, walk, equip, showClosed, sortKey, sortAsc])
 
   function togglePref(pref: string) {
     // 府県を変えると選べる市区町村・最寄駅が変わるので、選択済みのものは落とす
@@ -213,6 +229,15 @@ export default function PracticeListPage() {
               suffix="名以上"
               value={capacity}
               onChange={v => update({ capacity: v })}
+            />
+          )}
+          {hasAreaData && (
+            <BoundInput
+              label="AREA"
+              title="面積"
+              suffix="㎡以上"
+              value={area}
+              onChange={v => update({ area: v })}
             />
           )}
           <BoundInput

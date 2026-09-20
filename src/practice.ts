@@ -65,13 +65,26 @@ export function maxArea(p: PracticeListItem): number {
 }
 
 /**
- * 絞り込み用の定員。**分からない場合は 0 ではなく undefined を返す。**
- * 0 に均すと「定員が未調査の施設」と「定員0の施設」が同じ扱いになり、
- * 未調査のまま静かに除外されてしまう（表示用の maxCapacity とはここが違う）。
+ * 絞り込み用の定員・面積。**分からない場合は 0 ではなく undefined を返す。**
+ * 0 に均すと「未調査の施設」と「定員0・面積0の施設」が同じ扱いになり、
+ * 未調査のまま静かに除外されてしまう（表示用の maxCapacity / maxArea とはここが違う）。
  */
-export function knownCapacity(p: PracticeListItem): number | undefined {
-  const known = p.部屋?.map(r => r.定員).filter(v => v != null) ?? []
+type ListRoom = NonNullable<PracticeListItem['部屋']>[number]
+
+function knownMax(
+  p: PracticeListItem,
+  pick: (r: ListRoom) => number | undefined,
+): number | undefined {
+  const known = p.部屋?.map(pick).filter(v => v != null) ?? []
   return known.length > 0 ? Math.max(...known) : undefined
+}
+
+export function knownCapacity(p: PracticeListItem): number | undefined {
+  return knownMax(p, r => r.定員)
+}
+
+export function knownArea(p: PracticeListItem): number | undefined {
+  return knownMax(p, r => r.面積)
 }
 
 export const PRACTICE_EQUIP_FIELDS = [
@@ -113,6 +126,8 @@ export interface PracticeCriteria {
   city: string
   /** 「◯名以上」。空文字は指定なし */
   capacity: string
+  /** 「◯㎡以上」。空文字は指定なし */
+  area: string
   station: string
   /** 「◯分以内」。空文字は指定なし */
   walk: string
@@ -123,7 +138,7 @@ export interface PracticeCriteria {
 
 /**
  * 条件を「合う / 合わない / 判断できない」で並べる（→ filter.ts）。
- * 定員・最寄駅・徒歩分数も未調査がありうるので、設備と同じ扱いにする。
+ * 定員・面積・最寄駅・徒歩分数も未調査がありうるので、設備と同じ扱いにする。
  */
 function practiceConditions(c: PracticeCriteria): Condition<PracticeListItem>[] {
   return [
@@ -133,6 +148,7 @@ function practiceConditions(c: PracticeCriteria): Condition<PracticeListItem>[] 
     { label: '市区町村', match: p => matchOneOf(p.市区町村, c.city ? [c.city] : []) },
     { label: 'フリーワード', match: p => matchText(searchText(p), c.query) },
     { label: '定員', match: p => matchAtLeast(knownCapacity(p), c.capacity) },
+    { label: '面積', match: p => matchAtLeast(knownArea(p), c.area) },
     { label: '最寄駅', match: p => matchAny(stationNames(p), c.station ? [c.station] : []) },
     { label: '駅徒歩', match: p => matchAtMost(knownWalk(p), c.walk) },
     ...PRACTICE_EQUIP_FIELDS.filter(e => c.equip.has(e.key)).map(e => ({
@@ -201,6 +217,7 @@ export function practiceStateFromParams(params: URLSearchParams): PracticePageSt
     prefs: readList(params, 'pref', ALL_PREFS),
     city: readText(params, 'city'),
     capacity: readNumber(params, 'cap'),
+    area: readNumber(params, 'area'),
     station: readText(params, 'station'),
     walk: readNumber(params, 'walk'),
     equip: readSet(params, 'equip', PRACTICE_EQUIP_KEYS),
@@ -217,6 +234,7 @@ export function practiceStateToParams(s: PracticePageState): URLSearchParams {
   writeList(params, 'pref', s.prefs)
   writeText(params, 'city', s.city)
   writeText(params, 'cap', s.capacity)
+  writeText(params, 'area', s.area)
   writeText(params, 'station', s.station)
   writeText(params, 'walk', s.walk)
   writeSet(params, 'equip', s.equip, PRACTICE_EQUIP_KEYS)

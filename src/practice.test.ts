@@ -30,6 +30,7 @@ const NO_CRITERIA: PracticeCriteria = {
   prefs: [],
   city: '',
   capacity: '',
+  area: '',
   station: '',
   walk: '',
   equip: new Set(),
@@ -90,6 +91,26 @@ describe('filterPractices', () => {
     expect(filterPractices(list, criteria({ capacity: '30' })).filtered.map(p => p.ID)).toEqual([
       10,
     ])
+  })
+
+  // 「30㎡で足りるか」も部屋単位の話。定員と同じく最大の部屋で判断する
+  it('面積は最も広い部屋で判断する', () => {
+    const list = [
+      practice({ ID: 10, 部屋: [{ 面積: 20 }, { 面積: 40 }] }),
+      practice({ ID: 20, 部屋: [{ 面積: 20 }] }),
+    ]
+    expect(filterPractices(list, criteria({ area: '30' })).filtered.map(p => p.ID)).toEqual([10])
+  })
+
+  it('面積が未調査の施設は「面積0」として扱わない', () => {
+    const list = [practice({ ID: 10, 部屋: [{ 定員: 10 }] })]
+    const { filtered, unknownExcluded, unknownFields } = filterPractices(
+      list,
+      criteria({ area: '1' }),
+    )
+    expect(filtered).toEqual([])
+    expect(unknownExcluded).toBe(1)
+    expect(unknownFields).toEqual(['面積'])
   })
 
   it('フリーワードは施設名・かな・住所・最寄駅を見る', () => {
@@ -319,6 +340,7 @@ describe('URLとの往復', () => {
       prefs: ['京都府'],
       city: '京都市中京区',
       capacity: '50',
+      area: '30',
       station: '烏丸駅',
       walk: '10',
       equip: new Set(['piano', 'perc']),
@@ -332,6 +354,7 @@ describe('URLとの往復', () => {
       prefs: ['京都府'],
       city: '京都市中京区',
       capacity: '50',
+      area: '30',
       station: '烏丸駅',
       walk: '10',
       equip: new Set(['piano', 'perc']),
