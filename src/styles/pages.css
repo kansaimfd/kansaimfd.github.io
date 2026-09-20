@@ -386,6 +386,20 @@
   margin-top: 0.5rem;
 }
 
+/* プライバシーポリシーの外部サービス一覧。段落と同じ読み心地に揃える */
+.about__list {
+  margin-top: 0.5rem;
+  padding-left: 1.25rem;
+  color: var(--color-text);
+  font-size: var(--fs-base);
+  line-height: 1.8;
+  list-style: disc;
+}
+
+.about__list li + li {
+  margin-top: 0.25rem;
+}
+
 .about__link {
   color: var(--color-gold-700);
   text-decoration: underline;

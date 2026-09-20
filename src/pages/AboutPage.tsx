@@ -81,7 +81,25 @@ export default function AboutPage() {
 
       <section className="about__section">
         <h2>プライバシーポリシー</h2>
-        <p>本サイトは個人情報を収集しません。アクセス解析等も行っていません。</p>
+        <p>
+          本サイトは個人情報を収集しません。アクセス解析・広告・クッキーによる追跡は行っていません。
+        </p>
+        <p>
+          ただし、表示のために次の外部サービスへ通信が発生し、その際に閲覧者のIPアドレスとブラウザの情報が送信されます。各社・各団体での扱いは、それぞれの方針に従います。
+        </p>
+        <ul className="about__list">
+          <li>
+            Google Fonts（fonts.googleapis.com / fonts.gstatic.com）— 本文と見出しの書体の配信。
+            全ページで読み込みます
+          </li>
+          <li>
+            OpenStreetMap Foundation（vector.openstreetmap.org）— 地図のタイルとフォントの配信。
+            地図を表示したときだけ読み込みます
+          </li>
+        </ul>
+        <p>
+          絞り込みの条件はURLに載せているだけで、サーバーには送っていません（本サイトにサーバーはありません）。
+        </p>
       </section>
 
       <section className="about__section">
