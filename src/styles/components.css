@@ -1105,11 +1105,47 @@ div.map-pin {
   outline-offset: 2px;
 }
 
+/*
+ * ピンを押したときのパネル。
+ *
+ * **maplibre は面の白（#fff）を自分の CSS に直書きしている。** 中身の文字は
+ * こちらのトークンなので、ダークでは白い板に白い文字が乗って読めなかった。
+ * 地を --color-surface に差し替えると、カード・表と同じ面になり、
+ * 文字色のトークンがそのまま効く。影は暗い地では見えないので、
+ * 地図から浮かせるのに 1px の罫を足す。
+ */
 .map .maplibregl-popup-content {
   padding: 0;
   overflow: hidden;
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
+  background: var(--color-surface);
   box-shadow: 0 4px 16px rgb(15 27 48 / 0.18);
+}
+
+/*
+ * 座標を指す三角。**向きごとに1辺だけ色を持つ**（残る3辺は transparent で、
+ * それが三角の形を作っている）ので、border-color をまとめて塗ると四角い板になる。
+ * maplibre と同じ組み合わせのまま、色だけ面に合わせる。
+ */
+.map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--color-surface);
+}
+
+.map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--color-surface);
+}
+
+.map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--color-surface);
+}
+
+.map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--color-surface);
 }
 
 .map .maplibregl-popup-close-button {
@@ -1117,6 +1153,11 @@ div.map-pin {
   height: 1.75rem;
   color: var(--color-text-muted);
   font-size: var(--fs-lg);
+}
+
+/* maplibre の既定は黒の5%。暗い面の上では何も起きていないように見える */
+.map .maplibregl-popup-close-button:hover {
+  background-color: var(--color-line-faint);
 }
 
 .map-popup {
