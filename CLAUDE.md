@@ -526,28 +526,23 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
 
 ## Deployment
 
-**現在デプロイは停止している。** リポジトリを private に変更し、GitHub Pages を無効化したうえで、
-`Deploy to GitHub Pages` ワークフローを Actions の画面から手動で停止してある
-（`gh workflow list --all` で `disabled_manually` と表示される）。
-**master に push してもデプロイは走らず**、https://kansaimfd.github.io/ も配信されていない。
+**master への push で GitHub Pages に配信される**（https://kansaimfd.github.io/）。
+`.github/workflows/deploy.yml` が `npm run build` して `dist/` をそのまま Pages に上げる。
+Pages のソースは **GitHub Actions**（`build_type: workflow`）で、ブランチを直に配っているのではない。
 
-`.github/workflows/deploy.yml` はファイルとしては残してある（削除していない）。
-動作確認はローカルの `npm run build` / `npm run preview` で行う。
+**デプロイは CI の完了を待たない。** `ci.yml` と `deploy.yml` は別々に push で起動するので、
+**`npm run check` が落ちている master でも配信される**。壊したまま push しないこと。
 
-**CI は止めていない。** `ci.yml` は active のままで、push と PR で `npm run check` 相当が今も回る。
+**2026-09-20 まで停止していた**（private 化・GitHub Pages の無効化・ワークフローの手動停止）。
+public に戻し、Pages を有効化し、`gh workflow enable "Deploy to GitHub Pages"` で再開した。
+このとき**全コミットの著者・コミッタのメールを GitHub の noreply に書き換えている**
+（public にすると個人のアドレスが誰でも読めるため）。**このリポジトリの `git config user.email` は
+noreply にしてある**ので、commit する際に上書きしないこと（global は個人のアドレスのまま）。
 
-### 再開するときに関係すること
-
-`deploy.yml` とアプリ側の設定は、再開すればそのまま動く状態で残っている。
-
-- **private のままでは GitHub Pages を使えない**（Pages を private リポジトリで配信するには
-  有料プランが要る）。public に戻すか、プランを上げるかの判断が先に要る
-- 手順としては Pages を有効化し、ワークフローを有効に戻す
-  （`gh workflow enable "Deploy to GitHub Pages"`）
 - リポジトリ名が `kansaimfd/kansaimfd.github.io` なので **User Pages となり、
   https://kansaimfd.github.io/ のルートで配信される**（プロジェクトページのようなサブパスは付かない）。
   そのため `vite.config.ts` の `base` と React Router の `basename` はともに **`/`**。
-  **この2つは現在の設定でもそうなっている**ので、デプロイ停止中に変更しないこと
+  配信先を変えない限り、**この2つは触らないこと**
 - **URLごとの静的HTMLはビルドが書き出す**（`scripts/build-static-pages.mjs`）。
   GitHub Pages は SPA のルーティングを知らないので、以前は `index.html` を `404.html` に写して
   直リンクを表示させていたが、**HTTPステータスが404のまま**で検索エンジンには「無いページ」だった。
@@ -558,8 +553,9 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
     （GitHub Pages・Cloudflare Pages・`vite preview` はそうする）。一覧（`/concert`）は同名のディレクトリと
     並ぶので `concert.html` と `concert/index.html` の両方に書いてある。
     **ローカルの preview で全URLが200で返ることは `npm run check:dist` が毎回確かめている**
-    （`scripts/check-dist.mjs`。CI でも回る）。**再開したら本番のURLでも確かめること**——
-    確かめているのは preview の挙動であって、GitHub Pages の挙動ではない
+    （`scripts/check-dist.mjs`。CI でも回る）。**ただし確かめているのは preview の挙動であって、
+    GitHub Pages の挙動ではない**。再開時（2026-09-20）に本番でも全URLが200・題名と canonical が
+    ページごとに違うこと・存在しないURLが noindex の404で返ることを確かめた
   - `404.html` もビルドが書く（`noindex`、canonical なし）。存在しないURLは従来どおりアプリの「見つかりません」を出す
   - 絶対URLは `static-pages.mjs` の `SITE_URL`（`https://kansaimfd.github.io`）と `public/robots.txt` にある。
     **配信先を変えるならこの2か所を直す**
@@ -571,8 +567,8 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
     広めに開いて 1200×630 に切り出す。並べる府県は `static-pages.mjs` の `DESCRIBED_PREFS` と合わせる。
     **画像は CSS 変数を読めないので、`tokens.css` の色やロゴを変えたら原稿を合わせて PNG を作り直す**。
     施設ごとの画像は作らない（施設名はカードの題名に出る。ビルドに日本語フォントと画像生成を抱えるほどの得が無い）
-- **残っている手当て**: 配信を始めたら Search Console に sitemap を登録し、
-  X・Facebook の確認ツールでカードの見え方を確かめる
+- **残っている手当て**: Search Console に sitemap を登録し、
+  X・Facebook の確認ツールでカードの見え方を確かめる（どちらも未着手）
 
 ## Notes
 
