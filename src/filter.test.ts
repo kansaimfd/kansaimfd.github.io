@@ -83,7 +83,7 @@ describe('matchRange', () => {
     expect(matchRange(1000, ['500', '1000'])).toBe('pass')
   })
 
-  /** 客席数は一覧の144ホール中126件しか入っていない。ここを fail に倒すと18件が黙って消える */
+  /** 客席数は一覧のホールの1割ほどに入っていない。ここを fail に倒すとそれが黙って消える */
   it('値が未調査なら判断できない', () => {
     expect(matchRange(undefined, ['500', ''])).toBe('unknown')
     expect(matchRange(null, ['', '1000'])).toBe('unknown')

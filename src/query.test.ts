@@ -72,7 +72,7 @@ describe('readRange', () => {
     expect(readRange(params('seats=500-'), 'seats')).toEqual(['500', ''])
   })
 
-  // 舞台寸法は146ホール中60ホールが小数（いずみホールは 19.4×10.5m）。
+  // 舞台寸法は4割ほどのホールが小数（いずみホールは 19.4×10.5m）。
   // 整数だけにしていたころ、共有されたURLの条件が開いた先で消えていた
   it('小数の指定を読む', () => {
     expect(readRange(params('stagew=16.5-20.8'), 'stagew')).toEqual(['16.5', '20.8'])
