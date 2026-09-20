@@ -165,7 +165,8 @@ export default function ConcertHallListPage() {
       <header className="page-head">
         <p className="page-head__eyebrow">CONCERT HALLS</p>
         <h1 className="page-head__title">コンサートホール一覧</h1>
-        <p className="page-head__lead">関西6府県のホールを客席数・設備・アクセスで比較</p>
+        {/* 府県の数は書かない。載っている府県はデータで変わる（→ options.ts の prefOptions） */}
+        <p className="page-head__lead">関西のホールを客席数・設備・アクセスで比較</p>
       </header>
 
       <FilterPanel

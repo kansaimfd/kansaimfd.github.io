@@ -12,6 +12,8 @@
  *    本文（noscript）まで見て、全ページが同じ index.html に戻っていないことを確かめる。
  * 2. **入口の大きさ**。入口チャンクは一覧の静的 import を剥がして gzip 95.9KB → 75.0KB に
  *    下げたもので、静的 import が1本増えれば黙って戻る。数字で止める。
+ * 3. **説明文が名乗る府県**。載っている施設の府県と食い違えば止める（6府県を名乗りながら
+ *    和歌山県の施設が1件も無い、という状態が続いていた）。
  *
  * 使い方: node scripts/check-dist.mjs（npm run check とCIが呼ぶ）
  */
@@ -21,7 +23,13 @@ import { gzipSync } from 'zlib'
 import { readFileSync, existsSync, readdirSync } from 'fs'
 import { resolve, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
-import { buildPages, pageTitle, SITE_URL } from './static-pages.mjs'
+import {
+  buildPages,
+  DESCRIBED_PREFS,
+  pageTitle,
+  SITE_DESCRIPTION,
+  SITE_URL,
+} from './static-pages.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = resolve(root, 'dist')
@@ -67,7 +75,34 @@ const readDir = kind =>
     .map(f => JSON.parse(readFileSync(join(dataDir, kind, f), 'utf-8')))
     .sort((a, b) => a.ID - b.ID)
 
+const facilities = [...readDir('concert'), ...readDir('practice')]
 const pages = buildPages({ concert: readDir('concert'), practice: readDir('practice') })
+
+/**
+ * 説明文が名乗る府県と、実際に載っている府県が合っているか。
+ *
+ * 以前は6府県を名乗りながら和歌山県の施設が1件も無く、検索結果から来た人には
+ * 「和歌山があるはず」に見えていた。**足したときも外したときも、ここで気づく。**
+ */
+const 実データの府県 = [...new Set(facilities.map(f => f.都道府県.replace(/[府県]$/, '')))]
+const 名乗り = [...DESCRIBED_PREFS]
+const 不足 = 実データの府県.filter(p => !名乗り.includes(p))
+const 余分 = 名乗り.filter(p => !実データの府県.includes(p))
+if (不足.length > 0 || 余分.length > 0) {
+  fail(
+    `説明文の府県がデータと合っていません（static-pages.mjs の DESCRIBED_PREFS）` +
+      `${不足.length ? `\n    載っているのに名乗っていない: ${不足.join('・')}` : ''}` +
+      `${余分.length ? `\n    名乗っているのに1件も無い: ${余分.join('・')}` : ''}`,
+  )
+}
+
+/** dev サーバーだけが読む index.html の控えが、ビルドの差し替えと食い違わないように */
+const 控え = indexHtml.match(/<meta\s+name="description"\s+content="([^"]*)"/)?.[1]
+if (控え !== SITE_DESCRIPTION) {
+  fail(
+    `index.html の description が SITE_DESCRIPTION と違います:\n    ${控え}\n    ${SITE_DESCRIPTION}`,
+  )
+}
 
 /** 404.html は配信側が返すものなので preview では出てこない。ファイルとして確かめる */
 const notFound = existsSync(join(dist, '404.html'))

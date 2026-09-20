@@ -2,6 +2,8 @@
 <!--
   OGP 画像（SNS に URL を貼ったときのカード）の原稿。1200×630。
   これをブラウザで開いて PNG に書き出し、public/ogp.png としてコミットする。
+  **窓の高さを 630 ちょうどにすると、下端の府県の帯（92px）が入らないことがある**
+  （窓の高さと表示領域の高さは一致しない）。広めに開いて 1200×630 に切り出す。
   色は src/styles/tokens.css、マークは public/favicon.svg と同じもの。
   **tokens.css の色を変えたら、ここも合わせて PNG を作り直す**（画像は CSS 変数を読めない）
 -->
@@ -179,8 +181,11 @@
         <span class="card__pref" style="--accent: #6b4a3a">京都</span>
         <span class="card__pref" style="--accent: #2d5a4a">兵庫</span>
         <span class="card__pref" style="--accent: #9a7d25">奈良</span>
+        <!--
+          並べるのは施設のある府県（static-pages.mjs の DESCRIBED_PREFS と同じ）。
+          和歌山の施設は1件も無いので外してある。臙脂（#8a3e3e）は tokens.css に残っている
+        -->
         <span class="card__pref" style="--accent: #3a5a7a">滋賀</span>
-        <span class="card__pref" style="--accent: #8a3e3e">和歌山</span>
       </div>
     </div>
   </body>
