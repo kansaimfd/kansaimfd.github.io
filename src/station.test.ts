@@ -7,7 +7,6 @@ import {
   minWalk,
   stationKind,
   stationLabel,
-  stationLabels,
   stationName,
   stationNames,
   walkLabel,
@@ -129,18 +128,5 @@ describe('stationName', () => {
 
   it('名前が既にバス停と言っていれば重ねない', () => {
     expect(stationName(station({ 駅: '小林バス停' }))).toBe('小林バス停')
-  })
-})
-
-describe('stationLabels', () => {
-  it('駅名から表示名を引けるようにする', () => {
-    const labels = stationLabels([
-      { 最寄駅: [station({ 駅: '新大阪駅' })] },
-      { 最寄駅: [station({ 駅: '出戸バスターミナル', 種別: 'バス停' })] },
-      {},
-    ])
-    expect(labels.get('新大阪駅')).toBe('新大阪駅')
-    expect(labels.get('出戸バスターミナル')).toBe('出戸バスターミナル（バス停）')
-    expect(labels.size).toBe(2)
   })
 })

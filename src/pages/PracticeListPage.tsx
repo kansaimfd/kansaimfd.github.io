@@ -1,8 +1,8 @@
 import { useMemo, Suspense, lazy } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { practices } from '../datasets/practices'
-import { NO_WALK, minWalk, stationLabels, stationNames } from '../station'
-import { ALL_PREFS } from '../pref'
+import { NO_WALK, minWalk } from '../station'
+import { cityOptions, equipOptions, prefOptions, stationOptions } from '../options'
 import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
 import { isClosed } from '../rental'
@@ -49,10 +49,6 @@ const SORT_OPTIONS: SortOption<PracticeSortKey>[] = [
   { key: '最寄駅徒歩', asc: false, label: '最寄駅徒歩（遠い順）' },
 ]
 
-function unique<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr)).sort() as T[]
-}
-
 /** 定員が1件も入っていないうちは、必ず0件になる絞り込みを見せない */
 const hasCapacityData = practices.some(p => maxCapacity(p) > 0)
 
@@ -83,28 +79,15 @@ export default function PracticeListPage() {
     update({ sortKey: next.key, sortAsc: next.asc })
   }
 
-  // データが1件も無い設備は選択肢に出さない。必ず0件になる絞り込みを見せないため
-  const equipOptions = useMemo(
-    () => PRACTICE_EQUIP_FIELDS.filter(e => practices.some(p => e.state(p) !== undefined)),
-    [],
+  // 府県・市区町村・最寄駅・設備の選択肢（→ options.ts）。
+  // データが1件も無い府県・設備は出さない。必ず0件になる絞り込みを見せないため
+  const prefChoices = useMemo(() => prefOptions(practices), [])
+  const equipChoices = useMemo(() => equipOptions(PRACTICE_EQUIP_FIELDS, practices), [])
+  const cities = useMemo(() => cityOptions(practices, prefs, city), [prefs, city])
+  const stations = useMemo(
+    () => stationOptions(practices, prefs, city, station),
+    [prefs, city, station],
   )
-
-  const prefOptions = useMemo(
-    () => ALL_PREFS.filter(p => practices.some(x => x.都道府県 === p)),
-    [],
-  )
-  const cities = useMemo(
-    () =>
-      unique(
-        practices
-          .filter(p => prefs.length === 0 || prefs.includes(p.都道府県))
-          .map(p => p.市区町村),
-      ),
-    [prefs],
-  )
-  const stations = useMemo(() => unique(practices.flatMap(stationNames)), [])
-  // 「出戸バスターミナル」のように名前からは鉄道駅と区別がつかないものがある
-  const stationDisplay = useMemo(() => stationLabels(practices), [])
 
   const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
     const result = filterPractices(practices, {
@@ -121,8 +104,8 @@ export default function PracticeListPage() {
   }, [query, prefs, city, capacity, station, walk, equip, showClosed, sortKey, sortAsc])
 
   function togglePref(pref: string) {
-    // 府県を変えると選べる市区町村が変わるので、選択済みの市区町村は落とす
-    update({ prefs: toggleIn(prefs, pref), city: '' })
+    // 府県を変えると選べる市区町村・最寄駅が変わるので、選択済みのものは落とす
+    update({ prefs: toggleIn(prefs, pref), city: '', station: '' })
   }
 
   const sortTh = (k: PracticeSortKey, label: string, numeric?: boolean) => (
@@ -160,7 +143,7 @@ export default function PracticeListPage() {
         }
       >
         <FilterRow label="PREFECTURE" title="都道府県">
-          {prefOptions.map(pref => {
+          {prefChoices.map(pref => {
             const on = prefs.includes(pref)
             return (
               <button
@@ -183,22 +166,22 @@ export default function PracticeListPage() {
             label="市区町村"
             placeholder="市区町村（すべて）"
             value={city}
-            options={cities}
-            onChange={v => update({ city: v })}
+            groups={cities}
+            // 市区町村を変えると選べる駅も変わる（→ 府県・市区町村・駅の順に狭める）
+            onChange={v => update({ city: v, station: '' })}
           />
           <FilterSelect
             label="最寄駅"
             placeholder="最寄駅（すべて）"
             value={station}
-            options={stations}
-            formatOption={v => stationDisplay.get(v) ?? v}
+            groups={stations}
             onChange={v => update({ station: v })}
           />
         </FilterRow>
 
-        {equipOptions.length > 0 && (
+        {equipChoices.length > 0 && (
           <FilterRow label="EQUIPMENT" title="設備">
-            {equipOptions.map(e => {
+            {equipChoices.map(e => {
               const on = equip.has(e.key)
               return (
                 <button

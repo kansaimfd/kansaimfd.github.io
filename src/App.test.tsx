@@ -282,10 +282,34 @@ describe('絞り込みとURL', () => {
     expect(currentUrl()).toBe('/concert?city=大阪市北区&walk=10')
   })
 
-  it('府県を変えると選び直しの要る市区町村は落とす', () => {
-    renderAt('/concert?city=大阪市北区')
+  /**
+   * 絞り込みは府県 → 市区町村 → 最寄駅の順に狭まる。上を変えたら下は選び直しになるので、
+   * 残したまま必ず0件になる組み合わせ（大阪府＋三宮駅）を作らない
+   */
+  it('府県を変えると市区町村・最寄駅は落とす', () => {
+    renderAt('/concert?city=大阪市北区&station=大阪駅')
     fireEvent.click(screen.getByRole('button', { name: '京都府' }))
     expect(currentUrl()).toBe('/concert?pref=京都府')
+  })
+
+  it('市区町村を変えると最寄駅は落とす', () => {
+    renderAt('/practice?station=三宮駅')
+    fireEvent.change(screen.getByLabelText('市区町村'), { target: { value: '大阪市北区' } })
+    expect(currentUrl()).toBe('/practice?city=大阪市北区')
+  })
+
+  /**
+   * 選択肢は選んだ府県の中だけに絞る。**ただし、いま選ばれている値は範囲の外でも残す。**
+   * URLは手で書き換えられるので、絞り込みには効いているのに選択欄が未選択に見えると
+   * 「0件だがなぜか分からない」画面になる
+   */
+  it('最寄駅の選択肢は選んだ府県の中に絞り、選択中の駅だけは残す', () => {
+    renderAt('/concert?pref=京都府&station=大阪駅')
+    const 最寄駅 = screen.getByLabelText('最寄駅')
+    const 束 = Array.from(最寄駅.querySelectorAll('optgroup')).map(g => g.getAttribute('label'))
+    // 京都府の駅に加えて、選択中の大阪駅がその府県の束として残る
+    expect(束).toEqual(['大阪府', '京都府'])
+    expect((最寄駅 as HTMLSelectElement).value).toBe('大阪駅')
   })
 
   it('表示の切り替えもURLに載る', () => {

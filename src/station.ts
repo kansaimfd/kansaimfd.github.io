@@ -44,18 +44,6 @@ export function stationName(s: Station): string {
   return stationKind(s) === 'バス停' && !namedAsBusStop(s.駅) ? `${s.駅}（バス停）` : s.駅
 }
 
-/**
- * 一覧の絞り込み用に「駅名 → 表示名」を作る。
- * 絞り込みの値は駅名そのもの（データと突き合わせるため）なので、表示だけを差し替える。
- */
-export function stationLabels(facilities: HasStations[]): Map<string, string> {
-  const labels = new Map<string, string>()
-  for (const f of facilities) {
-    for (const s of f.最寄駅 ?? []) labels.set(s.駅, stationName(s))
-  }
-  return labels
-}
-
 /** 路線名。複数路線が同一駅に乗り入れる場合は「・」で連ねる（公式サイトの慣習に合わせる） */
 export function lineLabel(s: Station): string {
   return s.路線?.join('・') ?? ''

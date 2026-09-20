@@ -1,8 +1,8 @@
 import { useMemo, Suspense, lazy } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { concerthalls } from '../datasets/concerthalls'
-import { NO_WALK, minWalk, stationLabels, stationNames } from '../station'
-import { ALL_PREFS } from '../pref'
+import { NO_WALK, minWalk } from '../station'
+import { cityOptions, equipOptions, prefOptions, stationOptions } from '../options'
 import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
 import { isClosed } from '../rental'
@@ -53,10 +53,6 @@ const SORT_OPTIONS: SortOption<HallSortKey>[] = [
   { key: '最寄駅徒歩', asc: false, label: '最寄駅徒歩（遠い順）' },
 ]
 
-function unique(arr: string[]): string[] {
-  return Array.from(new Set(arr)).sort()
-}
-
 const closedCount = concerthalls.filter(h => isClosed(h.貸館)).length
 
 export default function ConcertHallListPage() {
@@ -106,21 +102,16 @@ export default function ConcertHallListPage() {
   }
 
   /**
-   * 市区町村と最寄駅の選択肢。一覧は施設×ホールに平坦化されているので重複する。
-   * 市区町村は選んだ府県の中だけに絞る（府県を選ばずに全部並べると数百件になる）
+   * 府県・市区町村・最寄駅・設備の選択肢（→ options.ts）。
+   * 一覧は施設×ホールに平坦化されているので重複するが、選択肢を作る側で落とす。
    */
-  const cities = useMemo(
-    () =>
-      unique(
-        concerthalls
-          .filter(h => prefs.length === 0 || prefs.includes(h.都道府県))
-          .map(h => h.市区町村),
-      ),
-    [prefs],
+  const prefChoices = useMemo(() => prefOptions(concerthalls), [])
+  const equipChoices = useMemo(() => equipOptions(HALL_EQUIP_FIELDS, concerthalls), [])
+  const cities = useMemo(() => cityOptions(concerthalls, prefs, city), [prefs, city])
+  const stations = useMemo(
+    () => stationOptions(concerthalls, prefs, city, station),
+    [prefs, city, station],
   )
-  const stations = useMemo(() => unique(concerthalls.flatMap(stationNames)), [])
-  // 「出戸バスターミナル」のように名前からは鉄道駅と区別がつかないものがある
-  const stationDisplay = useMemo(() => stationLabels(concerthalls), [])
 
   const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
     const result = filterHalls(concerthalls, {
@@ -191,7 +182,7 @@ export default function ConcertHallListPage() {
         }
       >
         <FilterRow label="PREFECTURE" title="都道府県">
-          {ALL_PREFS.map(pref => {
+          {prefChoices.map(pref => {
             const on = prefs.includes(pref)
             return (
               <button
@@ -199,8 +190,8 @@ export default function ConcertHallListPage() {
                 type="button"
                 data-pref={pref}
                 aria-pressed={on}
-                // 府県を変えると選べる市区町村が変わるので、選択済みの市区町村は落とす
-                onClick={() => update({ prefs: toggleIn(prefs, pref), city: '' })}
+                // 府県を変えると選べる市区町村・最寄駅が変わるので、選択済みのものは落とす
+                onClick={() => update({ prefs: toggleIn(prefs, pref), city: '', station: '' })}
                 className={on ? 'pill pill--on' : 'pill'}
               >
                 {on && <span className="pill__check">✓</span>}
@@ -215,36 +206,38 @@ export default function ConcertHallListPage() {
             label="市区町村"
             placeholder="市区町村（すべて）"
             value={city}
-            options={cities}
-            onChange={v => update({ city: v })}
+            groups={cities}
+            // 市区町村を変えると選べる駅も変わる（→ 府県・市区町村・駅の順に狭める）
+            onChange={v => update({ city: v, station: '' })}
           />
           <FilterSelect
             label="最寄駅"
             placeholder="最寄駅（すべて）"
             value={station}
-            options={stations}
-            formatOption={v => stationDisplay.get(v) ?? v}
+            groups={stations}
             onChange={v => update({ station: v })}
           />
         </FilterRow>
 
-        <FilterRow label="EQUIPMENT" title="設備">
-          {HALL_EQUIP_FIELDS.map(({ key, label }) => {
-            const on = equip.has(key)
-            return (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={on}
-                onClick={() => update({ equip: toggleKey(equip, key) })}
-                className={on ? 'pill pill--equip pill--on' : 'pill pill--equip'}
-              >
-                {on && <span className="pill__check">✓</span>}
-                {label}
-              </button>
-            )
-          })}
-        </FilterRow>
+        {equipChoices.length > 0 && (
+          <FilterRow label="EQUIPMENT" title="設備">
+            {equipChoices.map(({ key, label }) => {
+              const on = equip.has(key)
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => update({ equip: toggleKey(equip, key) })}
+                  className={on ? 'pill pill--equip pill--on' : 'pill pill--equip'}
+                >
+                  {on && <span className="pill__check">✓</span>}
+                  {label}
+                </button>
+              )
+            })}
+          </FilterRow>
+        )}
 
         <ClosedToggle
           on={showClosed}
