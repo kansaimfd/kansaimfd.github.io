@@ -13,7 +13,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **素のCSS** — スタイリング（`src/styles/` のグローバルCSS。CSSフレームワークは使わない）
 - **React Router v7** — クライアントサイドルーティング（`basename="/"`）
 - **MapLibre GL JS + OpenStreetMap のベクトルタイル**（OSMF 配信の Shortbread）— 地図表示
-- **js-yaml** — YAML→JSON変換（ビルドスクリプト内で使用）
+- **js-yaml** — YAML→JSON変換（ビルドスクリプト内で使用）。
+  **5系は既定エクスポートを持たない**ので `import * as yaml from 'js-yaml'` と書く
+  （`import yaml from` だと `yaml` が undefined になり、lint も型チェックも通ったまま実行時に落ちる）
 
 ## Commands
 
