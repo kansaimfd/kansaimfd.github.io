@@ -162,6 +162,27 @@ describe('buildPages', () => {
     ])
   })
 
+  // トップと /concert は同じ一覧を描く。別々の canonical で両方を sitemap に並べると、
+  // 検索エンジンには同じ内容のページが2つあるように見える
+  it('トップは /concert を正規のURLにし、sitemap には載せない', () => {
+    const top = pages.find(p => p.path === '/')
+    expect(top.canonical).toBe('/concert')
+    expect(top.sitemap).toBe(false)
+    expect(buildSitemap(pages)).not.toContain('<loc>https://kansaimfd.github.io/</loc>')
+    expect(buildSitemap(pages)).toContain('<loc>https://kansaimfd.github.io/concert</loc>')
+  })
+
+  it('トップの canonical と og:url は /concert を指す', () => {
+    const html = renderPage(
+      indexHtml,
+      pages.find(p => p.path === '/'),
+    )
+    expect(html).toContain('<link rel="canonical" href="https://kansaimfd.github.io/concert" />')
+    expect(html).toContain(
+      '<meta property="og:url" content="https://kansaimfd.github.io/concert" />',
+    )
+  })
+
   it('施設ページは施設名・構造化データ・最終確認日を持つ', () => {
     const concert = pages.find(p => p.path === '/concert/10')
     expect(concert.name).toBe('テストホール')

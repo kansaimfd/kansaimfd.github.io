@@ -158,7 +158,20 @@ export function buildPages({ concert, practice }) {
     }
   }
   return [
-    { path: '/', name: undefined, description: SITE_DESCRIPTION },
+    /**
+     * トップは `/concert` と**同じコンサートホール一覧を描く**。
+     * 別々の canonical を名乗らせ、両方を sitemap に並べると、
+     * 検索エンジンには同じ内容のページが2つあるように見える。
+     * サイト内のリンク（ヘッダーの導線・詳細ページの「一覧に戻る」）は
+     * どれも `/concert` を指すので、正規のURLはそちらに寄せる。
+     */
+    {
+      path: '/',
+      name: undefined,
+      description: SITE_DESCRIPTION,
+      canonical: '/concert',
+      sitemap: false,
+    },
     ...FIXED_PAGES,
     ...concert.map(f => detail('concert', f, concertDescription(f))),
     ...practice.map(f => detail('practice', f, practiceDescription(f))),
@@ -174,7 +187,8 @@ export function buildPages({ concert, practice }) {
  */
 export function renderPage(template, page) {
   const title = pageTitle(page.name)
-  const url = SITE_URL + page.path
+  // 正規のURLが別にあるページ（トップ）は、canonical も og:url もそちらを指す
+  const url = SITE_URL + (page.canonical ?? page.path)
   const titleRe = /<title>[^<]*<\/title>/
   const descRe = /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/
   if (!titleRe.test(template) || !descRe.test(template)) {
@@ -213,9 +227,14 @@ export function renderNotFound(template) {
   return template.replace(/<head>/, () => '<head>\n    <meta name="robots" content="noindex" />')
 }
 
-/** sitemap.xml。lastmod は出典の最終確認日（施設ページのみ。一覧は日付を持たない） */
+/**
+ * sitemap.xml。lastmod は出典の最終確認日（施設ページのみ。一覧は日付を持たない）。
+ * `sitemap: false` のページは載せない（canonical が別を指しているのに並べると、
+ * 正規化したはずの重複を自分から申告することになる）
+ */
 export function buildSitemap(pages) {
   const urls = pages
+    .filter(p => p.sitemap !== false)
     .map(p => {
       const lastmod = p.lastmod ? `<lastmod>${p.lastmod}</lastmod>` : ''
       return `  <url><loc>${escapeHtml(SITE_URL + p.path)}</loc>${lastmod}</url>`
