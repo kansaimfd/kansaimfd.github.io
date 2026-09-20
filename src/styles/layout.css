@@ -16,7 +16,7 @@
   left: -9999px;
   z-index: 100;
   padding: 0.5rem 1rem;
-  background: var(--color-navy-700);
+  background: var(--color-navy-surface);
   color: #fff;
   font-size: var(--fs-base);
 }
@@ -30,7 +30,7 @@
 /* ── ヘッダー ────────────────────────────────── */
 
 .site-header {
-  background: var(--color-navy-700);
+  background: var(--color-navy-surface);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
 }
 

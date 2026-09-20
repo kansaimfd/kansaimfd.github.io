@@ -14,6 +14,9 @@
  * 3. **説明文が名乗る府県**。載っている施設の府県と食い違えば止める（6府県を名乗りながら
  *    和歌山県の施設が1件も無い、という状態が続いていた）。
  *
+ * **ここは読み書きと段取りだけを持つ。判断は dist-check.mjs にある**
+ * （validate.mjs / build-data.mjs と同じ分け方。門番そのものをテストできるように）。
+ *
  * 使い方: node scripts/check-dist.mjs（npm run check とCIが呼ぶ）
  */
 import { createServer } from 'net'
@@ -22,13 +25,16 @@ import { gzipSync } from 'zlib'
 import { readFileSync, existsSync, readdirSync } from 'fs'
 import { resolve, dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+import { buildPages, DESCRIBED_PREFS, SITE_DESCRIPTION } from './static-pages.mjs'
 import {
-  buildPages,
-  DESCRIBED_PREFS,
-  pageTitle,
-  SITE_DESCRIPTION,
-  SITE_URL,
-} from './static-pages.mjs'
+  checkDescribedPrefs,
+  checkEntrySize,
+  checkIndexDescription,
+  checkNotFound,
+  checkPage,
+  checkSitemap,
+  entryAssetPaths,
+} from './dist-check.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const dist = resolve(root, 'dist')
@@ -47,27 +53,17 @@ const dataDir = resolve(root, 'src/data')
 const ENTRY_BUDGET = 90 * 1024
 
 const errors = []
-const fail = msg => errors.push(msg)
+const fail = msgs => errors.push(...msgs)
 
 /* ── 1. 入口の大きさ ─────────────────────────────────────── */
 
 const indexHtml = readFileSync(join(dist, 'index.html'), 'utf-8')
-const entryAssets = [...indexHtml.matchAll(/(?:src|href)="\/(assets\/[^"]+)"/g)].map(m => m[1])
-if (entryAssets.length === 0) fail('dist/index.html が assets を1つも読んでいません')
-
-let entryBytes = 0
-const sizes = entryAssets.map(asset => {
-  const bytes = gzipSync(readFileSync(join(dist, asset)), { level: 9 }).length
-  entryBytes += bytes
-  return `${asset} ${(bytes / 1024).toFixed(1)}KB`
-})
-if (entryBytes > ENTRY_BUDGET) {
-  fail(
-    `入口が大きくなっています: gzip ${(entryBytes / 1024).toFixed(1)}KB ` +
-      `> 上限 ${(ENTRY_BUDGET / 1024).toFixed(1)}KB（${sizes.join(' / ')}）\n` +
-      `    静的 import が増えていないか確かめてください（一覧も詳細も遅延読み込みです）`,
-  )
-}
+const entryAssets = entryAssetPaths(indexHtml).map(path => ({
+  path,
+  bytes: gzipSync(readFileSync(join(dist, path)), { level: 9 }).length,
+}))
+const entryBytes = entryAssets.reduce((sum, a) => sum + a.bytes, 0)
+fail(checkEntrySize(entryAssets, ENTRY_BUDGET))
 
 /* ── 2. URLごとの静的HTML ────────────────────────────────── */
 
@@ -77,47 +73,22 @@ const readDir = kind =>
     .map(f => JSON.parse(readFileSync(join(dataDir, kind, f), 'utf-8')))
     .sort((a, b) => a.ID - b.ID)
 
-const facilities = [...readDir('concert'), ...readDir('practice')]
-const pages = buildPages({ concert: readDir('concert'), practice: readDir('practice') })
+const concert = readDir('concert')
+const practice = readDir('practice')
+const pages = buildPages({ concert, practice })
 
-/**
- * 説明文が名乗る府県と、実際に載っている府県が合っているか
- * （名乗りを実データに合わせる理由は static-pages.mjs の DESCRIBED_PREFS）。
- * **足したときも外したときも、ここで気づく。**
- */
-const 実データの府県 = [...new Set(facilities.map(f => f.都道府県.replace(/[府県]$/, '')))]
-const 名乗り = [...DESCRIBED_PREFS]
-const 不足 = 実データの府県.filter(p => !名乗り.includes(p))
-const 余分 = 名乗り.filter(p => !実データの府県.includes(p))
-if (不足.length > 0 || 余分.length > 0) {
-  fail(
-    `説明文の府県がデータと合っていません（static-pages.mjs の DESCRIBED_PREFS）` +
-      `${不足.length ? `\n    載っているのに名乗っていない: ${不足.join('・')}` : ''}` +
-      `${余分.length ? `\n    名乗っているのに1件も無い: ${余分.join('・')}` : ''}`,
-  )
-}
-
-/** dev サーバーだけが読む index.html の控えが、ビルドの差し替えと食い違わないように */
-const 控え = indexHtml.match(/<meta\s+name="description"\s+content="([^"]*)"/)?.[1]
-if (控え !== SITE_DESCRIPTION) {
-  fail(
-    `index.html の description が SITE_DESCRIPTION と違います:\n    ${控え}\n    ${SITE_DESCRIPTION}`,
-  )
-}
-
-/** 404.html は配信側が返すものなので preview では出てこない。ファイルとして確かめる */
-const notFound = existsSync(join(dist, '404.html'))
-  ? readFileSync(join(dist, '404.html'), 'utf-8')
-  : ''
-if (!notFound) fail('dist/404.html がありません')
-else {
-  if (!/<meta name="robots" content="noindex"/.test(notFound)) {
-    fail('404.html に noindex がありません（無いページが検索結果に出ます）')
-  }
-  if (/rel="canonical"/.test(notFound)) {
-    fail('404.html に canonical があります（無いページがトップの複製に見えます）')
-  }
-}
+fail(
+  checkDescribedPrefs(
+    [...concert, ...practice].map(f => f.都道府県),
+    DESCRIBED_PREFS,
+  ),
+)
+fail(checkIndexDescription(indexHtml, SITE_DESCRIPTION))
+fail(
+  checkNotFound(
+    existsSync(join(dist, '404.html')) ? readFileSync(join(dist, '404.html'), 'utf-8') : '',
+  ),
+)
 
 const freePort = () =>
   new Promise((ok, ng) => {
@@ -157,36 +128,18 @@ try {
   }
   if (!up) throw new Error(`vite preview が ${base} で立ち上がりませんでした`)
 
-  const titleOf = html => html.match(/<title>([^<]*)<\/title>/)?.[1]
-  const canonicalOf = html => html.match(/<link rel="canonical" href="([^"]+)"/)?.[1]
-
   for (const page of pages) {
     const res = await fetch(base + page.path)
-    if (res.status !== 200) {
-      fail(`${page.path} が ${res.status} で返りました（静的HTMLが届いていません）`)
-      continue
-    }
-    const html = await res.text()
-    const expected = pageTitle(page.name)
-    if (titleOf(html) !== expected) {
-      fail(`${page.path} の題名が違います: ${titleOf(html)} ≠ ${expected}`)
-    }
-    const canonical = SITE_URL + (page.canonical ?? page.path)
-    if (canonicalOf(html) !== canonical) {
-      fail(`${page.path} の canonical が違います: ${canonicalOf(html)} ≠ ${canonical}`)
-    }
-    // 施設ページは noscript に施設名が出る（JS を実行しない相手に見える唯一の本文）
-    if (page.fallback && !html.includes(`<h1>${page.fallback.heading}</h1>`)) {
-      fail(`${page.path} の noscript に施設名がありません`)
-    }
+    fail(checkPage(page, res.status, res.status === 200 ? await res.text() : ''))
   }
 
-  // sitemap も配られていること（robots.txt が指している先）
   const sitemap = await fetch(base + '/sitemap.xml')
-  const xml = sitemap.ok ? await sitemap.text() : ''
-  const listed = [...xml.matchAll(/<loc>/g)].length
-  const expected = pages.filter(p => p.sitemap !== false).length
-  if (listed !== expected) fail(`sitemap.xml の件数が違います: ${listed} ≠ ${expected}`)
+  fail(
+    checkSitemap(
+      sitemap.ok ? await sitemap.text() : '',
+      pages.filter(p => p.sitemap !== false).length,
+    ),
+  )
 } finally {
   preview.kill()
 }

@@ -11,8 +11,10 @@ name: Audit URLs
 
 on:
   schedule:
-    # 毎月1日 09:00 JST（cron はUTC）
-    - cron: '0 0 1 * *'
+    # 毎月1日 09:17 JST（cron はUTC）。**正時ちょうどを避ける**——GitHub の
+    # スケジュールは 0分 に世界中の実行が集中し、数十分遅れるか落とされる。
+    # 月次なので遅れても実害は小さいが、ずらすだけで済む
+    - cron: '17 0 1 * *'
   workflow_dispatch:
 
 permissions:

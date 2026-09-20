@@ -7,6 +7,8 @@ import {
   filterPractices,
   maxArea,
   maxCapacity,
+  practiceEquipFields,
+  PRACTICE_EQUIP_FIELDS,
   practiceStateFromParams,
   practiceStateToParams,
   sortPractices,
@@ -381,5 +383,36 @@ describe('URLとの往復', () => {
       sortKey: '最寄駅徒歩',
       sortAsc: true,
     })
+  })
+})
+
+/**
+ * 一覧の表は、見出しと中身をこの関数が返す1本の配列から出す（→ PracticeListPage）。
+ * 以前は添字で引いていたので、設備を並べ替えると見出しと中身が静かに入れ替わった。
+ */
+describe('practiceEquipFields', () => {
+  it('渡したキーの順で返す（表の列の並びになる）', () => {
+    expect(practiceEquipFields(['piano', 'wind', 'perc']).map(f => f.key)).toEqual([
+      'piano',
+      'wind',
+      'perc',
+    ])
+  })
+
+  it('配列の並びではなくキーで引く', () => {
+    // 定義の並びは piano → wind → perc → cembalo。逆から頼んでも取り違えない
+    expect(practiceEquipFields(['cembalo', 'piano']).map(f => f.badge)).toEqual([
+      'チェンバロ',
+      'ピアノ',
+    ])
+  })
+
+  it('返すのは定義そのもの（見出しと中身が同じ1件から出る）', () => {
+    const [piano] = practiceEquipFields(['piano'])
+    expect(piano).toBe(PRACTICE_EQUIP_FIELDS.find(f => f.key === 'piano'))
+  })
+
+  it('一部だけを頼める（表はチェンバロを載せない）', () => {
+    expect(practiceEquipFields([])).toEqual([])
   })
 })

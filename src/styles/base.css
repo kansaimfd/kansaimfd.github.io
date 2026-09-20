@@ -31,6 +31,12 @@ ol {
 
 html {
   -webkit-text-size-adjust: 100%;
+  /*
+   * **ブラウザが描く部分にもテーマを伝える。** 絞り込みは select と input で
+   * できているが、これが無いとダークでもそこだけ白い部品のまま残る
+   * （スクロールバーも同じ）。tokens.css の色は自分で描く部分にしか効かない。
+   */
+  color-scheme: light dark;
 }
 
 body {

@@ -12,8 +12,9 @@ name: Audit freshness
 
 on:
   schedule:
-    # 毎月1日 10:00 JST（cron はUTC）。リンク検査の1時間後にずらしてある
-    - cron: '0 1 1 * *'
+    # 毎月1日 10:17 JST（cron はUTC）。リンク検査の1時間後にずらしてある。
+    # 正時ちょうどを避ける理由は audit-urls.yml と同じ
+    - cron: '17 1 1 * *'
   workflow_dispatch:
 
 permissions:

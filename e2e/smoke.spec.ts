@@ -60,6 +60,50 @@ test('施設ページを直接開ける', async ({ page }) => {
 })
 
 /**
+ * 練習場側。**一覧も詳細もコンサートホールとは別のチャンク**なので、片方が
+ * 届かなくなってもここを踏まなければ気づけない（ルートも詳細データも動的 import で、
+ * check-dist.mjs が見ているのは200と <head> まで）。
+ * 実際このスモークは6回とも /concert 系を開いていて、練習場は本番ビルドで
+ * 一度も開かれていなかった。
+ */
+test('練習場一覧が描ける', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/practice')
+
+  await expect(page.getByRole('heading', { name: '練習場一覧', level: 1 })).toBeVisible()
+  await expect(page.locator('.facility-card').first()).toBeVisible()
+  expect(await page.locator('.facility-card').count()).toBeGreaterThan(10)
+  expect(errors).toEqual([])
+})
+
+/**
+ * 一覧から詳細へ。**行き先は2種類ある**——練習場一覧には、コンサートホール施設に
+ * 併設された練習室も並び、そちらのカードは /concert/:id を指す（→ practiceDetailPath）。
+ * どちらに当たっても、押した施設の見出しが出ることを見る
+ */
+test('練習場一覧から施設の詳細ページへ行ける', async ({ page }) => {
+  const errors = collectErrors(page)
+  await page.goto('/practice')
+
+  const firstCard = page.locator('.facility-card').first()
+  const name = await firstCard.locator('.facility-card__name').innerText()
+  await firstCard.locator('.facility-card__name').click()
+
+  await expect(page.getByRole('heading', { name, level: 1 })).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+/** 練習場ページへの直リンク。URLごとの静的HTMLは練習場ぶんも書き出している */
+test('練習場ページを直接開ける', async ({ page }) => {
+  const errors = collectErrors(page)
+  const response = await page.goto('/practice/10')
+
+  expect(response?.status()).toBe(200)
+  await expect(page.locator('.detail-head__title')).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+/**
  * 地図。maplibre-gl は**バンドラを通したときにワーカーのURLが解決できず**、
  * 開発では動いても本番ビルドでだけ落ちうる（createMap.ts の worker&url がそれ）。
  * WebGL が要るので、ここでしか確かめられない。

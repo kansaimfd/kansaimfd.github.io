@@ -120,6 +120,27 @@ export const PRACTICE_EQUIP_FIELDS = [
   },
 ] as const
 
+/** 設備の並びを表す型。`PRACTICE_EQUIP_FIELDS` の `key` から作る */
+export type PracticeEquipField = (typeof PRACTICE_EQUIP_FIELDS)[number]
+export type PracticeEquipKey = PracticeEquipField['key']
+
+/**
+ * 設備をキーで引く。**位置（添字）で引かせないために置いてある。**
+ *
+ * 一覧の表は見出しを直書きし、中身を `PRACTICE_EQUIP_FIELDS[0]` `[1]` `[2]` と
+ * 添字で引いていた。配列を並べ替えたり途中に1つ挟んだりすると、
+ * **見出しと中身が静かに入れ替わる**（型チェックも lint もテストも止めない）。
+ * キーで引けば、綴りの誤りはその場で型が弾き、並べ替えても中身は付いてくる。
+ *
+ * 返す順は渡したキーの順。見出しと中身を**同じ1本の配列から**出せるようにするため。
+ */
+export function practiceEquipFields(
+  keys: readonly PracticeEquipKey[],
+): readonly PracticeEquipField[] {
+  // キーの型が上の配列から作られているので、見つからないことはない
+  return keys.map(key => PRACTICE_EQUIP_FIELDS.find(f => f.key === key)!)
+}
+
 export interface PracticeCriteria {
   query: string
   prefs: string[]
