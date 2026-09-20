@@ -197,11 +197,16 @@
 
     /*
      * 文字。ライトと同じく3段で、いちばん薄い faint でも地・面の両方で 4.5:1。
-     * 対 --color-cream: text 15.6 / muted 9.5 / faint 7.0
+     * 対 --color-cream: text 16.5 / muted 11.9 / faint 8.5
+     *
+     * **青みは地と罫だけに残す。** 以前は3段とも青寄りの灰
+     * （muted #b4bcca / faint #98a1b0）で、暗い地の上では白ではなく
+     * 「青みがかった白」に見え、比の数字ほど読みやすくなかった。
+     * 今は text の温かい白に寄せた無彩色にして、そのぶん明るくしてある。
      */
-    --color-text: #f0eee9;
-    --color-text-muted: #b4bcca;
-    --color-text-faint: #98a1b0;
+    --color-text: #f6f4f0;
+    --color-text-muted: #d3d1cc;
+    --color-text-faint: #b3b1ac;
 
     /* 罫。暗い地では白を薄く重ねるより、青みを残したほうが濁らない */
     --color-line: #333c4d;
@@ -214,7 +219,13 @@
      * 800 は主ボタンのホバーの地なので、これも暗いまま。
      */
     --color-navy-50: #1c2636;
-    --color-navy-700: #9fb6d4;
+    /*
+     * 文字としてのネイビー。**施設名がこれ**（カードの見出し・詳細の題名・
+     * 地図のポップアップ）。暗い地では青みがそのまま「くすみ」に見えるので、
+     * 色味だけ残して明るさは白のすぐ手前まで上げる。面の上で 12.0:1 で、
+     * 本文の text（14.7）と muted（10.6）のあいだに入る。
+     */
+    --color-navy-700: #d6dfec;
     --color-navy-800: #131d31;
     --color-navy-900: #0b1220;
     --color-navy-surface: #1b2740;
