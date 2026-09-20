@@ -22,7 +22,7 @@ export default function AboutPage() {
         <p>
           本サイトのソースコードは{' '}
           <a
-            href="https://github.com/kansaimfd/kansaimfd.github.io/blob/master/LICENSE"
+            href="https://github.com/kansaimfd/kansaimfd.github.io/blob/main/LICENSE"
             target="_blank"
             rel="noopener noreferrer"
             className="about__link"
@@ -34,7 +34,7 @@ export default function AboutPage() {
         <p>
           掲載している施設データは{' '}
           <a
-            href="https://github.com/kansaimfd/kansaimfd.github.io/blob/master/data/LICENSE.md"
+            href="https://github.com/kansaimfd/kansaimfd.github.io/blob/main/data/LICENSE.md"
             target="_blank"
             rel="noopener noreferrer"
             className="about__link"
@@ -106,7 +106,7 @@ export default function AboutPage() {
         <h2>コントリビューション</h2>
         <p>施設データの追加・修正にご協力いただける方を歓迎しています。</p>
         <a
-          href="https://github.com/kansaimfd/kansaimfd.github.io/blob/master/CONTRIBUTING.md"
+          href="https://github.com/kansaimfd/kansaimfd.github.io/blob/main/CONTRIBUTING.md"
           target="_blank"
           rel="noopener noreferrer"
           className="about__link about__link--block"

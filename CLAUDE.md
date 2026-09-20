@@ -526,12 +526,12 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
 
 ## Deployment
 
-**master への push で GitHub Pages に配信される**（https://kansaimfd.github.io/）。
+**main への push で GitHub Pages に配信される**（https://kansaimfd.github.io/）。
 `.github/workflows/deploy.yml` が `npm run build` して `dist/` をそのまま Pages に上げる。
 Pages のソースは **GitHub Actions**（`build_type: workflow`）で、ブランチを直に配っているのではない。
 
 **デプロイは CI の完了を待たない。** `ci.yml` と `deploy.yml` は別々に push で起動するので、
-**`npm run check` が落ちている master でも配信される**。壊したまま push しないこと。
+**`npm run check` が落ちている main でも配信される**。壊したまま push しないこと。
 
 **2026-09-20 まで停止していた**（private 化・GitHub Pages の無効化・ワークフローの手動停止）。
 public に戻し、Pages を有効化し、`gh workflow enable "Deploy to GitHub Pages"` で再開した。
