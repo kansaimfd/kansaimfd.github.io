@@ -2,6 +2,8 @@ import type { ConcertHall, HallType, Availability } from './types'
 import type { ViewMode } from './components/ViewToggle'
 import {
   applyConditions,
+  matchAny,
+  matchAtMost,
   matchAvailability,
   matchOneOf,
   matchRange,
@@ -19,6 +21,7 @@ import {
   readFlag,
   writeFlag,
   readList,
+  readNumber,
   readRange,
   readSet,
   readSort,
@@ -92,6 +95,10 @@ export const HALL_EQUIP_FIELDS = [
 export interface HallCriteria {
   query: string
   prefs: string[]
+  city: string
+  station: string
+  /** 「◯分以内」。空文字は指定なし */
+  walk: string
   hallTypes: HallType[]
   seats: Range
   stageW: Range
@@ -115,7 +122,10 @@ function hallConditions(c: HallCriteria): Condition<ConcertHall>[] {
     // 貸館の状態・都道府県・施設名・住所は必ず判断できるので、未調査にはならない
     { label: '貸館', match: h => matchRentable(h.貸館, c.showClosed) },
     { label: '都道府県', match: h => matchOneOf(h.都道府県, c.prefs) },
+    { label: '市区町村', match: h => matchOneOf(h.市区町村, c.city ? [c.city] : []) },
     { label: 'フリーワード', match: h => matchText(searchText(h), c.query) },
+    { label: '最寄駅', match: h => matchAny(stationNames(h), c.station ? [c.station] : []) },
+    { label: '駅徒歩', match: h => matchAtMost(knownWalk(h), c.walk) },
     { label: 'ホール種別', match: h => matchOneOf(h.ホール種別, c.hallTypes) },
     { label: '客席数', match: h => matchRange(h.客席数, c.seats) },
     { label: '舞台幅', match: h => matchRange(h.舞台幅, c.stageW) },
@@ -204,12 +214,16 @@ const HALL_EQUIP_KEYS = HALL_EQUIP_FIELDS.map(e => e.key)
  * URLから一覧の状態を読む。
  * 府県・ホール種別・設備は**知っている値だけ**を通す（手で書き換えられるため）。
  * フリーワードは何でも通す（絞り込みの結果が0件になるだけで、誤解は生まない）。
+ * 市区町村・最寄駅はデータ側にしか一覧が無いのでそのまま通す（練習場一覧と同じ扱い）。
  */
 export function hallStateFromParams(params: URLSearchParams): HallPageState {
   const { key, asc } = readSort(params, HALL_SORT_KEYS, '施設名')
   return {
     query: readText(params, 'q'),
     prefs: readList(params, 'pref', ALL_PREFS),
+    city: readText(params, 'city'),
+    station: readText(params, 'station'),
+    walk: readNumber(params, 'walk'),
     hallTypes: readList(params, 'type', ALL_HALL_TYPES),
     seats: readRange(params, 'seats'),
     stageW: readRange(params, 'stagew'),
@@ -226,6 +240,9 @@ export function hallStateToParams(s: HallPageState): URLSearchParams {
   const params = new URLSearchParams()
   writeText(params, 'q', s.query)
   writeList(params, 'pref', s.prefs)
+  writeText(params, 'city', s.city)
+  writeText(params, 'station', s.station)
+  writeText(params, 'walk', s.walk)
   writeList(params, 'type', s.hallTypes)
   writeRange(params, 'seats', s.seats)
   writeRange(params, 'stagew', s.stageW)

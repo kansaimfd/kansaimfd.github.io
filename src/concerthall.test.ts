@@ -29,6 +29,9 @@ function hall(overrides: Partial<ConcertHall> & { ID: number }): ConcertHall {
 const NO_CRITERIA: HallCriteria = {
   query: '',
   prefs: [],
+  city: '',
+  station: '',
+  walk: '',
   hallTypes: [],
   seats: ['', ''],
   stageW: ['', ''],
@@ -59,6 +62,42 @@ describe('filterHalls', () => {
     expect(shown.filtered.map(h => h.ID)).toEqual([10, 20, 30, 40, 50])
     // 隠したのは状態が分かっているからで、未調査のせいではない
     expect(filterHalls(halls, NO_CRITERIA).unknownExcluded).toBe(0)
+  })
+
+  // 練習場一覧にはあったのにコンサートホール側だけ無かった条件（要求仕様にもあった）
+  it('市区町村で絞り込める', () => {
+    const halls = [
+      hall({ ID: 10, 市区町村: '大阪市北区' }),
+      hall({ ID: 20, 市区町村: '大阪市中央区' }),
+    ]
+    expect(filterHalls(halls, criteria({ city: '大阪市北区' })).filtered.map(h => h.ID)).toEqual([
+      10,
+    ])
+  })
+
+  it('最寄駅で絞り込み、駅の記録が無いものは未調査として数える', () => {
+    const halls = [
+      hall({ ID: 10, 最寄駅: [{ 駅: '大阪城公園駅', 駅徒歩: 5 }] }),
+      hall({ ID: 20, 最寄駅: [{ 駅: '西梅田駅', 駅徒歩: 3 }] }),
+      hall({ ID: 30 }),
+    ]
+    const result = filterHalls(halls, criteria({ station: '大阪城公園駅' }))
+    expect(result.filtered.map(h => h.ID)).toEqual([10])
+    expect(result.unknownExcluded).toBe(1)
+    expect(result.unknownFields).toEqual(['最寄駅'])
+  })
+
+  it('徒歩◯分以内で絞り込み、分数が未調査のものは開示する', () => {
+    const halls = [
+      hall({ ID: 10, 最寄駅: [{ 駅: 'A駅', 駅徒歩: 5 }] }),
+      hall({ ID: 20, 最寄駅: [{ 駅: 'B駅', 駅徒歩: 15 }] }),
+      // 駅はあるが分数が分からない。「10分より遠い」とは言えない
+      hall({ ID: 30, 最寄駅: [{ 駅: 'C駅' }] }),
+    ]
+    const result = filterHalls(halls, criteria({ walk: '10' }))
+    expect(result.filtered.map(h => h.ID)).toEqual([10])
+    expect(result.unknownExcluded).toBe(1)
+    expect(result.unknownFields).toEqual(['駅徒歩'])
   })
 
   it('府県は選んだもののどれかに当たれば残す', () => {
@@ -463,6 +502,9 @@ describe('URLとの往復', () => {
     const params = hallStateToParams({
       query: 'ホール',
       prefs: ['大阪府', '兵庫県'],
+      city: '大阪市北区',
+      station: '大阪城公園駅',
+      walk: '10',
       hallTypes: ['音楽専用'],
       seats: ['500', '1200'],
       stageW: ['', '20'],
@@ -476,6 +518,9 @@ describe('URLとの往復', () => {
     expect(hallStateFromParams(params)).toEqual({
       query: 'ホール',
       prefs: ['大阪府', '兵庫県'],
+      city: '大阪市北区',
+      station: '大阪城公園駅',
+      walk: '10',
       hallTypes: ['音楽専用'],
       seats: ['500', '1200'],
       stageW: ['', '20'],

@@ -241,6 +241,24 @@ describe('絞り込みとURL', () => {
     expect(screen.getByText(String(大阪の件数))).toBeDefined()
   })
 
+  // 練習場一覧にしか無かった条件をコンサートホール一覧にも足した。
+  // 導線としてそこにあり、押した結果がURLに載ることまでを見る
+  it('コンサートホール一覧でも市区町村・最寄駅・徒歩で絞り込める', () => {
+    renderAt('/concert')
+
+    fireEvent.change(screen.getByLabelText('市区町村'), { target: { value: '大阪市北区' } })
+    expect(currentUrl()).toBe('/concert?city=大阪市北区')
+
+    fireEvent.change(screen.getByLabelText('最寄駅徒歩（分以内）'), { target: { value: '10' } })
+    expect(currentUrl()).toBe('/concert?city=大阪市北区&walk=10')
+  })
+
+  it('府県を変えると選び直しの要る市区町村は落とす', () => {
+    renderAt('/concert?city=大阪市北区')
+    fireEvent.click(screen.getByRole('button', { name: '京都府' }))
+    expect(currentUrl()).toBe('/concert?pref=京都府')
+  })
+
   it('表示の切り替えもURLに載る', () => {
     renderAt('/practice')
     fireEvent.click(screen.getByRole('button', { name: '表' }))

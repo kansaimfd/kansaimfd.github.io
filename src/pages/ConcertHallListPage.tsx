@@ -1,7 +1,7 @@
 import { useMemo, Suspense, lazy } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { concerthalls } from '../datasets/concerthalls'
-import { NO_WALK, minWalk } from '../station'
+import { NO_WALK, minWalk, stationLabels, stationNames } from '../station'
 import { ALL_PREFS } from '../pref'
 import { nextSort, toggleIn, toggleKey } from '../toggle'
 import useDocumentTitle from '../useDocumentTitle'
@@ -24,6 +24,8 @@ import SearchBox from '../components/SearchBox'
 import FilterPanel from '../components/FilterPanel'
 import FilterRow from '../components/FilterRow'
 import RangeInput from '../components/RangeInput'
+import BoundInput from '../components/BoundInput'
+import FilterSelect from '../components/FilterSelect'
 import FacilityCard from '../components/FacilityCard'
 import HallStats from '../components/HallStats'
 import Stat from '../components/Stat'
@@ -51,6 +53,10 @@ const SORT_OPTIONS: SortOption<HallSortKey>[] = [
   { key: '最寄駅徒歩', asc: false, label: '最寄駅徒歩（遠い順）' },
 ]
 
+function unique(arr: string[]): string[] {
+  return Array.from(new Set(arr)).sort()
+}
+
 const closedCount = concerthalls.filter(h => isClosed(h.貸館)).length
 
 export default function ConcertHallListPage() {
@@ -72,6 +78,9 @@ export default function ConcertHallListPage() {
   const {
     query,
     prefs,
+    city,
+    station,
+    walk,
     hallTypes,
     seats,
     stageW,
@@ -96,10 +105,30 @@ export default function ConcertHallListPage() {
     update({ sortKey: next.key, sortAsc: next.asc })
   }
 
+  /**
+   * 市区町村と最寄駅の選択肢。一覧は施設×ホールに平坦化されているので重複する。
+   * 市区町村は選んだ府県の中だけに絞る（府県を選ばずに全部並べると数百件になる）
+   */
+  const cities = useMemo(
+    () =>
+      unique(
+        concerthalls
+          .filter(h => prefs.length === 0 || prefs.includes(h.都道府県))
+          .map(h => h.市区町村),
+      ),
+    [prefs],
+  )
+  const stations = useMemo(() => unique(concerthalls.flatMap(stationNames)), [])
+  // 「出戸バスターミナル」のように名前からは鉄道駅と区別がつかないものがある
+  const stationDisplay = useMemo(() => stationLabels(concerthalls), [])
+
   const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
     const result = filterHalls(concerthalls, {
       query,
       prefs,
+      city,
+      station,
+      walk,
       hallTypes,
       seats,
       stageW,
@@ -108,7 +137,21 @@ export default function ConcertHallListPage() {
       showClosed,
     })
     return { ...result, filtered: sortHalls(result.filtered, sortKey, sortAsc) }
-  }, [query, prefs, hallTypes, seats, stageW, stageD, equip, showClosed, sortKey, sortAsc])
+  }, [
+    query,
+    prefs,
+    city,
+    station,
+    walk,
+    hallTypes,
+    seats,
+    stageW,
+    stageD,
+    equip,
+    showClosed,
+    sortKey,
+    sortAsc,
+  ])
 
   // リストは1施設1枚のカードにまとめる。並びは絞り込み・並び替えを終えたホールの順を保つ
   const groups = useMemo(() => groupByFacility(filtered), [filtered])
@@ -156,7 +199,8 @@ export default function ConcertHallListPage() {
                 type="button"
                 data-pref={pref}
                 aria-pressed={on}
-                onClick={() => update({ prefs: toggleIn(prefs, pref) })}
+                // 府県を変えると選べる市区町村が変わるので、選択済みの市区町村は落とす
+                onClick={() => update({ prefs: toggleIn(prefs, pref), city: '' })}
                 className={on ? 'pill pill--on' : 'pill'}
               >
                 {on && <span className="pill__check">✓</span>}
@@ -164,6 +208,24 @@ export default function ConcertHallListPage() {
               </button>
             )
           })}
+        </FilterRow>
+
+        <FilterRow label="AREA" title="市区町村・駅">
+          <FilterSelect
+            label="市区町村"
+            placeholder="市区町村（すべて）"
+            value={city}
+            options={cities}
+            onChange={v => update({ city: v })}
+          />
+          <FilterSelect
+            label="最寄駅"
+            placeholder="最寄駅（すべて）"
+            value={station}
+            options={stations}
+            formatOption={v => stationDisplay.get(v) ?? v}
+            onChange={v => update({ station: v })}
+          />
         </FilterRow>
 
         <FilterRow label="EQUIPMENT" title="設備">
@@ -211,6 +273,13 @@ export default function ConcertHallListPage() {
             unit="m"
             value={stageD}
             onChange={v => update({ stageD: v })}
+          />
+          <BoundInput
+            label="WALK"
+            title="最寄駅徒歩"
+            suffix="分以内"
+            value={walk}
+            onChange={v => update({ walk: v })}
           />
         </div>
       </FilterPanel>

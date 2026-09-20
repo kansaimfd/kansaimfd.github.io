@@ -153,7 +153,7 @@ React コンポーネント
 地図から詳細へ行って戻ると条件が消えていた。置き場所をURLにすると3つとも同時に解ける。
 
 ```
-/concert?pref=大阪府,兵庫県&seats=1000-&equip=piano,organ&view=table&sort=客席数.desc
+/concert?pref=大阪府,兵庫県&city=大阪市北区&walk=10&seats=1000-&equip=piano,organ&view=table&sort=客席数.desc
 ```
 
 - 変換は `src/query.ts`（汎用の読み書き）と `concerthall.ts` / `practice.ts` の
