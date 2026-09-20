@@ -39,7 +39,7 @@ jobs:
         run: node scripts/audit-urls.mjs --json > audit.json
 
       - name: 結果を Issue にまとめる
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs')
