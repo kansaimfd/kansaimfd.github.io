@@ -16,3 +16,7 @@ coverage
 
 # Playwright CLI の作業ログ
 .playwright-cli
+
+# Playwright の出力
+test-results
+playwright-report

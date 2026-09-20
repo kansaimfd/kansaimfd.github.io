@@ -1,9 +1,8 @@
 name: CI
 
+# main への push は deploy.yml が同じ検査（npm run check 相当）を回してから配信するので、
+# ここでは見ない。両方で回すと、同じコミットに同じジョブが2本走る
 on:
-  push:
-    branches:
-      - main
   pull_request:
   workflow_dispatch:
 
@@ -43,7 +42,6 @@ jobs:
       # 4指標とも100%）は --coverage のときしか効かないため
       - run: npm run test:coverage
 
-      # deploy.yml を止めているあいだ、vite build が壊れても気づく経路がここしかない。
       # tsc -b が通っても vite build は別に落ちうる（JSONの読み込み・動的importなど）
       - run: npm run build
 
@@ -51,3 +49,16 @@ jobs:
       # 届かなくなっても（配信側の .html 補完に頼っている）ビルドは通ってしまう。
       # 入口チャンクの大きさもここで止める
       - run: npm run check:dist
+
+      # ブラウザで実際に開く（→ playwright.config.ts）。chromium だけでよい
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      # 落ちたときだけ、何が起きたのかを持ち帰れるようにする
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 7

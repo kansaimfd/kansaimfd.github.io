@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "check:dist": "node scripts/check-dist.mjs",
-    "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build && npm run check:dist"
+    "test:e2e": "playwright test",
+    "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build && npm run check:dist && npm run test:e2e"
   },
   "dependencies": {
     "maplibre-gl": "^6.10.0",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@maplibre/maplibre-gl-style-spec": "^26.4.4",
+    "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@types/node": "^22.20.3",

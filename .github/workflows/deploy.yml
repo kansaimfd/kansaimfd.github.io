@@ -28,15 +28,29 @@ jobs:
 
       - run: npm ci
 
-      # 404.html（存在しないURL用）・URLごとの静的HTML・sitemap.xml は
-      # npm run build の最後（scripts/build-static-pages.mjs）が書き出す
-      - run: npm run build
+      # ブラウザで実際に開く検品（npm run check の最後）に要る。chromium だけでよい
+      - run: npx playwright install --with-deps chromium
+
+      # **配る前に検品する。** 以前ここは `npm run build` だけで、lint もテストも
+      # check:dist も通らずに Pages へ上がっていた（ci.yml は push で独立に走るので、
+      # 検査が赤いままの main も配信されえた）。`npm run check` は
+      # データ生成 → lint → 型 → 整形 → テスト → ビルド → dist の検品 → ブラウザでの
+      # スモークまでを通すので、**ここを通った dist だけが配られる**。
+      # 404.html・URLごとの静的HTML・sitemap.xml はこの中の build が書き出す
+      - run: npm run check
 
       - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-trace
+          path: test-results/
+          retention-days: 7
 
   deploy:
     needs: build

@@ -47,3 +47,7 @@ docs/schema-review.md
 
 # Playwright CLI の作業ログ（調査時に出る）
 .playwright-cli/
+
+# Playwright（本番ビルドのスモークテスト）の出力。痕跡は失敗したときだけ残る
+test-results/
+playwright-report/
