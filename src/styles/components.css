@@ -159,9 +159,17 @@
   white-space: nowrap;
 }
 
+/*
+ * 並び替えの select。
+ *
+ * **地は transparent にしない。** 見た目は親（絞り込みパネル＝面の色）と同じだが、
+ * 開いたときの選択肢の一覧は**ブラウザが select の地の色から作る**ので、
+ * transparent だと白い板に落ち、ダークでは明るい文字（navy-700）が白地に載って読めなかった。
+ * 面の色を明示すれば、選択肢の一覧もテーマに付いてくる（絞り込みの .filter-select と同じ）。
+ */
 .sort-select__control {
   border: 0;
-  background: transparent;
+  background: var(--color-surface);
   color: var(--color-navy-700);
   font-size: var(--fs-sm);
   font-weight: 500;
@@ -1030,13 +1038,74 @@
   height: 16rem;
 }
 
+/*
+ * 拡大・縮小のボタンと出典。
+ *
+ * **maplibre は面の白（#fff）と境目の #ddd を自分の CSS に直書きしている。**
+ * ダークでは暗い地図の上に白い板だけが残って浮いていたので、ポップアップと同じく
+ * 地を --color-surface に差し替える。
+ *
+ * アイコンは色を焼き込んだ SVG を background-image に持っているため**塗り替えられない**。
+ * 明暗の反転だけは効くので、反転するかどうかを tokens.css の --map-ctrl-invert が持つ
+ * （ライトは 0＝そのまま）。**反転は絵にだけ掛ける**——押せる要素に掛けると、
+ * こちらで指定した押下中の地色も、フォーカスの輪も一緒に反転する
+ * （拡大・縮小の絵はボタンの中の span なのでそのまま掛けられる。出典は下を見ること）。
+ */
 .map .maplibregl-ctrl-group {
   border-radius: var(--radius);
+  background: var(--color-surface);
   box-shadow: 0 1px 3px rgb(27 46 75 / 0.15);
 }
 
-.map .maplibregl-ctrl-attrib {
+.map .maplibregl-ctrl-group button + button {
+  border-top-color: var(--color-line);
+}
+
+/* maplibre の既定は黒の5%。暗い面の上では何も起きていないように見える */
+.map .maplibregl-ctrl button:not(:disabled):hover,
+.map .maplibregl-ctrl button:not(:disabled):active {
+  background-color: var(--color-line-faint);
+}
+
+.map .maplibregl-ctrl-icon {
+  filter: invert(var(--map-ctrl-invert));
+}
+
+/*
+ * 出典の ⓘ。**押せる要素そのものに絵が付いている**ので、ここへ反転を掛けると
+ * フォーカスの輪（maplibre の青い影と base.css のゴールドの輪）まで一緒に反転する。
+ * 絵だけを ::before へ移し、そちらを反転させる。同じ理由で mask も使えない
+ * （要素を切り抜くと輪ごと消える）。絵は maplibre のものと同じ形。
+ */
+.map .maplibregl-ctrl-attrib-button {
+  background-color: transparent;
+  background-image: none;
+}
+
+.map .maplibregl-ctrl-attrib-button::before {
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill-rule='evenodd' viewBox='0 0 20 20'><path d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/></svg>")
+    center / 24px 24px no-repeat;
+  filter: invert(var(--map-ctrl-invert));
+  content: '';
+}
+
+/*
+ * 出典は compact（ⓘ を押すと開く形）で出しているので、**畳んだ丸と開いた帯の
+ * 両方が白地を持つ**。どちらも面の色にして、文字は本文と同じ組み合わせにする。
+ * 詳細度は maplibre 側（`.maplibregl-ctrl.maplibregl-ctrl-attrib` などクラス2つ）
+ * より高く保つ——同じだと、あとから読まれる向こうが勝つ。
+ */
+.map .maplibregl-ctrl.maplibregl-ctrl-attrib,
+.map .maplibregl-ctrl-attrib.maplibregl-compact {
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
   font-size: var(--fs-2xs);
+}
+
+.map .maplibregl-ctrl-attrib a {
+  color: var(--color-text-muted);
 }
 
 /*
@@ -1079,7 +1148,7 @@ div.map-pin {
   height: 0.5rem;
   margin: auto;
   border-radius: 50%;
-  background: var(--color-gold-400);
+  background: var(--map-pin-core);
   content: '';
 }
 
@@ -1092,8 +1161,12 @@ div.map-pin {
   z-index: 1;
 }
 
+/*
+ * 選択中の印。輪の色はテーマで動く（→ tokens.css の --map-pin-ring）。
+ * 色だけに頼らず、拡大（上の transform）とポップアップでも示している
+ */
 .map-pin.is-active .map-pin__head {
-  border-color: var(--color-gold-400);
+  border-color: var(--map-pin-ring);
 }
 
 .map-pin:focus-visible {

@@ -15,10 +15,16 @@ import { describe, expect, it } from 'vitest'
 
 const css = readFileSync(new URL('./tokens.css', import.meta.url), 'utf8')
 
-/** tokens.css の `--name: #rrggbb;` を集める */
+/**
+ * tokens.css の `--name: #rrggbb;` を集める。
+ * 地図の色（`--map-*`）も混ぜるのは、**ピンの芯が府県アクセントの上に載る**ためで、
+ * 読めるかどうかの突き合わせに地図側の値が要る（→ 末尾の「地図のピン」）。
+ */
 function readTokens(source: string): Record<string, string> {
   const found: Record<string, string> = {}
-  for (const [, name, hex] of source.matchAll(/(--color-[\w-]+):\s*(#[0-9a-fA-F]{3,6})\b/g)) {
+  for (const [, name, hex] of source.matchAll(
+    /(--(?:color|map)-[\w-]+):\s*(#[0-9a-fA-F]{3,6})\b/g,
+  )) {
     found[name] = hex
   }
   return found
@@ -183,6 +189,30 @@ describe.each(THEMES)('府県アクセントのコントラスト（%s）', (nam
 
     it(`${pref} の accent はカードの面の上でも 4.5:1 以上`, () => {
       expect(contrastRatio(accent!, theme['--color-surface'])).toBeGreaterThanOrEqual(4.5)
+    })
+  }
+})
+
+/**
+ * 地図のピン。**面は府県アクセントで、その明暗がテーマで入れ替わる**
+ * （ライトは濃い面、ダークは明るい面）。面の上に載る芯を片方のテーマだけで選ぶと
+ * もう片方で消え、ダークでは明るい面にゴールドの芯で 1.1:1 まで落ちていた。
+ *
+ * 文字ではないので基準は 3:1（WCAG 1.4.11 の「文字以外のコントラスト」）。
+ * 選択中の輪（--map-pin-ring）は色だけに頼らない補助の印なので、ここでは見ない。
+ */
+describe.each(THEMES)('地図のピンのコントラスト（%s）', (name, theme) => {
+  const scope = name === 'ダーク' ? block(css, DARK_MEDIA) : css.slice(0, css.indexOf(DARK_MEDIA))
+
+  for (const [pref, body] of prefBlocks(scope)) {
+    const accent = declared(body, '--pref-accent')!
+
+    it(`${pref} のピンは地図の地の上で 3:1 以上`, () => {
+      expect(contrastRatio(accent, theme['--map-land'])).toBeGreaterThanOrEqual(3)
+    })
+
+    it(`${pref} のピンの芯は面の上で 3:1 以上`, () => {
+      expect(contrastRatio(theme['--map-pin-core'], accent)).toBeGreaterThanOrEqual(3)
     })
   }
 })
