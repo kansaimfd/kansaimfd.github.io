@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build"
+    "check:dist": "node scripts/check-dist.mjs",
+    "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build && npm run check:dist"
   },
   "dependencies": {
     "maplibre-gl": "^6.10.0",

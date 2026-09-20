@@ -25,9 +25,10 @@ npm run preview    # ビルド結果のプレビュー
 npm run data       # YAML→JSON変換だけを実行（データ検査もここで走る）
 
 npm run check      # データ生成 → lint → 型チェック → 整形チェック → テスト（カバレッジ付き）
-                   # → 本番ビルド を一括。CI と同じ内容。
+                   # → 本番ビルド → dist の検品 を一括。CI と同じ内容。
                    # **ビルドまで含めるのは、tsc が通っても vite build は別に落ちうるため**
                    # （JSONの読み込み・動的import）。入れる前はローカル緑・CI赤になりえた
+npm run check:dist # 出来た dist を vite preview で実際に配って検品する（→ Deployment）
 npm run lint       # ESLintによるコードチェック（src と scripts/*.mjs の両方）
 npm run typecheck  # 型チェック。中身は `tsc -b --noEmit`（tsconfig.json は files:[] +
                    # references なので `tsc --noEmit` は1ファイルも検査しない。-b が要る）
@@ -63,7 +64,8 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
 ### 開発環境
 
 - **Node は 22 系**（`.nvmrc` / `package.json` の `engines`）。CI は `.nvmrc` を見る
-- **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す。
+- **CI**（`.github/workflows/ci.yml`）は push と PR で `npm run check` 相当を回す
+  （`permissions: contents: read` と `concurrency` を明示してある）。
   依存と actions の更新は Dependabot（`.github/dependabot.yml`）が月次でまとめて出す
 - **月次のリンク検査**（`.github/workflows/audit-urls.yml`）が毎月1日に `audit-urls.mjs` を回し、
   結果を Issue にまとめる（題名が `リンク切れ検査:` で始まる Issue を**使い回して更新**する。
@@ -188,6 +190,10 @@ React コンポーネント
 - `scripts/validate.mjs` — データ検査（オフラインで完結するもののみ）。ビルド前に自動実行される
 - `scripts/static-pages.mjs` — URLごとの静的HTML（題名・説明・canonical・OGP・構造化データ）と
   sitemap.xml の組み立て。書き出しは `build-static-pages.mjs` が `npm run build` の最後に行う（→ Deployment）
+- `scripts/check-dist.mjs` — 出来た `dist/` を `vite preview` で実際に配って検品する。
+  **デプロイを止めているあいだ、ここが唯一の実物の確認経路**。全URLが200で返り、
+  題名・canonical・noscript の本文がページごとに違うこと、404.html が noindex で
+  canonical を持たないこと、**入口チャンクが gzip 86KB を超えないこと**を見る
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
 - `scripts/url-audit.mjs` — 「開くが別サイト」の判定（一致率・英語ページ・文字符号化）。
   **通信を持たないので単体でテストできる**（`audit-urls.mjs` が決めているのは月次Issueの中身で、
@@ -522,7 +528,9 @@ Tailwind のユーティリティクラスも、JSX の `style={{}}` も使わ�
   - `/concert/10` → `concert/10.html` は、拡張子を省いたURLに `.html` を当てる配信側の挙動に頼っている
     （GitHub Pages・Cloudflare Pages・`vite preview` はそうする）。一覧（`/concert`）は同名のディレクトリと
     並ぶので `concert.html` と `concert/index.html` の両方に書いてある。
-    **再開したら `/concert` と `/concert/10` が 200 で返ることを実物で確かめること**（ローカルの preview では確認済み）
+    **ローカルの preview で全URLが200で返ることは `npm run check:dist` が毎回確かめている**
+    （`scripts/check-dist.mjs`。CI でも回る）。**再開したら本番のURLでも確かめること**——
+    確かめているのは preview の挙動であって、GitHub Pages の挙動ではない
   - `404.html` もビルドが書く（`noindex`、canonical なし）。存在しないURLは従来どおりアプリの「見つかりません」を出す
   - 絶対URLは `static-pages.mjs` の `SITE_URL`（`https://kansaimfd.github.io`）と `public/robots.txt` にある。
     **配信先を変えるならこの2か所を直す**

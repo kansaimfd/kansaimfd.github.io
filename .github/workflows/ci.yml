@@ -7,6 +7,15 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 読むだけ。既定に任せると、設定次第で書き込み権のあるトークンが渡る
+permissions:
+  contents: read
+
+# 連続して push したとき、古いジョブを走り切らせない
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -37,3 +46,8 @@ jobs:
       # deploy.yml を止めているあいだ、vite build が壊れても気づく経路がここしかない。
       # tsc -b が通っても vite build は別に落ちうる（JSONの読み込み・動的importなど）
       - run: npm run build
+
+      # 出来上がった dist を実際に配ってみる。SPA なので、URLごとの静的HTMLが
+      # 届かなくなっても（配信側の .html 補完に頼っている）ビルドは通ってしまう。
+      # 入口チャンクの大きさもここで止める
+      - run: npm run check:dist
