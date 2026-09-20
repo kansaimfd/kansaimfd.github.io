@@ -17,6 +17,7 @@ import {
   maxArea,
   maxCapacity,
   practiceDetailPath,
+  practiceEquipFields,
   practiceStateFromParams,
   practiceStateToParams,
   sortPractices,
@@ -41,6 +42,19 @@ import TableNum from '../components/TableNum'
 import RentalBadge from '../components/RentalBadge'
 import UsageConditionBadge from '../components/UsageConditionBadge'
 import ClosedToggle from '../components/ClosedToggle'
+
+/**
+ * 表に出す設備の列。**見出しと中身をここから一緒に出す。**
+ *
+ * 以前は見出しを「ピアノ / 管楽器 / 打楽器」と直書きし、中身を
+ * `PRACTICE_EQUIP_FIELDS[0]` `[1]` `[2]` と添字で引いていた。設備を並べ替えれば
+ * 見出しはそのままに中身だけ入れ替わり、型もテストも止めない。
+ * チェンバロを載せないのは、記録が3室しかなく列が「—」で埋まるため。
+ */
+const TABLE_EQUIP = practiceEquipFields(['piano', 'wind', 'perc'])
+
+/** 表の列数。設備の列を増やしたときに0件の行だけ幅が合わなくならないように数える */
+const TABLE_COLUMNS = 6 + TABLE_EQUIP.length
 
 /** 1件も入っていないうちは、必ず0件になる絞り込みを見せない */
 const hasCapacityData = practices.some(p => knownCapacity(p) != null)
@@ -247,7 +261,7 @@ export default function PracticeListPage() {
       {view === 'table' && (
         <DataTable
           caption={`練習場の一覧（${filtered.length}件）`}
-          columns={9}
+          columns={TABLE_COLUMNS}
           count={filtered.length}
           onReset={onReset}
           head={
@@ -262,15 +276,11 @@ export default function PracticeListPage() {
                 最大面積(㎡)
               </th>
               {sortTh('最寄駅徒歩', '徒歩(分)', true)}
-              <th scope="col" className="is-center">
-                ピアノ
-              </th>
-              <th scope="col" className="is-center">
-                管楽器
-              </th>
-              <th scope="col" className="is-center">
-                打楽器
-              </th>
+              {TABLE_EQUIP.map(e => (
+                <th key={e.key} scope="col" className="is-center">
+                  {e.badge}
+                </th>
+              ))}
             </tr>
           }
         >
@@ -297,15 +307,11 @@ export default function PracticeListPage() {
               <td className="is-num">
                 <TableNum values={[minWalk(p) < NO_WALK ? minWalk(p) : undefined]} />
               </td>
-              <td className="is-center">
-                <AvailabilityMark value={PRACTICE_EQUIP_FIELDS[0].state(p)} />
-              </td>
-              <td className="is-center">
-                <AvailabilityMark value={PRACTICE_EQUIP_FIELDS[1].state(p)} />
-              </td>
-              <td className="is-center">
-                <AvailabilityMark value={PRACTICE_EQUIP_FIELDS[2].state(p)} />
-              </td>
+              {TABLE_EQUIP.map(e => (
+                <td key={e.key} className="is-center">
+                  <AvailabilityMark value={e.state(p)} />
+                </td>
+              ))}
             </tr>
           ))}
         </DataTable>
