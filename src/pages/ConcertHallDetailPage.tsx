@@ -5,6 +5,7 @@ import type { Hall } from '../types'
 import InfoRow from '../components/InfoRow'
 import SourceNote from '../components/SourceNote'
 import { blankOf, pianoDetail, standDetail, valueOrNotStated } from '../availability'
+import { builtYear, formatBuiltDate } from '../builtDate'
 import useDocumentTitle from '../useDocumentTitle'
 import RentalNotice from '../components/RentalNotice'
 import UsageConditionNote from '../components/UsageConditionNote'
@@ -122,7 +123,7 @@ export default function ConcertHallDetailPage() {
   const showChembalo = rooms.some(r => r.チェンバロ != null)
 
   const maxSeats = maxOf(rooms, r => r.客席数)
-  const builtYear = f.築年月 ? Number(f.築年月.slice(0, 4)) : undefined
+  const opened = builtYear(f.築年月)
 
   // 住所と最寄駅は見出しに出しているので、ここには重ねない
   const rows = (
@@ -135,7 +136,7 @@ export default function ConcertHallDetailPage() {
           : valueOrNotStated(f.開館時間, f, '開館時間'),
       ],
       ['休館日', valueOrNotStated(f.休館日, f, '休館日')],
-      ['築年月', valueOrNotStated(f.築年月, f, '築年月')],
+      ['築年月', valueOrNotStated(f.築年月 ? formatBuiltDate(f.築年月) : undefined, f, '築年月')],
       ['駐車場', valueOrNotStated(f.駐車場 != null ? `${f.駐車場}台` : undefined, f, '駐車場')],
     ] satisfies Row[]
   ).filter(([, v]) => v != null && v !== '')
@@ -157,7 +158,7 @@ export default function ConcertHallDetailPage() {
           <>
             {rooms.length > 0 && <Stat values={[rooms.length]} unit="室" caption="ROOMS" />}
             {maxSeats != null && <Stat values={[maxSeats]} unit="席" caption="MAX CAPACITY" />}
-            {builtYear != null && <Stat values={[builtYear]} unit="年" caption="OPENED" />}
+            {opened != null && <Stat values={[opened]} unit="年" caption="OPENED" />}
             {f.駐車場 != null && <Stat values={[f.駐車場]} unit="台" caption="PARKING" />}
           </>
         }
