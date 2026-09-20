@@ -134,6 +134,25 @@ export interface PracticeCriteria {
   equip: Set<string>
   /** 貸館を終えた（終了・廃止）ものも出すか。既定では出さない */
   showClosed: boolean
+  /**
+   * 条件に合うか判断できないもの（未調査・公式に記載なし）も出すか。既定では出さない。
+   * 考え方はコンサートホール側と同じ（→ concerthall.ts / filter.ts）
+   */
+  includeUnknown: boolean
+}
+
+/** 何も絞り込んでいない状態。「条件をすべて解除」の行き先（→ useListState） */
+export const EMPTY_PRACTICE_CRITERIA: PracticeCriteria = {
+  query: '',
+  prefs: [],
+  city: '',
+  capacity: '',
+  area: '',
+  station: '',
+  walk: '',
+  equip: new Set(),
+  showClosed: false,
+  includeUnknown: false,
 }
 
 /**
@@ -167,7 +186,7 @@ export function filterPractices(
   practices: PracticeListItem[],
   c: PracticeCriteria,
 ): FilterResult<PracticeListItem> {
-  return applyConditions(practices, practiceConditions(c))
+  return applyConditions(practices, practiceConditions(c), c.includeUnknown)
 }
 
 export function sortPractices(
@@ -222,6 +241,7 @@ export function practiceStateFromParams(params: URLSearchParams): PracticePageSt
     walk: readNumber(params, 'walk'),
     equip: readSet(params, 'equip', PRACTICE_EQUIP_KEYS),
     showClosed: readFlag(params, 'closed'),
+    includeUnknown: readFlag(params, 'unknown'),
     view: readView(params),
     sortKey: key,
     sortAsc: asc,
@@ -239,6 +259,7 @@ export function practiceStateToParams(s: PracticePageState): URLSearchParams {
   writeText(params, 'walk', s.walk)
   writeSet(params, 'equip', s.equip, PRACTICE_EQUIP_KEYS)
   writeFlag(params, 'closed', s.showClosed)
+  writeFlag(params, 'unknown', s.includeUnknown)
   writeView(params, s.view)
   writeSort(params, s.sortKey, s.sortAsc, '施設名')
   return params

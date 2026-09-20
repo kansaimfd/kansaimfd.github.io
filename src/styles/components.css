@@ -68,6 +68,33 @@
   margin-top: 0.875rem;
 }
 
+/*
+ * 絞り込みの解除。**条件の下に置く**（条件を見てから外す順になる）。
+ * 効いている条件が1つも無ければボタンごと出ない（→ FilterPanel の onReset）。
+ */
+.filters__foot {
+  margin-top: 0.875rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line-faint);
+}
+
+.filters__reset {
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--fs-xs);
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.filters__reset:hover {
+  border-color: var(--color-text-faint);
+  color: var(--color-navy-700);
+}
+
 @media (min-width: 40rem) {
   .filters__toggle {
     display: none;
@@ -751,6 +778,24 @@
   color: var(--color-usage-text);
 }
 
+/*
+ * 注意書きの中の切り替え（未調査を含める／除く）。**文中に置く**——
+ * 何を言われているかの直後に、それに対してできることが並ぶ
+ */
+.notice__action {
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.625rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  color: inherit;
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.notice__action:hover {
+  background: var(--color-surface);
+}
+
 .notice__sep {
   margin: 0 0.375rem;
   opacity: 0.5;
@@ -1115,6 +1160,25 @@ div.map-pin {
   padding: 2rem 0;
   color: var(--color-text-faint);
   text-align: center;
+}
+
+/*
+ * 0件のときに条件を外す導線。**絞り込みパネルまで戻らせない**
+ * （狭い画面ではパネルが畳まれていて、どの条件が効いているのかも見えない）
+ */
+.empty__reset {
+  margin-top: 0.75rem;
+  padding: 0.375rem 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-navy-700);
+  font-size: var(--fs-sm);
+  transition: border-color 0.15s;
+}
+
+.empty__reset:hover {
+  border-color: var(--color-navy-700);
 }
 
 /* ── ボタン ─────────────────────────────────── */

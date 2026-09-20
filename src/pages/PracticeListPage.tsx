@@ -8,6 +8,7 @@ import useDocumentTitle from '../useDocumentTitle'
 import useListState from '../useListState'
 import { isClosed } from '../rental'
 import {
+  EMPTY_PRACTICE_CRITERIA,
   PRACTICE_EQUIP_FIELDS,
   PRACTICE_SORT_KEYS,
   filterPractices,
@@ -54,10 +55,10 @@ export default function PracticeListPage() {
    * 一覧の状態はURLが持つ。**`useState` に持たない。**
    * 絞り込んだ結果をそのまま人に送れて、詳細ページから戻っても条件が残る。
    */
-  const { state, update, toggleSort } = useListState<PracticeSortKey, PracticePageState>(
-    practiceStateFromParams,
-    practiceStateToParams,
-  )
+  const { state, update, toggleSort, reset, hasCriteria } = useListState<
+    PracticeSortKey,
+    PracticePageState
+  >(practiceStateFromParams, practiceStateToParams, EMPTY_PRACTICE_CRITERIA)
   const {
     query,
     prefs,
@@ -68,6 +69,7 @@ export default function PracticeListPage() {
     walk,
     equip,
     showClosed,
+    includeUnknown,
     view,
     sortKey,
     sortAsc,
@@ -83,7 +85,7 @@ export default function PracticeListPage() {
     [prefs, city, station],
   )
 
-  const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
+  const { filtered, unknownCount, unknownFields } = useMemo(() => {
     const result = filterPractices(practices, {
       query,
       prefs,
@@ -94,9 +96,26 @@ export default function PracticeListPage() {
       walk,
       equip,
       showClosed,
+      includeUnknown,
     })
     return { ...result, filtered: sortPractices(result.filtered, sortKey, sortAsc) }
-  }, [query, prefs, city, capacity, area, station, walk, equip, showClosed, sortKey, sortAsc])
+  }, [
+    query,
+    prefs,
+    city,
+    capacity,
+    area,
+    station,
+    walk,
+    equip,
+    showClosed,
+    includeUnknown,
+    sortKey,
+    sortAsc,
+  ])
+
+  // 何も絞り込んでいなければ、解除するものが無いのでボタンを出さない
+  const onReset = hasCriteria ? reset : undefined
 
   const sortTh = (k: PracticeSortKey, label: string, numeric?: boolean) => (
     <SortableTh
@@ -120,10 +139,16 @@ export default function PracticeListPage() {
       sortKey={sortKey}
       sortAsc={sortAsc}
       onSort={(key, asc) => update({ sortKey: key, sortAsc: asc })}
+      onReset={onReset}
       view={view}
       onChangeView={v => update({ view: v })}
       count={filtered.length}
-      unknown={{ count: unknownExcluded, fields: unknownFields }}
+      unknown={{
+        count: unknownCount,
+        fields: unknownFields,
+        included: includeUnknown,
+        onToggle: () => update({ includeUnknown: !includeUnknown }),
+      }}
       filters={
         <>
           <PrefPills
@@ -194,7 +219,7 @@ export default function PracticeListPage() {
       }
     >
       {view === 'list' && (
-        <CardList count={filtered.length}>
+        <CardList count={filtered.length} onReset={onReset}>
           {filtered.map(p => (
             <FacilityCard
               key={practiceDetailPath(p)}
@@ -224,6 +249,7 @@ export default function PracticeListPage() {
           caption={`練習場の一覧（${filtered.length}件）`}
           columns={9}
           count={filtered.length}
+          onReset={onReset}
           head={
             <tr>
               {sortTh('施設名', '施設名')}

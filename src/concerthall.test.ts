@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ConcertHall } from './types'
 import {
+  EMPTY_HALL_CRITERIA,
   HALL_EQUIP_FIELDS,
   dedupeByFacility,
   filterHalls,
@@ -10,6 +11,7 @@ import {
   hallStateToParams,
   sortHalls,
   type HallCriteria,
+  type HallPageState,
 } from './concerthall'
 
 /** 絞り込みに関係しない必須項目を埋めた土台 */
@@ -26,19 +28,9 @@ function hall(overrides: Partial<ConcertHall> & { ID: number }): ConcertHall {
   }
 }
 
-const NO_CRITERIA: HallCriteria = {
-  query: '',
-  prefs: [],
-  city: '',
-  station: '',
-  walk: '',
-  hallTypes: [],
-  seats: ['', ''],
-  stageW: ['', ''],
-  stageD: ['', ''],
-  equip: new Set(),
-  showClosed: false,
-}
+// 画面の「条件をすべて解除」が戻す先と同じものを使う。
+// 別に書くと、条件が増えたときにどちらかが古くなる
+const NO_CRITERIA: HallCriteria = EMPTY_HALL_CRITERIA
 
 const criteria = (over: Partial<HallCriteria>): HallCriteria => ({ ...NO_CRITERIA, ...over })
 
@@ -61,7 +53,7 @@ describe('filterHalls', () => {
     const shown = filterHalls(halls, criteria({ showClosed: true }))
     expect(shown.filtered.map(h => h.ID)).toEqual([10, 20, 30, 40, 50])
     // 隠したのは状態が分かっているからで、未調査のせいではない
-    expect(filterHalls(halls, NO_CRITERIA).unknownExcluded).toBe(0)
+    expect(filterHalls(halls, NO_CRITERIA).unknownCount).toBe(0)
   })
 
   // 練習場一覧にはあったのにコンサートホール側だけ無かった条件（要求仕様にもあった）
@@ -83,7 +75,7 @@ describe('filterHalls', () => {
     ]
     const result = filterHalls(halls, criteria({ station: '大阪城公園駅' }))
     expect(result.filtered.map(h => h.ID)).toEqual([10])
-    expect(result.unknownExcluded).toBe(1)
+    expect(result.unknownCount).toBe(1)
     expect(result.unknownFields).toEqual(['最寄駅'])
   })
 
@@ -96,7 +88,7 @@ describe('filterHalls', () => {
     ]
     const result = filterHalls(halls, criteria({ walk: '10' }))
     expect(result.filtered.map(h => h.ID)).toEqual([10])
-    expect(result.unknownExcluded).toBe(1)
+    expect(result.unknownCount).toBe(1)
     expect(result.unknownFields).toEqual(['駅徒歩'])
   })
 
@@ -257,17 +249,17 @@ describe('filterHalls', () => {
      * 実際にはピアノがある施設を利用者が見落とす
      */
     it('未調査で外れた件数を数える（「なし」は数えない）', () => {
-      const { unknownExcluded, unknownFields } = filterHalls(
+      const { unknownCount, unknownFields } = filterHalls(
         halls,
         criteria({ equip: new Set(['piano']) }),
       )
-      expect(unknownExcluded).toBe(1)
+      expect(unknownCount).toBe(1)
       // 注意書きに出す名前。何が未調査だったのかを利用者に示す
       expect(unknownFields).toEqual(['ピアノの有無'])
     })
 
     it('設備で絞っていなければ 0 件', () => {
-      expect(filterHalls(halls, NO_CRITERIA).unknownExcluded).toBe(0)
+      expect(filterHalls(halls, NO_CRITERIA).unknownCount).toBe(0)
     })
 
     /**
@@ -282,33 +274,33 @@ describe('filterHalls', () => {
         hall({ ID: 30 }), // 未調査
         hall({ ID: 40 }), // 未調査
       ]
-      const { filtered, unknownExcluded, unknownFields } = filterHalls(
+      const { filtered, unknownCount, unknownFields } = filterHalls(
         halls,
         criteria({ seats: ['500', ''] }),
       )
       expect(filtered.map(h => h.ID)).toEqual([10])
-      expect(unknownExcluded).toBe(2)
+      expect(unknownCount).toBe(2)
       expect(unknownFields).toEqual(['客席数'])
     })
 
     it('ホール種別の未調査も数える', () => {
       const halls = [hall({ ID: 10, ホール種別: '音楽専用' }), hall({ ID: 20 })]
-      const { unknownExcluded, unknownFields } = filterHalls(
+      const { unknownCount, unknownFields } = filterHalls(
         halls,
         criteria({ hallTypes: ['音楽専用'] }),
       )
-      expect(unknownExcluded).toBe(1)
+      expect(unknownCount).toBe(1)
       expect(unknownFields).toEqual(['ホール種別'])
     })
 
     /** 府県が違うだけの施設まで数えると、除外件数が実態より膨らむ */
     it('他の条件で外れた施設は未調査に数えない', () => {
       const halls = [hall({ ID: 10, 都道府県: '京都府' })] // 客席数は未調査
-      const { unknownExcluded } = filterHalls(
+      const { unknownCount } = filterHalls(
         halls,
         criteria({ prefs: ['大阪府'], seats: ['500', ''] }),
       )
-      expect(unknownExcluded).toBe(0)
+      expect(unknownCount).toBe(0)
     })
 
     /**
@@ -357,12 +349,12 @@ describe('filterHalls', () => {
         hall({ ID: 20, 駐車場: 0 }),
         hall({ ID: 30 }), // 未調査
       ]
-      const { filtered, unknownExcluded } = filterHalls(
+      const { filtered, unknownCount } = filterHalls(
         halls,
         criteria({ equip: new Set(['parking']) }),
       )
       expect(filtered.map(h => h.ID)).toEqual([10])
-      expect(unknownExcluded).toBe(1)
+      expect(unknownCount).toBe(1)
     })
   })
 })
@@ -511,6 +503,7 @@ describe('URLとの往復', () => {
       stageD: ['10', ''],
       equip: new Set(['piano', 'organ']),
       showClosed: true,
+      includeUnknown: true,
       view: 'table',
       sortKey: '客席数',
       sortAsc: false,
@@ -527,10 +520,41 @@ describe('URLとの往復', () => {
       stageD: ['10', ''],
       equip: new Set(['piano', 'organ']),
       showClosed: true,
+      includeUnknown: true,
       view: 'table',
       sortKey: '客席数',
       sortAsc: false,
     })
+  })
+
+  /**
+   * **読む側と書く側は別々に手で並べてある**ので、片方に足し忘れても
+   * 型チェックも lint も通る（条件は効いているのに共有したURLからは消える）。
+   * 条件をひとつずつ立てて、URLに載ることと読み戻せることを全項目で確かめる。
+   */
+  it('絞り込みの全項目がURLを往復する', () => {
+    const empty = hallStateFromParams(new URLSearchParams(''))
+    const full: HallPageState = {
+      ...empty,
+      query: 'ホール',
+      prefs: ['大阪府'],
+      city: '大阪市北区',
+      station: '大阪駅',
+      walk: '10',
+      hallTypes: ['音楽専用'],
+      seats: ['500', '1200'],
+      stageW: ['5', '20'],
+      stageD: ['5', '20'],
+      equip: new Set(['piano']),
+      showClosed: true,
+      includeUnknown: true,
+    }
+    for (const key of Object.keys(EMPTY_HALL_CRITERIA) as (keyof typeof EMPTY_HALL_CRITERIA)[]) {
+      const state = { ...empty, [key]: full[key] }
+      const params = hallStateToParams(state)
+      expect(params.toString(), `${key} がURLに載っていない`).not.toBe('')
+      expect(hallStateFromParams(params), `${key} を読み戻せない`).toEqual(state)
+    }
   })
 
   // 手で書き換えられるので、知らない値は黙って落とす（0件の理由が分からない画面にしない）

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PracticeListItem } from './types'
 import {
+  EMPTY_PRACTICE_CRITERIA,
   practiceDetailPath,
   facilityState,
   filterPractices,
@@ -10,6 +11,7 @@ import {
   practiceStateToParams,
   sortPractices,
   type PracticeCriteria,
+  type PracticePageState,
 } from './practice'
 
 /** 絞り込みに関係しない必須項目を埋めた土台 */
@@ -25,17 +27,8 @@ function practice(overrides: Partial<PracticeListItem> & { ID: number }): Practi
   }
 }
 
-const NO_CRITERIA: PracticeCriteria = {
-  query: '',
-  prefs: [],
-  city: '',
-  capacity: '',
-  area: '',
-  station: '',
-  walk: '',
-  equip: new Set(),
-  showClosed: false,
-}
+// 画面の「条件をすべて解除」が戻す先と同じものを使う（→ concerthall.test.ts）
+const NO_CRITERIA: PracticeCriteria = EMPTY_PRACTICE_CRITERIA
 
 const criteria = (over: Partial<PracticeCriteria>): PracticeCriteria => ({
   ...NO_CRITERIA,
@@ -104,12 +97,9 @@ describe('filterPractices', () => {
 
   it('面積が未調査の施設は「面積0」として扱わない', () => {
     const list = [practice({ ID: 10, 部屋: [{ 定員: 10 }] })]
-    const { filtered, unknownExcluded, unknownFields } = filterPractices(
-      list,
-      criteria({ area: '1' }),
-    )
+    const { filtered, unknownCount, unknownFields } = filterPractices(list, criteria({ area: '1' }))
     expect(filtered).toEqual([])
-    expect(unknownExcluded).toBe(1)
+    expect(unknownCount).toBe(1)
     expect(unknownFields).toEqual(['面積'])
   })
 
@@ -215,12 +205,12 @@ describe('filterPractices', () => {
         practice({ ID: 30, 部屋: [{}] }),
         practice({ ID: 40 }),
       ]
-      const { filtered, unknownExcluded, unknownFields } = filterPractices(
+      const { filtered, unknownCount, unknownFields } = filterPractices(
         list,
         criteria({ equip: new Set(['wind']) }),
       )
       expect(filtered.map(p => p.ID)).toEqual([10])
-      expect(unknownExcluded).toBe(2)
+      expect(unknownCount).toBe(2)
       expect(unknownFields).toEqual(['管楽器の可否'])
     })
 
@@ -235,12 +225,12 @@ describe('filterPractices', () => {
         practice({ ID: 30, 部屋: [{}] }), // 定員が未調査
         practice({ ID: 40 }), // 部屋そのものが未登録
       ]
-      const { filtered, unknownExcluded, unknownFields } = filterPractices(
+      const { filtered, unknownCount, unknownFields } = filterPractices(
         list,
         criteria({ capacity: '30' }),
       )
       expect(filtered.map(p => p.ID)).toEqual([10])
-      expect(unknownExcluded).toBe(2)
+      expect(unknownCount).toBe(2)
       expect(unknownFields).toEqual(['定員'])
     })
 
@@ -252,20 +242,20 @@ describe('filterPractices', () => {
 
       const byStation = filterPractices(list, criteria({ station: '梅田駅' }))
       expect(byStation.filtered.map(p => p.ID)).toEqual([10])
-      expect(byStation.unknownExcluded).toBe(1)
+      expect(byStation.unknownCount).toBe(1)
       expect(byStation.unknownFields).toEqual(['最寄駅'])
 
       const byWalk = filterPractices(list, criteria({ walk: '10' }))
       expect(byWalk.filtered.map(p => p.ID)).toEqual([10])
-      expect(byWalk.unknownExcluded).toBe(1)
+      expect(byWalk.unknownCount).toBe(1)
       expect(byWalk.unknownFields).toEqual(['駅徒歩'])
     })
 
     /** 定員0の部屋と、定員が未調査の部屋を同じに扱わない */
     it('定員が未調査の施設は「定員0」として扱わない', () => {
       const list = [practice({ ID: 10, 部屋: [{ 面積: 30 }] })]
-      const { unknownExcluded, unknownFields } = filterPractices(list, criteria({ capacity: '1' }))
-      expect(unknownExcluded).toBe(1)
+      const { unknownCount, unknownFields } = filterPractices(list, criteria({ capacity: '1' }))
+      expect(unknownCount).toBe(1)
       expect(unknownFields).toEqual(['定員'])
     })
   })
@@ -334,6 +324,32 @@ describe('URLとの往復', () => {
     expect(practiceStateToParams(state).toString()).toBe('')
   })
 
+  /** 読む側と書く側の食い違いを全項目で見る（→ concerthall.test.ts の同名テスト） */
+  it('絞り込みの全項目がURLを往復する', () => {
+    const empty = practiceStateFromParams(new URLSearchParams(''))
+    const full: PracticePageState = {
+      ...empty,
+      query: 'スタジオ',
+      prefs: ['京都府'],
+      city: '京都市中京区',
+      capacity: '50',
+      area: '30',
+      station: '烏丸駅',
+      walk: '10',
+      equip: new Set(['piano']),
+      showClosed: true,
+      includeUnknown: true,
+    }
+    for (const key of Object.keys(
+      EMPTY_PRACTICE_CRITERIA,
+    ) as (keyof typeof EMPTY_PRACTICE_CRITERIA)[]) {
+      const state = { ...empty, [key]: full[key] }
+      const params = practiceStateToParams(state)
+      expect(params.toString(), `${key} がURLに載っていない`).not.toBe('')
+      expect(practiceStateFromParams(params), `${key} を読み戻せない`).toEqual(state)
+    }
+  })
+
   it('条件をひととおり載せて読み戻せる', () => {
     const params = practiceStateToParams({
       query: 'スタジオ',
@@ -345,6 +361,7 @@ describe('URLとの往復', () => {
       walk: '10',
       equip: new Set(['piano', 'perc']),
       showClosed: true,
+      includeUnknown: true,
       view: 'map',
       sortKey: '最寄駅徒歩',
       sortAsc: true,
@@ -359,6 +376,7 @@ describe('URLとの往復', () => {
       walk: '10',
       equip: new Set(['piano', 'perc']),
       showClosed: true,
+      includeUnknown: true,
       view: 'map',
       sortKey: '最寄駅徒歩',
       sortAsc: true,

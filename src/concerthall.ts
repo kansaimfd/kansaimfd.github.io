@@ -105,6 +105,27 @@ export interface HallCriteria {
   equip: Set<string>
   /** 貸館を終えた（終了・廃止）ものも出すか。既定では出さない */
   showClosed: boolean
+  /**
+   * 条件に合うか判断できないもの（未調査・公式に記載なし）も出すか。既定では出さない。
+   * **「合わない」と確かめられたわけではない**ので、含める道を残す（→ filter.ts）
+   */
+  includeUnknown: boolean
+}
+
+/** 何も絞り込んでいない状態。「条件をすべて解除」の行き先（→ useListState） */
+export const EMPTY_HALL_CRITERIA: HallCriteria = {
+  query: '',
+  prefs: [],
+  city: '',
+  station: '',
+  walk: '',
+  hallTypes: [],
+  seats: ['', ''],
+  stageW: ['', ''],
+  stageD: ['', ''],
+  equip: new Set(),
+  showClosed: false,
+  includeUnknown: false,
 }
 
 export type { FilterResult }
@@ -151,7 +172,7 @@ function searchText(h: ConcertHall): string {
 }
 
 export function filterHalls(halls: ConcertHall[], c: HallCriteria): FilterResult<ConcertHall> {
-  return applyConditions(halls, hallConditions(c))
+  return applyConditions(halls, hallConditions(c), c.includeUnknown)
 }
 
 export function sortHalls(halls: ConcertHall[], key: HallSortKey, asc: boolean): ConcertHall[] {
@@ -229,6 +250,7 @@ export function hallStateFromParams(params: URLSearchParams): HallPageState {
     stageD: readRange(params, 'staged'),
     equip: readSet(params, 'equip', HALL_EQUIP_KEYS),
     showClosed: readFlag(params, 'closed'),
+    includeUnknown: readFlag(params, 'unknown'),
     view: readView(params),
     sortKey: key,
     sortAsc: asc,
@@ -248,6 +270,7 @@ export function hallStateToParams(s: HallPageState): URLSearchParams {
   writeRange(params, 'staged', s.stageD)
   writeSet(params, 'equip', s.equip, HALL_EQUIP_KEYS)
   writeFlag(params, 'closed', s.showClosed)
+  writeFlag(params, 'unknown', s.includeUnknown)
   writeView(params, s.view)
   writeSort(params, s.sortKey, s.sortAsc, '施設名')
   return params

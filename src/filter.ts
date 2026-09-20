@@ -15,7 +15,11 @@ import { toHiragana } from './name'
  *
  * **未調査は「無い」ではない**という方針（CLAUDE.md「設備の3値」）は、
  * 項目の型が boolean かどうかとは関係がない。そこで条件を一様にこの形へ揃え、
- * 未調査で外れた件数と、その原因になった項目名をまとめて返す。
+ * 未調査で判断できなかった件数と、その原因になった項目名をまとめて返す。
+ *
+ * **含めるか外すかは利用者が選ぶ**（`includeUnknown`）。既定は外す側——条件に
+ * 合うと確かめられた施設が先に見える方が探す目的には合う——だが、数だけ知らせても
+ * 利用者にできることが「条件を外す」しかないので、含める道も用意する。
  */
 export type Match = 'pass' | 'fail' | 'unknown'
 
@@ -28,22 +32,31 @@ export interface Condition<T> {
 export interface FilterResult<T> {
   filtered: T[]
   /**
-   * 値が「合わない」のではなく「未調査」だったために外れた件数。
-   * 黙って消すと、実際には条件に合う施設を見落とさせる
+   * 値が「合わない」のではなく「未調査」だったために、合うとも合わないとも
+   * 言えなかった件数。**`includeUnknown` で含めた場合も数える**
+   * （含めていることを注意書きで伝えるため）。黙って消すと、実際には
+   * 条件に合う施設を見落とさせる
    */
-  unknownExcluded: number
-  /** 未調査による除外を実際に起こした項目名（注意書きに出す） */
+  unknownCount: number
+  /** 判断できなさを実際に起こした項目名（注意書きに出す） */
   unknownFields: string[]
 }
 
 /**
  * 全条件を通す。**1つでも「合わない」があれば、未調査があっても数えない**
  * （客席数が未調査でも、府県が違えばそれは未調査のせいで外れたのではない）。
+ *
+ * `includeUnknown` を立てると、判断できなかったものも一覧に含める。件数と項目名は
+ * どちらの場合も同じように返す（画面はそれを見て文言を変える）。
  */
-export function applyConditions<T>(items: T[], conditions: Condition<T>[]): FilterResult<T> {
+export function applyConditions<T>(
+  items: T[],
+  conditions: Condition<T>[],
+  includeUnknown = false,
+): FilterResult<T> {
   const filtered: T[] = []
   const unknownBy = new Set<string>()
-  let unknownExcluded = 0
+  let unknownCount = 0
 
   for (const item of items) {
     let failed = false
@@ -61,13 +74,14 @@ export function applyConditions<T>(items: T[], conditions: Condition<T>[]): Filt
       filtered.push(item)
       continue
     }
-    unknownExcluded++
+    if (includeUnknown) filtered.push(item)
+    unknownCount++
     for (const label of unknowns) unknownBy.add(label)
   }
 
   // 条件の並び順に揃える（同じ絞り込みなら毎回同じ文言になるように）
   const unknownFields = conditions.map(c => c.label).filter(label => unknownBy.has(label))
-  return { filtered, unknownExcluded, unknownFields }
+  return { filtered, unknownCount, unknownFields }
 }
 
 /**

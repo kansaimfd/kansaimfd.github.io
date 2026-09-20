@@ -28,14 +28,25 @@ export interface ListStateApi<S, K extends string> {
   /** `replace` を立てると履歴を積まずに置き換える（フリーワード用） */
   update: (patch: Partial<S>, replace?: boolean) => void
   toggleSort: (key: K) => void
+  /** 絞り込みだけを解除する。**表示と並び替えは残す**（探し方は変えていないため） */
+  reset: () => void
+  /** 絞り込みが1つでも効いているか。解除ボタンを出すかの判断に使う */
+  hasCriteria: boolean
 }
 
 export default function useListState<K extends string, S extends ListState<K>>(
   fromParams: (params: URLSearchParams) => S,
   toParams: (state: S) => URLSearchParams,
+  /** 何も絞り込んでいない状態の絞り込み条件（表示・並び替えは含めない） */
+  emptyCriteria: Partial<S>,
 ): ListStateApi<S, K> {
   const [params, setParams] = useSearchParams()
   const state = useMemo(() => fromParams(params), [fromParams, params])
+
+  // 絞り込みだけを既定に戻した状態。URLに書き出したものが今と同じなら、
+  // 効いている絞り込みは1つも無い（表示・並び替えはどちらにも同じように載る）
+  const cleared = { ...state, ...emptyCriteria }
+  const hasCriteria = toParams(cleared).toString() !== toParams(state).toString()
 
   return {
     state,
@@ -44,5 +55,7 @@ export default function useListState<K extends string, S extends ListState<K>>(
       const next = nextSort({ key: state.sortKey, asc: state.sortAsc }, key)
       setParams(toParams({ ...state, sortKey: next.key, sortAsc: next.asc }))
     },
+    reset: () => setParams(toParams(cleared)),
+    hasCriteria,
   }
 }

@@ -322,4 +322,39 @@ describe('絞り込みとURL', () => {
     fireEvent.click(screen.getByRole('button', { name: '表' }))
     expect(currentUrl()).toBe('/practice?view=table')
   })
+
+  /**
+   * 絞り込みは10近くあり、0件になった人は効いている条件を1つずつ戻すしかなかった。
+   * **解除は絞り込みだけで、表示と並び替えは残す**（探し方まで戻されると、
+   * 表で見ていた人がリストに飛ばされる）
+   */
+  it('条件をすべて解除すると、絞り込みだけがURLから消える', () => {
+    renderAt('/concert?pref=大阪府&walk=5&view=table')
+    fireEvent.click(screen.getAllByRole('button', { name: '条件をすべて解除' })[0])
+    expect(currentUrl()).toBe('/concert?view=table')
+  })
+
+  it('何も絞り込んでいなければ解除は出さない', () => {
+    renderAt('/concert')
+    expect(screen.queryByRole('button', { name: '条件をすべて解除' })).toBeNull()
+  })
+
+  // 0件の画面からも外せること。絞り込みパネルは狭い画面では畳まれている
+  it('0件のときは空の表示からも解除できる', () => {
+    renderAt('/practice?q=ありえない施設名')
+    const buttons = screen.getAllByRole('button', { name: '条件をすべて解除' })
+    fireEvent.click(buttons[buttons.length - 1])
+    expect(currentUrl()).toBe('/practice')
+  })
+
+  /**
+   * 未調査は「無い」ではないので、除外した件数を知らせるだけでなく
+   * 含める道を用意してある（→ filter.ts / UnknownNotice）
+   */
+  it('未調査も含めて表示できる', () => {
+    renderAt('/concert?equip=organ')
+    fireEvent.click(screen.getByRole('button', { name: '未調査も含めて表示' }))
+    expect(currentUrl()).toBe('/concert?equip=organ&unknown=1')
+    expect(screen.getByRole('button', { name: '未調査を除く' })).toBeDefined()
+  })
 })

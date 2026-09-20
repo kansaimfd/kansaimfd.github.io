@@ -8,6 +8,7 @@ import useDocumentTitle from '../useDocumentTitle'
 import useListState from '../useListState'
 import { isClosed } from '../rental'
 import {
+  EMPTY_HALL_CRITERIA,
   HALL_EQUIP_FIELDS,
   HALL_SORT_KEYS,
   dedupeByFacility,
@@ -64,10 +65,10 @@ export default function ConcertHallListPage() {
    * 一覧の状態はURLが持つ。**`useState` に持たない。**
    * 絞り込んだ結果をそのまま人に送れて、詳細ページから戻っても条件が残る。
    */
-  const { state, update, toggleSort } = useListState<HallSortKey, HallPageState>(
-    stateFromParams,
-    hallStateToParams,
-  )
+  const { state, update, toggleSort, reset, hasCriteria } = useListState<
+    HallSortKey,
+    HallPageState
+  >(stateFromParams, hallStateToParams, EMPTY_HALL_CRITERIA)
   const {
     query,
     prefs,
@@ -80,6 +81,7 @@ export default function ConcertHallListPage() {
     stageD,
     equip,
     showClosed,
+    includeUnknown,
     view,
     sortKey,
     sortAsc,
@@ -97,7 +99,7 @@ export default function ConcertHallListPage() {
     [prefs, city, station],
   )
 
-  const { filtered, unknownExcluded, unknownFields } = useMemo(() => {
+  const { filtered, unknownCount, unknownFields } = useMemo(() => {
     const result = filterHalls(concerthalls, {
       query,
       prefs,
@@ -110,6 +112,7 @@ export default function ConcertHallListPage() {
       stageD,
       equip,
       showClosed,
+      includeUnknown,
     })
     return { ...result, filtered: sortHalls(result.filtered, sortKey, sortAsc) }
   }, [
@@ -124,6 +127,7 @@ export default function ConcertHallListPage() {
     stageD,
     equip,
     showClosed,
+    includeUnknown,
     sortKey,
     sortAsc,
   ])
@@ -132,6 +136,9 @@ export default function ConcertHallListPage() {
   const groups = useMemo(() => groupByFacility(filtered), [filtered])
   // 地図はこの配列が変わるたびにピンを置き直すので、描画ごとに作り直さない
   const mapFacilities = useMemo(() => dedupeByFacility(filtered), [filtered])
+
+  // 何も絞り込んでいなければ、解除するものが無いのでボタンを出さない
+  const onReset = hasCriteria ? reset : undefined
 
   const sortTh = (k: HallSortKey, label: string, numeric?: boolean) => (
     <SortableTh
@@ -155,12 +162,18 @@ export default function ConcertHallListPage() {
       sortKey={sortKey}
       sortAsc={sortAsc}
       onSort={(key, asc) => update({ sortKey: key, sortAsc: asc })}
+      onReset={onReset}
       view={view}
       onChangeView={v => update({ view: v })}
       count={filtered.length}
       unit="ホール"
       note={`${groups.length}施設`}
-      unknown={{ count: unknownExcluded, fields: unknownFields }}
+      unknown={{
+        count: unknownCount,
+        fields: unknownFields,
+        included: includeUnknown,
+        onToggle: () => update({ includeUnknown: !includeUnknown }),
+      }}
       filters={
         <>
           <PrefPills
@@ -234,7 +247,7 @@ export default function ConcertHallListPage() {
       }
     >
       {view === 'list' && (
-        <CardList count={filtered.length}>
+        <CardList count={filtered.length} onReset={onReset}>
           {groups.map(g => {
             const [h] = g
             const multi = g.length > 1
@@ -286,6 +299,7 @@ export default function ConcertHallListPage() {
           caption={`コンサートホールの一覧（${filtered.length}件）`}
           columns={8}
           count={filtered.length}
+          onReset={onReset}
           head={
             <tr>
               {sortTh('施設名', '施設名')}

@@ -23,6 +23,8 @@ interface Props<K extends SortKey> {
 
   /** 一覧ごとの絞り込み条件（FilterRow の並び） */
   filters: ReactNode
+  /** 絞り込みが効いているときだけ渡す */
+  onReset?: () => void
 
   view: ViewMode
   onChangeView: (v: ViewMode) => void
@@ -31,10 +33,12 @@ interface Props<K extends SortKey> {
   unit?: string
   note?: string
 
-  /** 未調査で絞り込みから外れた件数と項目名（→ UnknownNotice） */
+  /** 未調査で判断できなかった件数と、その扱い（→ UnknownNotice） */
   unknown: {
     count: number
     fields: string[]
+    included: boolean
+    onToggle: () => void
   }
 
   /** 表示（リスト・表・地図）の中身 */
@@ -61,6 +65,7 @@ export default function ListLayout<K extends SortKey>({
   sortAsc,
   onSort,
   filters,
+  onReset,
   view,
   onChangeView,
   count,
@@ -81,6 +86,7 @@ export default function ListLayout<K extends SortKey>({
       </header>
 
       <FilterPanel
+        onReset={onReset}
         head={
           <>
             {/* フリーワードは履歴を積まずに置き換える（→ ページ側の update の第2引数） */}

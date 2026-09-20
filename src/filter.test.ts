@@ -139,7 +139,7 @@ describe('applyConditions', () => {
   it('条件が無ければ全件そのまま', () => {
     const r = applyConditions(items, [])
     expect(r.filtered).toEqual(items)
-    expect(r.unknownExcluded).toBe(0)
+    expect(r.unknownCount).toBe(0)
     expect(r.unknownFields).toEqual([])
   })
 
@@ -148,7 +148,7 @@ describe('applyConditions', () => {
 
     expect(r.filtered.map(i => i.id)).toEqual([1])
     // 2（客席数が足りない）と 5（ピアノが無い）は「合わない」ので数えない
-    expect(r.unknownExcluded).toBe(2)
+    expect(r.unknownCount).toBe(2)
     expect(r.unknownFields).toEqual(['客席数', 'ピアノの有無'])
   })
 
@@ -159,7 +159,7 @@ describe('applyConditions', () => {
   it('合わない条件があるなら、未調査があっても数えない', () => {
     const r = applyConditions([{ id: 9, seats: 100 }], [seatsAtLeast('500'), hasPiano])
     expect(r.filtered).toEqual([])
-    expect(r.unknownExcluded).toBe(0)
+    expect(r.unknownCount).toBe(0)
     expect(r.unknownFields).toEqual([])
   })
 
@@ -170,9 +170,23 @@ describe('applyConditions', () => {
     expect(reversed.unknownFields).toEqual(['ピアノの有無', '客席数'])
   })
 
+  /**
+   * 未調査を含める側。**除外したときと同じ件数・項目名を返す**
+   * （画面は「◯件を含めて表示しています」と伝えるのに使う）
+   */
+  it('含める指定なら、判断できないものも一覧に入れる', () => {
+    const r = applyConditions(items, [seatsAtLeast('500'), hasPiano], true)
+
+    // 1（合う）に加えて、3（客席数が未調査）と 4（ピアノが未調査）が入る。
+    // 2（客席数が足りない）と 5（ピアノが無い）は「合わない」ので入らない
+    expect(r.filtered.map(i => i.id)).toEqual([1, 3, 4])
+    expect(r.unknownCount).toBe(2)
+    expect(r.unknownFields).toEqual(['客席数', 'ピアノの有無'])
+  })
+
   it('同じ項目で何件外れても、項目名は1度だけ挙げる', () => {
     const r = applyConditions([{ id: 1 }, { id: 2 }], [seatsAtLeast('500')])
-    expect(r.unknownExcluded).toBe(2)
+    expect(r.unknownCount).toBe(2)
     expect(r.unknownFields).toEqual(['客席数'])
   })
 })
