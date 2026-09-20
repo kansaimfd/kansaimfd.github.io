@@ -87,7 +87,7 @@ node scripts/audit-urls.mjs            # 登録URLの生死と「別サイトへ
   0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
   そのため全体の数字は追わない。**追うのは全体値ではなく、テスト対象モジュール
   （`transform` / `validate` / `coverage` / `static-pages` / `station` / `availability` / `address` / `name` /
-  `rental` / `concerthall` / `practice` / `filter` / `query` / `toggle` / `title` / `mapStyle`）が
+  `rental` / `concerthall` / `practice` / `filter` / `query` / `sort` / `toggle` / `title` / `mapStyle`）が
   4指標とも100%であること**。これは `vitest.config.ts` の `thresholds` で固定してあり、
   下回ると `npm run check` と CI が落ちる（文章で書いてあるだけでは気づかないうちに落ちていく）。
   **しきい値は `--coverage` のときしか効かない**ので、`check` と CI は `test:coverage` を回す。
@@ -198,7 +198,11 @@ React コンポーネント
   黙って落とすと「なぜ0件なのか分からない画面」になる。
   一覧は条件をこの形に並べて `applyConditions` に渡す
 - `src/query.ts` — URLクエリと絞り込み条件の相互変換（→ 一覧の状態はURLが持つ）
-- `src/station.ts` — 最寄駅の表記・徒歩分数まわりの共通ヘルパー
+- `src/station.ts` — 最寄駅の表記・徒歩分数まわりの共通ヘルパー。
+  `knownWalk()` は分数が1駅も分からなければ `undefined` を返す
+  （番兵値の `NO_WALK` のまま扱うと「999分の施設」と区別がつかない）
+- `src/sort.ts` — 一覧の並び替えで共通の比較。**未調査は向きに関わらず末尾へ送る**
+  （番兵値に均していたころ、「客席数の少ない順」で未調査の18ホールが先頭を占めていた）
 - `src/address.ts` — 住所の連結（`geocodableAddress()` は建物名を含めない）
 - `src/availability.ts` — 設備の3値（あり／なし／未調査）の表示と絞り込み
 - `src/name.ts` — 施設名の五十音順ソート

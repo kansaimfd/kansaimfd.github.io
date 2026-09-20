@@ -2,7 +2,8 @@ import type { PracticeListItem, Availability } from './types'
 import type { ViewMode } from './components/ViewToggle'
 import { fullAddress } from './address'
 import { compareByName } from './name'
-import { NO_WALK, minWalk, stationNames } from './station'
+import { compareUnknownLast } from './sort'
+import { knownWalk, stationNames } from './station'
 import {
   applyConditions,
   matchAny,
@@ -71,12 +72,6 @@ export function maxArea(p: PracticeListItem): number {
 export function knownCapacity(p: PracticeListItem): number | undefined {
   const known = p.部屋?.map(r => r.定員).filter(v => v != null) ?? []
   return known.length > 0 ? Math.max(...known) : undefined
-}
-
-/** 同じく絞り込み用の徒歩分数。1駅も分数が分からなければ undefined */
-export function knownWalk(p: PracticeListItem): number | undefined {
-  const walk = minWalk(p)
-  return walk === NO_WALK ? undefined : walk
 }
 
 export const PRACTICE_EQUIP_FIELDS = [
@@ -168,17 +163,9 @@ export function sortPractices(
   return [...practices].sort((a, b) => {
     // 施設名は五十音順（コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる）
     if (key === '施設名') return dir * compareByName(a, b)
-    let av: string | number, bv: string | number
-    if (key === '都道府県') {
-      av = a.都道府県
-      bv = b.都道府県
-    } else {
-      av = minWalk(a)
-      bv = minWalk(b)
-    }
-    if (av < bv) return -dir
-    if (av > bv) return dir
-    return 0
+    // 徒歩分数の未調査は、向きに関わらず末尾へ（→ sort.ts）
+    if (key === '都道府県') return compareUnknownLast(a.都道府県, b.都道府県, dir)
+    return compareUnknownLast(knownWalk(a), knownWalk(b), dir)
   })
 }
 

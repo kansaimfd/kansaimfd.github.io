@@ -266,6 +266,8 @@ describe('sortPractices', () => {
       practice({ ID: 30, 最寄駅: [{ 駅: 'B駅', 駅徒歩: 3 }] }),
     ]
     expect(sortPractices(list, '最寄駅徒歩', true).map(p => p.ID)).toEqual([30, 20, 10])
+    // 遠い順でも記録の無い施設は末尾（番兵値で比べていたころは先頭に来ていた）
+    expect(sortPractices(list, '最寄駅徒歩', false).map(p => p.ID)).toEqual([20, 30, 10])
   })
 
   // 同値のときに順序を入れ替えると、絞り込みを変えるたびに一覧が跳ねる

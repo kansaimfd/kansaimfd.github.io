@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Station } from './types'
 import {
   NO_WALK,
+  knownWalk,
   lineLabel,
   minWalk,
   stationKind,
@@ -13,6 +14,26 @@ import {
 } from './station'
 
 const station = (s: Partial<Station>): Station => ({ 駅: '新大阪駅', ...s })
+
+describe('knownWalk', () => {
+  // 番兵値のまま返すと「999分の施設」と区別がつかず、絞り込みで黙って落ち、
+  // 並び替えでは向きによって先頭を占める
+  it('分かっている最短の分数を返す', () => {
+    expect(
+      knownWalk({
+        最寄駅: [
+          { 駅: 'A駅', 駅徒歩: 12 },
+          { 駅: 'B駅', 駅徒歩: 3 },
+        ],
+      }),
+    ).toBe(3)
+  })
+
+  it('1駅も分数が分からなければ undefined', () => {
+    expect(knownWalk({ 最寄駅: [{ 駅: 'A駅' }] })).toBeUndefined()
+    expect(knownWalk({})).toBeUndefined()
+  })
+})
 
 describe('minWalk', () => {
   it('最寄駅がなければ NO_WALK', () => {

@@ -11,7 +11,8 @@ import {
 } from './filter'
 import { fullAddress } from './address'
 import { compareByName } from './name'
-import { minWalk, stationNames } from './station'
+import { compareUnknownLast } from './sort'
+import { knownWalk, stationNames } from './station'
 import { ALL_PREFS } from './pref'
 import { matchRentable } from './rental'
 import {
@@ -149,21 +150,10 @@ export function sortHalls(halls: ConcertHall[], key: HallSortKey, asc: boolean):
   return [...halls].sort((a, b) => {
     // 施設名は五十音順（コードポイント順だと 100BAN→7th Note→KOKO PLAZA→アイホール になる）
     if (key === '施設名') return dir * compareByName(a, b)
-    let av: string | number, bv: string | number
-    if (key === '都道府県') {
-      av = a.都道府県
-      bv = b.都道府県
-    } else if (key === '客席数') {
-      // 未調査は末尾ではなく最小として扱う（多い順では最後に来る）
-      av = a.客席数 ?? -1
-      bv = b.客席数 ?? -1
-    } else {
-      av = minWalk(a)
-      bv = minWalk(b)
-    }
-    if (av < bv) return -dir
-    if (av > bv) return dir
-    return 0
+    // 客席数・徒歩分数の未調査は、向きに関わらず末尾へ（→ sort.ts）
+    if (key === '都道府県') return compareUnknownLast(a.都道府県, b.都道府県, dir)
+    if (key === '客席数') return compareUnknownLast(a.客席数, b.客席数, dir)
+    return compareUnknownLast(knownWalk(a), knownWalk(b), dir)
   })
 }
 

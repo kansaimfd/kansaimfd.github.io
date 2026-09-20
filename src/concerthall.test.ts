@@ -372,10 +372,12 @@ describe('sortHalls', () => {
     expect(sortHalls(halls, '客席数', false).map(h => h.ID)).toEqual([20, 10])
   })
 
-  // 客席数の多い順で、調べていない施設が先頭に来ると一覧の意味が壊れる
-  it('客席数が未調査なら多い順で最後に来る', () => {
+  // 調べていない施設が先頭に来ると一覧の意味が壊れる。**向きを変えても同じ**で、
+  // 以前は未調査を -1 に均していたため「少ない順」で18ホールが先頭を占めていた
+  it('客席数が未調査ならどちらの向きでも最後に来る', () => {
     const halls = [hall({ ID: 10 }), hall({ ID: 20, 客席数: 300 })]
     expect(sortHalls(halls, '客席数', false).map(h => h.ID)).toEqual([20, 10])
+    expect(sortHalls(halls, '客席数', true).map(h => h.ID)).toEqual([20, 10])
   })
 
   // 未調査どうしを比べたときに並びが跳ねないこと
@@ -384,9 +386,11 @@ describe('sortHalls', () => {
     expect(sortHalls(halls, '客席数', false).map(h => h.ID)).toEqual([10, 20])
   })
 
-  it('最寄駅が無い施設は徒歩の近い順で最後に来る', () => {
+  it('最寄駅が無い施設は徒歩のどちらの向きでも最後に来る', () => {
     const halls = [hall({ ID: 10 }), hall({ ID: 20, 最寄駅: [{ 駅: 'テスト駅', 駅徒歩: 5 }] })]
     expect(sortHalls(halls, '最寄駅徒歩', true).map(h => h.ID)).toEqual([20, 10])
+    // 番兵値（999）で比べていたころは「遠い順」で先頭に来ていた
+    expect(sortHalls(halls, '最寄駅徒歩', false).map(h => h.ID)).toEqual([20, 10])
   })
 
   // Reactの状態として持つ配列を並べ替えてしまうと、再描画の判定が壊れる

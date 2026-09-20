@@ -14,6 +14,16 @@ export function minWalk(f: HasStations): number {
   return Math.min(NO_WALK, ...(f.最寄駅?.map(s => s.駅徒歩 ?? NO_WALK) ?? []))
 }
 
+/**
+ * 絞り込み・並び替え用の徒歩分数。**1駅も分数が分からなければ undefined を返す。**
+ * 番兵値の `NO_WALK` に均すと「999分の施設」と区別がつかず、
+ * 未調査のまま静かに除外されたり、並び替えで先頭に来たりする。
+ */
+export function knownWalk(f: HasStations): number | undefined {
+  const walk = minWalk(f)
+  return walk === NO_WALK ? undefined : walk
+}
+
 /** 名前そのものが「◯◯バス停」と言っているか。言っているなら種別を添える必要はない */
 const namedAsBusStop = (名前: string) => /(バス停|停留所)$/.test(名前)
 

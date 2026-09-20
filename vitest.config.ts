@@ -22,7 +22,9 @@ export default defineConfig({
         'src/data/**',
         'src/types.ts',
       ],
-      reporter: ['text', 'html', 'lcov'],
+      // json-summary は CLAUDE.md が「一覧はここを見る」と書いている
+      // coverage-summary.json を出すために要る（無いと参照先が存在しない）
+      reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
       /**
        * **中心モジュールは4指標とも100%を保つ。**
@@ -38,7 +40,7 @@ export default defineConfig({
        * 動的 import の関数を作るためで、100%にするには167施設を全部読むしかない。
        */
       thresholds: {
-        'src/{address,availability,concerthall,filter,mapStyle,name,practice,query,rental,station,title,toggle}.ts':
+        'src/{address,availability,concerthall,filter,mapStyle,name,practice,query,rental,sort,station,title,toggle}.ts':
           { statements: 100, branches: 100, functions: 100, lines: 100 },
         'scripts/{coverage,static-pages,transform,validate}.mjs': {
           statements: 100,
