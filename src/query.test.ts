@@ -72,14 +72,32 @@ describe('readRange', () => {
     expect(readRange(params('seats=500-'), 'seats')).toEqual(['500', ''])
   })
 
+  // 舞台寸法は146ホール中60ホールが小数（いずみホールは 19.4×10.5m）。
+  // 整数だけにしていたころ、共有されたURLの条件が開いた先で消えていた
+  it('小数の指定を読む', () => {
+    expect(readRange(params('stagew=16.5-20.8'), 'stagew')).toEqual(['16.5', '20.8'])
+    expect(readRange(params('stagew=.5-'), 'stagew')).toEqual(['.5', ''])
+  })
+
+  // 一覧の状態はURLが持つので、打鍵ごとにここを通って入力欄へ戻る。
+  // 打ちかけを落とすと、小数点を打った時点で欄が空になる
+  it('打ちかけの小数点を落とさない', () => {
+    expect(readRange(params('stagew=16.-'), 'stagew')).toEqual(['16.', ''])
+  })
+
   // 数として読めないものを渡すと NaN で全件が消える。指定なしに倒す
-  it('整数でない値は指定なしに倒す', () => {
-    expect(readRange(params('seats=abc-1.5'), 'seats')).toEqual(['', ''])
+  it('数として読めない値は指定なしに倒す', () => {
+    expect(readRange(params('seats=abc-1.2.3'), 'seats')).toEqual(['', ''])
+  })
+
+  // 小数点だけでは比較できない。「指定はあるが判断できない」状態を作らないよう弾く
+  it('小数点だけの指定は通さない', () => {
+    expect(readRange(params('stagew=.-'), 'stagew')).toEqual(['', ''])
   })
 })
 
 describe('readNumber', () => {
-  it('整数だけを通す', () => {
+  it('0以上の数だけを通す', () => {
     expect(readNumber(params('cap=50'), 'cap')).toBe('50')
     expect(readNumber(params('cap=-3'), 'cap')).toBe('')
     expect(readNumber(params(''), 'cap')).toBe('')

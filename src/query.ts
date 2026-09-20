@@ -25,8 +25,20 @@ const RANGE_SEP = '-'
 
 const VIEWS: ViewMode[] = ['list', 'table', 'map']
 
-/** 0以上の整数だけを通す。小数・負数・文字を混ぜたものは「指定なし」に倒す */
-const asNumberText = (v: string): string => (/^\d+$/.test(v) ? v : '')
+/**
+ * 0以上の数値だけを通す。負数・文字を混ぜたものは「指定なし」に倒す。
+ *
+ * **小数を通すこと。** 整数だけにしていたころ、舞台幅に `16.5` と打つと
+ * `.` を打った時点で URL に載らず、入力欄が勝手に空になっていた
+ * （一覧の状態はURLが持つので、打鍵ごとにここを通って戻ってくる）。
+ * 舞台寸法は146ホール中60ホールが小数で、いずみホールは 19.4×10.5m ある。
+ *
+ * 打ちかけの `16.` も通す（次の桁を打てなくなるため）。`Number('16.')` は 16 で、
+ * 絞り込みの比較はそのまま働く。小数点だけの `.` は `Number` が NaN を返すので、
+ * 「指定はあるが比較できない」状態にならないよう弾く。
+ */
+const asNumberText = (v: string): string =>
+  v !== '' && /^\d*\.?\d*$/.test(v) && Number.isFinite(Number(v)) ? v : ''
 
 export function readText(params: URLSearchParams, key: string): string {
   return params.get(key) ?? ''

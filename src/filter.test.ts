@@ -66,6 +66,14 @@ describe('matchRange', () => {
     expect(matchRange(undefined, ['', ''])).toBe('pass')
   })
 
+  // 舞台寸法は小数で書かれるものが多い（いずみホールは 19.4×10.5m）
+  it('小数の範囲を扱える', () => {
+    expect(matchRange(19.4, ['16.5', '20.8'])).toBe('pass')
+    expect(matchRange(19.4, ['19.5', ''])).toBe('fail')
+    // 打ちかけの「16.」は 16 として比較する（URLを往復する途中の値）
+    expect(matchRange(19.4, ['16.', ''])).toBe('pass')
+  })
+
   it('範囲に収まるかを見る', () => {
     expect(matchRange(800, ['500', '1000'])).toBe('pass')
     expect(matchRange(400, ['500', '1000'])).toBe('fail')
