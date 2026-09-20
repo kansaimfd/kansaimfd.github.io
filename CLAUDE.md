@@ -93,8 +93,9 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
 - **カバレッジの `include` は src と scripts の全体**。テストから読み込まれなかったファイルも
   0% として数える（分母から外すと「測っていない範囲」が数字から消えて実態より良く見えるため）。
   そのため全体の数字は追わない。**追うのは全体値ではなく、テスト対象モジュール
-  （`transform` / `validate` / `coverage` / `static-pages` / `station` / `availability` / `address` / `name` /
-  `rental` / `concerthall` / `practice` / `filter` / `query` / `sort` / `toggle` / `title` / `mapStyle`）が
+  （`transform` / `validate` / `coverage` / `static-pages` / `url-audit` / `station` / `availability` /
+  `address` / `name` / `rental` / `concerthall` / `practice` / `filter` / `options` / `query` / `sort` /
+  `toggle` / `title` / `mapStyle`）が
   4指標とも100%であること**。これは `vitest.config.ts` の `thresholds` で固定してあり、
   下回ると `npm run check` と CI が落ちる（文章で書いてあるだけでは気づかないうちに落ちていく）。
   **しきい値は `--coverage` のときしか効かない**ので、`check` と CI は `test:coverage` を回す。
@@ -103,7 +104,8 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
   ページとコンポーネントの数字はスモークテストが通りがかりに
   踏んだ結果で、**その値を上げにいかない**（導線以外を見ないテストなので、数字を追うと
   スモークテストの目的から外れる）。外部アクセスを伴う監査スクリプト
-  （`audit-coordinates` / `audit-urls`）は未着手で0%。
+  （`audit-coordinates` / `audit-urls`）は未着手で0%
+  （`audit-urls` の判定そのものは `url-audit.mjs` に出してテストしてある）。
   なお text レポーターは全項目100%のファイルを表から省く（`skipFull` とは無関係）。
   一覧は `coverage/index.html` か `coverage-summary.json` を見る
 
@@ -187,6 +189,10 @@ React コンポーネント
 - `scripts/static-pages.mjs` — URLごとの静的HTML（題名・説明・canonical・OGP・構造化データ）と
   sitemap.xml の組み立て。書き出しは `build-static-pages.mjs` が `npm run build` の最後に行う（→ Deployment）
 - `scripts/audit-coordinates.mjs` — 座標の検算（外部APIを使うためビルドには組み込まない）
+- `scripts/url-audit.mjs` — 「開くが別サイト」の判定（一致率・英語ページ・文字符号化）。
+  **通信を持たないので単体でテストできる**（`audit-urls.mjs` が決めているのは月次Issueの中身で、
+  閾値を動かせば見逃しにも誤検知にも振れる。スクリプトに閉じていると167施設へ
+  実際に通信してみるまで確かめられなかった）
 - `scripts/audit-freshness.mjs` — 確認日の鮮度の一覧（選び出しは `coverage.mjs` の `staleRecords`）
 - `scripts/build-station-master.mjs` — 駅座標マスタの生成（随時。出力はコミット済み）
 - `data/stations.json` — 関西1,904駅の座標（同名でも事業者が違えば別の駅）。出典: 国土数値情報（鉄道データ）国土交通省
