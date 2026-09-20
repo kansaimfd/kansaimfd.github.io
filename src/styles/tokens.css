@@ -5,7 +5,7 @@
  */
 
 :root {
-  /* ブランド3色。CLAUDE.md の Design に対応する */
+  /* ブランド3色。docs/design.md に対応する */
   --color-navy-50: #eef2f7;
   --color-navy-100: #d5e0ed;
   --color-navy-700: #1b2e4b;

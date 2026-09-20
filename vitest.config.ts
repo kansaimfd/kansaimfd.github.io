@@ -22,7 +22,7 @@ export default defineConfig({
         'src/data/**',
         'src/types.ts',
       ],
-      // json-summary は CLAUDE.md が「一覧はここを見る」と書いている
+      // json-summary は docs/development.md が「一覧はここを見る」と書いている
       // coverage-summary.json を出すために要る（無いと参照先が存在しない）
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
@@ -32,7 +32,7 @@ export default defineConfig({
        * 全体の数字は追わない（ページとコンポーネントの数字はスモークテストが
        * 通りがかりに踏んだ結果で、上げにいくとスモークテストの目的から外れる）。
        * 代わりに、絞り込み・並び替え・変換・検査といった**中身のあるモジュールだけ**を
-       * ここで固定する。CLAUDE.md に文章で書いてあっても、検査が無ければ
+       * ここで固定する。ドキュメントに文章で書いてあっても、検査が無ければ
        * 気づかないうちに落ちていく。
        *
        * ここに載せるのは「テストで全部辿れる純粋なモジュール」に限る。

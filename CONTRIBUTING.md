@@ -18,10 +18,14 @@
 
 ```bash
 npm install
+npx playwright install chromium   # 初回だけ。npm run check の最後で使う
 npm run data     # YAML→JSON変換。データ検査もここで走る
-npm run check    # lint → 型チェック → 整形チェック → テスト
+npm run check    # lint → 型チェック → 整形チェック → テスト → ビルド → dist の検品
 npm run dev      # 表示を確認する
 ```
+
+施設データだけを直す場合は `npm run data` が通れば十分です
+（`npm run check` はコードも含めた一式で、最後に本番ビルドをブラウザで開いて確かめます）。
 
 `npm run data` は変換の前にデータ検査（`scripts/validate.mjs`）を回します。
 **エラーがあるとビルドが止まります。** 警告は種類ごとにまとめて表示され、ビルドは続きます
@@ -29,7 +33,7 @@ npm run dev      # 表示を確認する
 
 ## 書くときに気をつけること
 
-スキーマの全体と判断基準は [CLAUDE.md](./CLAUDE.md) の「Data Schema」「記述ルール」にあります。
+スキーマの全体と判断基準は [docs/data-schema.md](./docs/data-schema.md) にあります。
 とくに間違えやすいのは次の3点です。
 
 - **1レコード = 1施設**。同じ施設に複数のホール・練習室があるときは行を分けず `部屋:` 配列に入れる
