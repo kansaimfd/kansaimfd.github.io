@@ -8,13 +8,18 @@
  * lint も通るので、描画して辿る以外に気づく方法が無い。
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import App from './App'
 import { concerthalls } from './datasets/concerthalls'
 import { practices } from './datasets/practices'
 import { isClosed } from './rental'
 import { practiceDetailPath } from './practice'
+
+// ルートは全部遅延読み込みなので、最初に描画するケースだけが最初の動的 import の
+// 解決を待つ。CI の遅いランナーでは既定の 1000ms をまたいで落ちていた（1059ms・1080ms）。
+// 待ち時間は見つからなかったときにしか消費されないので、広げても通常の実行は遅くならない
+configure({ asyncUtilTimeout: 5000 })
 
 // jsdom は window.scrollTo を実装していない。ScrollToTop が呼ぶだけで
 // 「Not implemented」が出てテスト出力が埋まるので差し替えておく
@@ -69,8 +74,8 @@ describe('ルーティング', () => {
   })
 
   /**
-   * GitHub Pages は存在しないパスにも index.html（を複製した 404.html）を返すので、
-   * どんなURLもこのSPAまで届く。受け皿のルートが無いと、ヘッダーとフッターだけが出て
+   * GitHub Pages は存在しないパスにも 404.html（`scripts/build-static-pages.mjs` が
+   * 書き出す。中身はこのSPA）を返すので、どんなURLもこのSPAまで届く。受け皿のルートが無いと、ヘッダーとフッターだけが出て
    * 本文が空になる。空白は型チェックにも lint にも引っかからない
    */
   it('知らないURLでは404の案内を出す', async () => {

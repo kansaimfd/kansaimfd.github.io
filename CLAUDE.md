@@ -537,7 +537,15 @@ Pages のソースは **GitHub Actions**（`build_type: workflow`）で、ブラ
 public に戻し、Pages を有効化し、`gh workflow enable "Deploy to GitHub Pages"` で再開した。
 このとき**全コミットの著者・コミッタのメールを GitHub の noreply に書き換えている**
 （public にすると個人のアドレスが誰でも読めるため）。**このリポジトリの `git config user.email` は
-noreply にしてある**ので、commit する際に上書きしないこと（global は個人のアドレスのまま）。
+noreply にしてある**（このマシンの global も同じ値に変えてある）。
+
+**このときリポジトリごと作り直している。** 履歴を書き換えて force push しても、GitHub は
+閉じた PR の `refs/pull/*` を恒久的に保持するので、そこから親をたどると旧メールのコミットに
+届いてしまう（force push でも `git gc` でも消えない）。そのため新しい
+`kansaimfd/kansaimfd.github.io` を作って書き換え済みの履歴だけを push した。
+**Actions の実行履歴と過去の PR がこの日より前に遡れないのはそのため。**
+旧リポジトリは `kansaimfd/kansaimfd.github.io-archive` として private で残してある
+（Pages 解除・Actions 停止済み）。**既定ブランチは作り直しに合わせて `master` から `main` にした。**
 
 - リポジトリ名が `kansaimfd/kansaimfd.github.io` なので **User Pages となり、
   https://kansaimfd.github.io/ のルートで配信される**（プロジェクトページのようなサブパスは付かない）。
