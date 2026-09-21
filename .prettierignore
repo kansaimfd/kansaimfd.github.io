@@ -20,3 +20,6 @@ coverage
 # Playwright の出力
 test-results
 playwright-report
+
+# Search Console の所有権確認ファイル。Google が発行した中身のまま置く
+public/google*.html
