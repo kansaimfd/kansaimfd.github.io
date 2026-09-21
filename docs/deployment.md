@@ -55,5 +55,7 @@ noreply にしてある**（このマシンの global も同じ値に変えて�
     広めに開いて 1200×630 に切り出す。並べる府県は `static-pages.mjs` の `DESCRIBED_PREFS` と合わせる。
     **画像は CSS 変数を読めないので、`tokens.css` の色やロゴを変えたら原稿を合わせて PNG を作り直す**。
     施設ごとの画像は作らない（施設名はカードの題名に出る。ビルドに日本語フォントと画像生成を抱えるほどの得が無い）
+- **Search Console の所有権確認は HTML ファイル方式**（`public/google36a05f4f889c9ab9.html`）。
+  消すと確認が外れるので残しておく
 - **残っている手当て**: Search Console に sitemap を登録し、
   X・Facebook の確認ツールでカードの見え方を確かめる（どちらも未着手）
