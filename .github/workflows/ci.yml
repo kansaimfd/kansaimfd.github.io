@@ -56,7 +56,7 @@ jobs:
       - run: npm run test:e2e
 
       # 落ちたときだけ、何が起きたのかを持ち帰れるようにする
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-trace
