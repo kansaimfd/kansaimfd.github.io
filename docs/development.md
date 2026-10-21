@@ -77,7 +77,9 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
   （題名が `確認日の鮮度:` で始まる Issue を使い回す。全件新しくなれば自動で閉じる）。
   **リンク検査が見つけるのは「開かなくなったURL」だけ**で、開くけれど中身が変わった施設
   （休館・移転・貸館終了・料金改定）は見つからないため、別に要る。
-  外部アクセスはしないが、ビルドを止める類のものでもないので `ci.yml` には入れない
+  外部アクセスはしないが、ビルドを止める類のものでもないので `ci.yml` には入れない。
+  一覧を出した先の**再確認そのもの**は、毎週土曜の早朝に Claude Code のスケジュール実行が
+  [freshness-check.md](./freshness-check.md) に従って数件ずつ行い、PR を出す
 - 動いている GitHub Actions はこの3つと、main への push で**検品してから**配信する
   `deploy.yml`（→ [deployment.md](./deployment.md)）
 - **Prettier の対象はコードだけ**。`data/` のYAMLと `*.md` は `.prettierignore` で除外している

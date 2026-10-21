@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | [docs/development.md](./docs/development.md) | コマンド・開発環境・CI・テストとカバレッジの方針 |
 | [docs/design.md](./docs/design.md) | 色・フォント・スタイルの書き方 |
 | [docs/deployment.md](./docs/deployment.md) | GitHub Pages への配信・URLごとの静的HTML |
+| [docs/freshness-check.md](./docs/freshness-check.md) | 登録済み施設の再確認（毎週の定期実行が読む手順） |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | 施設データを送る人向けの手順 |
 
 ## Project Overview
