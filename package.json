@@ -23,10 +23,10 @@
     "check": "npm run data && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build && npm run check:dist && npm run test:e2e"
   },
   "dependencies": {
-    "maplibre-gl": "^6.10.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "react-router-dom": "^7.14.1"
+    "maplibre-gl": "^6.16.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
