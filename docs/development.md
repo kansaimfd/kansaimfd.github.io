@@ -79,7 +79,8 @@ node scripts/audit-freshness.mjs       # 確認から1年を超えた施設と�
   （休館・移転・貸館終了・料金改定）は見つからないため、別に要る。
   外部アクセスはしないが、ビルドを止める類のものでもないので `ci.yml` には入れない。
   一覧を出した先の**再確認そのもの**は、毎週土曜の早朝に Claude Code のスケジュール実行が
-  [freshness-check.md](./freshness-check.md) に従って数件ずつ行い、PR を出す
+  [freshness-check.md](./freshness-check.md) に従って数件ずつ行い、PR を出す。
+  臨時に回すときはスキル `/freshness-check [件数]`（省略時10件）
 - 動いている GitHub Actions はこの3つと、main への push で**検品してから**配信する
   `deploy.yml`（→ [deployment.md](./deployment.md)）
 - **Prettier の対象はコードだけ**。`data/` のYAMLと `*.md` は `.prettierignore` で除外している
